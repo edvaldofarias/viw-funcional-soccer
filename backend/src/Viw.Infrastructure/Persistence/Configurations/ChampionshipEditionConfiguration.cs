@@ -22,5 +22,9 @@ public sealed class ChampionshipEditionConfiguration : IEntityTypeConfiguration<
 
         builder.Property(entity => entity.Name).HasMaxLength(200);
         builder.Property(entity => entity.Slug).HasMaxLength(200);
+        builder.Property(entity => entity.SourceImageUrl).HasMaxLength(2048);
+        builder.Property(entity => entity.SourceCoverUrl).HasMaxLength(2048);
+        builder.HasOne<MediaAsset>().WithMany().HasForeignKey(entity => entity.SourceImageAssetId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<MediaAsset>().WithMany().HasForeignKey(entity => entity.SourceCoverAssetId).OnDelete(DeleteBehavior.Restrict);
     }
 }

@@ -239,6 +239,22 @@ namespace Viw.Infrastructure.Persistence.Migrations
                         .IsUnicode(true)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<Guid?>("SourceCoverAssetId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("SourceCoverUrl")
+                        .HasMaxLength(2048)
+                        .IsUnicode(true)
+                        .HasColumnType("nvarchar(2048)");
+
+                    b.Property<Guid?>("SourceImageAssetId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("SourceImageUrl")
+                        .HasMaxLength(2048)
+                        .IsUnicode(true)
+                        .HasColumnType("nvarchar(2048)");
+
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
@@ -257,6 +273,10 @@ namespace Viw.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("Slug")
                         .IsUnique();
+
+                    b.HasIndex("SourceCoverAssetId");
+
+                    b.HasIndex("SourceImageAssetId");
 
                     b.ToTable("ChampionshipEdition", "viw", t =>
                         {
@@ -452,6 +472,12 @@ namespace Viw.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("EditionId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("ExternalId")
+                        .HasMaxLength(128)
+                        .IsUnicode(true)
+                        .HasColumnType("nvarchar(128)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -471,6 +497,10 @@ namespace Viw.Infrastructure.Persistence.Migrations
                         .HasColumnType("rowversion");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("EditionId", "PhaseId", "ExternalId")
+                        .IsUnique()
+                        .HasFilter("[ExternalId] IS NOT NULL");
 
                     b.HasIndex("EditionId", "PhaseId", "Number")
                         .IsUnique();
@@ -801,6 +831,9 @@ namespace Viw.Infrastructure.Persistence.Migrations
                         .HasColumnType("nvarchar(128)")
                         .UseCollation("Latin1_General_100_BIN2");
 
+                    b.Property<bool>("IsRemoved")
+                        .HasColumnType("bit");
+
                     b.Property<Guid>("MatchId")
                         .HasColumnType("uniqueidentifier");
 
@@ -1069,6 +1102,9 @@ namespace Viw.Infrastructure.Persistence.Migrations
                     b.Property<int?>("Goals")
                         .HasColumnType("int");
 
+                    b.Property<bool>("IsComplete")
+                        .HasColumnType("bit");
+
                     b.Property<Guid>("MatchId")
                         .HasColumnType("uniqueidentifier");
 
@@ -1204,6 +1240,10 @@ namespace Viw.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("AggregateStatisticsJson")
+                        .IsUnicode(true)
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("datetimeoffset");
 
@@ -1251,12 +1291,17 @@ namespace Viw.Infrastructure.Persistence.Migrations
                         .IsUnicode(true)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<Guid?>("SourceImageAssetId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("SourceImageUrl")
                         .HasMaxLength(2048)
                         .IsUnicode(true)
                         .HasColumnType("nvarchar(2048)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("SourceImageAssetId");
 
                     b.HasIndex("EditionId", "Provider", "ExternalId")
                         .IsUnique();
@@ -1334,6 +1379,10 @@ namespace Viw.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("AggregateStatisticsJson")
+                        .IsUnicode(true)
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("datetimeoffset");
 
@@ -1369,6 +1418,9 @@ namespace Viw.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("rowversion");
 
+                    b.Property<Guid?>("SourceImageAssetId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("SourceImageUrl")
                         .HasMaxLength(2048)
                         .IsUnicode(true)
@@ -1377,6 +1429,8 @@ namespace Viw.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("OfficialImageId");
+
+                    b.HasIndex("SourceImageAssetId");
 
                     b.HasIndex("EditionId", "Provider", "ExternalId")
                         .IsUnique();
@@ -1428,6 +1482,16 @@ namespace Viw.Infrastructure.Persistence.Migrations
                         .HasForeignKey("CompetitionId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("Viw.Domain.Competition.MediaAsset", null)
+                        .WithMany()
+                        .HasForeignKey("SourceCoverAssetId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Viw.Domain.Competition.MediaAsset", null)
+                        .WithMany()
+                        .HasForeignKey("SourceImageAssetId")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("Viw.Domain.Competition.Coach", b =>
@@ -1686,6 +1750,11 @@ namespace Viw.Infrastructure.Persistence.Migrations
                         .HasForeignKey("EditionId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("Viw.Domain.Competition.MediaAsset", null)
+                        .WithMany()
+                        .HasForeignKey("SourceImageAssetId")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("Viw.Domain.Competition.SourceSnapshot", b =>
@@ -1715,6 +1784,11 @@ namespace Viw.Infrastructure.Persistence.Migrations
                     b.HasOne("Viw.Domain.Competition.MediaAsset", null)
                         .WithMany()
                         .HasForeignKey("OfficialImageId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Viw.Domain.Competition.MediaAsset", null)
+                        .WithMany()
+                        .HasForeignKey("SourceImageAssetId")
                         .OnDelete(DeleteBehavior.Restrict);
                 });
 #pragma warning restore 612, 618

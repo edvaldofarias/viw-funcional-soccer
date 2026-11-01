@@ -1,0 +1,86 @@
+{
+  "ChampionshipCatalog": {
+    "Editions": [
+      {
+        "Slug": "copa-do-nordeste-2023-1",
+        "Name": "Copa do Nordeste",
+        "ExternalId": "-ntuuhaxhe2_pmjm8fm5",
+        "Year": 2023,
+        "Semester": 1,
+        "Archived": true,
+        "Enabled": true,
+        "ReserveMeansAbsent": false
+      },
+      {
+        "Slug": "copa-do-brasil-2023-2",
+        "Name": "Copa do Brasil",
+        "ExternalId": "-ncna_domeuyityn-om1",
+        "Year": 2023,
+        "Semester": 2,
+        "Archived": true,
+        "Enabled": true,
+        "ReserveMeansAbsent": false
+      },
+      {
+        "Slug": "premier-league-2024-1",
+        "Name": "Premier League",
+        "ExternalId": "-shn4",
+        "Year": 2024,
+        "Semester": 1,
+        "Archived": true,
+        "Enabled": true,
+        "ReserveMeansAbsent": false
+      },
+      {
+        "Slug": "euroviw-2024-2",
+        "Name": "EuroViw",
+        "ExternalId": "-4dqvf",
+        "Year": 2024,
+        "Semester": 2,
+        "Archived": true,
+        "Enabled": true,
+        "ReserveMeansAbsent": false
+      },
+      {
+        "Slug": "libertaviw-2025-1",
+        "Name": "LibertaViw",
+        "ExternalId": "-1xwvs",
+        "Year": 2025,
+        "Semester": 1,
+        "Archived": true,
+        "Enabled": true,
+        "ReserveMeansAbsent": false
+      },
+      {
+        "Slug": "campeonato-italiano-2025-2",
+        "Name": "Campeonato Italiano",
+        "ExternalId": "-t22j5",
+        "Year": 2025,
+        "Semester": 2,
+        "Archived": true,
+        "Enabled": true,
+        "ReserveMeansAbsent": false
+      },
+      {
+        "Slug": "copa-do-mundo-2026-1",
+        "Name": "Copa do Mundo",
+        "ExternalId": "-6pgn9",
+        "Year": 2026,
+        "Semester": 1,
+        "Archived": true,
+        "Enabled": true,
+        "ReserveMeansAbsent": false
+      },
+      {
+        "Slug": "la-liga-2026-2",
+        "Name": "La Liga",
+        "ExternalId": "-ciddy",
+        "Year": 2026,
+        "Semester": 2,
+        "Archived": false,
+        "Enabled": true,
+        "ReserveMeansAbsent": true
+      }
+    ]
+  }
+}

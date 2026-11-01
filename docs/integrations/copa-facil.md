@@ -62,7 +62,7 @@ Em resultado registrado, **`null × 3` representa `0 × 3`**. O mesmo vale para 
 - Valor negativo ou inválido: rejeitar/quarentenar; não converter para zero.
 - Snapshot original continua intacto, inclusive campos omitidos e nulos explícitos.
 
-O adaptador que identifica a existência do resultado será implementado na etapa do Worker. A confirmação humana acima complementa o contrato observado, não altera o site antigo nesta tarefa.
+O adaptador do Worker identifica a existência do objeto de resultado antes de converter lados nulos em zero. A confirmação humana acima complementa o contrato observado, não altera o site antigo nesta tarefa.
 
 ## Diferenças e lacunas verificadas
 
@@ -81,3 +81,11 @@ O adaptador que identifica a existência do resultado será implementado na etap
 ## Contrato de ingestão da próxima etapa
 
 DTOs de origem ficam na Infrastructure, separados do domínio. Usar timeout, cancelamento, retentativas limitadas, hash de conteúdo e checkpoint. Preservar campos não reconhecidos. Recursos, referências ou eventos inválidos não devem sobrescrever o último estado válido. Cadastro de IDs de origem pertence a `EditionSource`; não publicar esses valores no README.
+
+## Desserialização no Worker
+
+O adaptador usa `System.Text.Json`, DTOs com `[JsonPropertyName]` em `Viw.Infrastructure/Imports/Dtos` e coleções `Dictionary<string, T>` para os registros indexados do Firebase. `CopaFacilJson` desserializa os recursos; `CopaFacilValidation` valida nomes, participantes e placares; o writer recebe os dados tipados.
+
+Os dois conversores tratam apenas variações observadas: números em campos textuais e números inteiros representados com parte decimal zero. Strings numéricas em campos numéricos, frações em inteiros e tipos incompatíveis são rejeitados. Não há conversão permissiva que transforme erro em zero.
+
+`JsonElement` permanece para agregados ainda não normalizados e cópia fiel dos snapshots, inclusive campos desconhecidos e eventos originais. O formato textual de estatísticas `chave=valor#...` é tratado separadamente por `SourceStatisticsParser`; não é JSON. A mudança não exige migration nem altera o formato dos checkpoints.

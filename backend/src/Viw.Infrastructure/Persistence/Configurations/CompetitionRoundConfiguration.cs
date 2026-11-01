@@ -26,5 +26,7 @@ public sealed class CompetitionRoundConfiguration : IEntityTypeConfiguration<Com
             "CK_CompetitionRound_Number", "[Number] > 0"));
 
         builder.Property(entity => entity.Name).HasMaxLength(200);
+        builder.Property(entity => entity.ExternalId).HasMaxLength(128).UseCollation("Latin1_General_100_BIN2");
+        builder.HasIndex(entity => new { entity.EditionId, entity.PhaseId, entity.ExternalId }).IsUnique().HasFilter("[ExternalId] IS NOT NULL");
     }
 }

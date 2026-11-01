@@ -15,4 +15,6 @@ public sealed class SourcePlayer : Entity
     public string? ShirtNumber { get; set; }
     public string? Position { get; set; }
     public string? SourceImageUrl { get; set; }
+    public string? AggregateStatisticsJson { get; set; }
+    public Guid? SourceImageAssetId { get; set; }
 }

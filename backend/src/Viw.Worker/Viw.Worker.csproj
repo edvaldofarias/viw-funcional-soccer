@@ -15,4 +15,7 @@
     <ProjectReference Include="../Viw.Application/Viw.Application.csproj" />
     <ProjectReference Include="../Viw.Infrastructure/Viw.Infrastructure.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <None Update="championships.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

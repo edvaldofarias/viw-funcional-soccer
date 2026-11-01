@@ -23,5 +23,7 @@ public sealed class SourcePlayerConfiguration : IEntityTypeConfiguration<SourceP
             .UseCollation("Latin1_General_100_BIN2");
         builder.Property(entity => entity.OriginalName).HasMaxLength(200);
         builder.Property(entity => entity.SourceImageUrl).HasMaxLength(2048);
+        builder.Property(entity => entity.AggregateStatisticsJson).HasColumnType("nvarchar(max)").Metadata.SetMaxLength(null);
+        builder.HasOne<MediaAsset>().WithMany().HasForeignKey(entity => entity.SourceImageAssetId).OnDelete(DeleteBehavior.Restrict);
     }
 }

@@ -16,4 +16,5 @@ public sealed class MatchSourceEvent : Entity
     public decimal? Value { get; set; }
     public string RawJson { get; set; } = string.Empty;
     public int Revision { get; set; }
+    public bool IsRemoved { get; set; }
 }

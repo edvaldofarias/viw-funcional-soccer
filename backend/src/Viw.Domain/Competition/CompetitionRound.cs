@@ -11,4 +11,5 @@ public sealed class CompetitionRound : Entity
     public Guid PhaseId { get; set; }
     public int Number { get; set; }
     public string Name { get; set; } = string.Empty;
+    public string? ExternalId { get; set; }
 }

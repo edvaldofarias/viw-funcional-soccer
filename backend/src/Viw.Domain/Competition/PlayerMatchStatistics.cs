@@ -16,4 +16,5 @@ public sealed class PlayerMatchStatistics : Entity
     public int? RedCards { get; set; }
     public int? Appearances { get; set; }
     public int Revision { get; set; }
+    public bool IsComplete { get; set; }
 }

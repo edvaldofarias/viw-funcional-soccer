@@ -6,11 +6,9 @@ O projeto importa dados do Copa Fácil, mantém uma cópia própria no banco e p
 
 ## Estado do projeto
 
-A estrutura inicial está implementada: solução `backend/Viw.FuncionalSoccer.slnx`, bibliotecas backend, Worker em modo de preparação, Web API, MVC conectado à API, testes de unidade/integração e Docker Compose. O contrato inicial do Copa Fácil foi documentado e o modelo EF Core com 25 tabelas e migration foi criado. A importação e o Admin Angular ainda não foram implementados.
+O Worker importa as oito edições configuradas, executa ao iniciar e repete a cada hora. Inclui snapshots, checkpoints, atualização idempotente, recuperação de falhas, estatísticas de súmula e armazenamento de fotos local ou R2. Web API e MVC continuam com a estrutura inicial; interfaces de negócio e Admin Angular serão desenvolvidos depois.
 
-A persistência usa EF Core e migrations explícitas. A baseline e a migration `CreateCompetitionModel` preparam o banco e as tabelas; ainda não foram aplicadas a um SQL Server local. Consulte [execução local](docs/development/getting-started.md) e [migrations](docs/development/database.md).
-
-**Primeira entrega:** importar uma edição encerrada e a La Liga, persistir dados rastreáveis e demonstrar que novas execuções atualizam os registros sem duplicação ou perda das decisões manuais.
+O banco é criado e atualizado por migrations explícitas. A execução real da carga e os testes que dependem de SQL Server serão realizados no Windows. Consulte [execução do Worker](docs/worker/running.md) para preparação, comandos, configuração e limitações conhecidas das fontes.
 
 ## Objetivos
 

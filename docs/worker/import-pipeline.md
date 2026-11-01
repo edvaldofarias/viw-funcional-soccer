@@ -17,7 +17,7 @@ Importar uma edição encerrada e a La Liga, preservar origem, normalizar dados 
 
 Lease expirado não permite que um executor antigo continue gravando sem verificar propriedade/revisão. Cancelamento deve encerrar o lote com segurança; não registrar sucesso se a edição ficou incompleta.
 
-## Estados planejados
+## Estados
 
 Queued, Running, Succeeded, Failed e Cancelled. Importação sem alteração pode concluir com sucesso e contagem zero. Definir recuperação de Running abandonado com lease expirado; não deixar tarefa presa indefinidamente.
 
@@ -35,4 +35,4 @@ Queued, Running, Succeeded, Failed e Cancelled. Importação sem alteração pod
 
 O host Worker executa a lógica compartilhada. A API poderá receber solicitações autorizadas e persistir tarefas para o Worker. Uma alternativa para hospedagem compartilhada é executar lotes curtos pela API sob agendamento; ambos usam os mesmos locks e checkpoints. Não ativar duas estratégias sem coordenação.
 
-Intervalos, políticas por edição e tamanho de lote serão configuráveis e validados com os limites da fonte e hospedagem. Não há agendador implementado nesta etapa.
+Intervalos, políticas por edição e tamanho de lote serão configuráveis e validados com os limites da fonte e hospedagem. O Worker executa imediatamente e repete após 3600 segundos, configuráveis. Veja [execução e recuperação](running.md).

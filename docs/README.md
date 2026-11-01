@@ -19,3 +19,5 @@ Esta documentação descreve a arquitetura acordada e os critérios de implement
 | [Roadmap](planning/roadmap.md) | Entregas e pendências |
 
 Atualizar os documentos junto das mudanças de comportamento. Registrar decisões relevantes em `decisions/`, distinguindo proposta, decisão aceita e implementação concluída. Não incluir IDs reais das edições nem segredos nos exemplos.
+
+- [Executar Worker no Windows, Docker e storage](worker/running.md)

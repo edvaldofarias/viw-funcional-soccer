@@ -25,7 +25,11 @@ services:
       dockerfile: backend/src/Viw.Worker/Dockerfile
     environment:
       DOTNET_ENVIRONMENT: Development
-      Imports__Enabled: "false"
+      Imports__Enabled: ${VIW_IMPORTS_ENABLED:-false}
+      ConnectionStrings__ViwDatabase: ${ConnectionStrings__ViwDatabase:-}
+      Media__LocalPath: /data/media
+    volumes:
+      - worker-media:/data
   tests:
     profiles: [tests]
     build:
@@ -49,4 +53,5 @@ services:
     volumes:
       - sqlserver-data:/var/opt/mssql
 volumes:
+  worker-media:
   sqlserver-data:

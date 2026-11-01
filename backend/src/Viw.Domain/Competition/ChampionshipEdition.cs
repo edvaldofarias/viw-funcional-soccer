@@ -14,4 +14,8 @@ public sealed class ChampionshipEdition : Entity
     public int Semester { get; set; }
     public EditionStatus Status { get; set; }
     public string TimeZoneId { get; set; } = string.Empty;
+    public Guid? SourceImageAssetId { get; set; }
+    public Guid? SourceCoverAssetId { get; set; }
+    public string? SourceImageUrl { get; set; }
+    public string? SourceCoverUrl { get; set; }
 }

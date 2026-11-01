@@ -27,7 +27,7 @@ dotnet run --project frontend/Viw.Mvc
 dotnet run --project backend/src/Viw.Worker
 ```
 
-API: `http://localhost:5080`; MVC: `http://localhost:5081`. Para verificar o Worker e encerrar: `dotnet run --project backend/src/Viw.Worker -- --Imports:RunOnce=true`.
+API: `http://localhost:5080`; MVC: `http://localhost:5081`. Para executar o Worker, primeiro configure a conexão e aplique as migrations. Consulte [o guia do Worker](../worker/running.md). Para conferir apenas a fonte sem banco: `dotnet run --project backend/src/Viw.Worker -- --Imports:ValidateSourceOnly=true --Imports:RunOnce=true`.
 
 ## Docker
 
@@ -52,7 +52,7 @@ Não há `platform: linux/amd64` forçando emulação no Mac ARM. A imagem SQL S
 
 ## Configurações
 
-- Worker: `Imports__Enabled=false`, `Imports__RunOnce`, `Imports__PollIntervalSeconds` (5 a 86400; reservado ao futuro agendamento).
+- Worker: `Imports__Enabled=false`, `Imports__RunOnce`, `Imports__PollIntervalSeconds` (5 a 86400; intervalo após cada ciclo).
 - MVC: `ViwApi__BaseUrl` absoluta HTTP/HTTPS.
 - Backend: `ConnectionStrings__ViwDatabase` opcional nesta fundação e obrigatória para migrations.
 

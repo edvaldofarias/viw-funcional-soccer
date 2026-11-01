@@ -1,6 +1,6 @@
 # Roadmap
 
-Fundação criada: solução `.slnx`, projetos .NET, hosts iniciais, Docker, testes básicos e baseline de migrations. As entregas de importação e telas de negócio abaixo continuam pendentes.
+Fundação criada: solução `.slnx`, projetos .NET, hosts iniciais, Docker, testes básicos e baseline de migrations. A importação foi implementada; a aplicação das migrations e a carga real serão realizadas no Windows. Telas de negócio continuam pendentes.
 
 ## 1. Fundação e Worker
 
@@ -9,8 +9,9 @@ Fundação criada: solução `.slnx`, projetos .NET, hosts iniciais, Docker, tes
 - [x] Documentar contrato observado de uma edição encerrada e da La Liga, com fixtures sanitizadas.
 - [x] Modelar banco, snapshots, execuções, leases e checkpoints; gerar migration.
 - [ ] Aplicar e testar no SQL Server real (CI configurada; local sem servidor ativo).
-- Implementar importação idempotente e testes de correção/retomada.
-- Conferir dados e importar demais edições.
+- [x] Implementar importação idempotente, consulta horária, fotos e testes de correção/retomada.
+- [x] Configurar as oito edições; conferir recursos principais da origem.
+- [ ] Executar carga real e resolver partidas antigas encerradas sem objeto de placar.
 
 ## 2. Web API
 

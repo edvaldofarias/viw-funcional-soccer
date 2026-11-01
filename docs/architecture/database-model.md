@@ -37,7 +37,7 @@ Todas têm ID interno GUID gerado pela aplicação, criação em UTC e rowversio
 
 Nem toda regra entre tabelas cabe em CHECK: o Worker/Admin deverão confirmar que a equipe de uma estatística participa da partida; o premiado corresponde ao tipo da categoria; a concessão corresponde ao escopo campeonato/rodada/partida; períodos de inscrição/técnico não conflitam indevidamente. Devem ainda verificar propriedade do lease em cada gravação, permissões, auditoria e reversão de identidades.
 
-A separação entre dados originais e decisões manuais é estrutural; a proteção contra sobrescrita será exercida pelos casos de uso na etapa do Worker. Não há importador ou endpoints administrativos implementados agora.
+A separação entre dados originais e decisões manuais é estrutural; a proteção contra sobrescrita será exercida pelos casos de uso na etapa do Worker. O importador preserva essas decisões. Endpoints administrativos serão implementados depois.
 
 Agregados textuais e campos desconhecidos permanecem nos snapshots até seu mapeamento validado. Não tratar dados acumulados como presença por partida. Projeções de classificação e carreira serão implementadas após a ingestão; não há tabelas de resultados calculados alimentadas nesta entrega.
 

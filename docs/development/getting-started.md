@@ -1,27 +1,73 @@
 # Desenvolvimento local
 
-## Situação atual
+## Disponível nesta etapa
 
-Existem documentação e diretórios de preparação. Ainda não existem `.csproj`, solução, migrações, aplicação Angular ou comando funcional de inicialização.
+Solução `backend/Viw.FuncionalSoccer.slnx` com oito projetos .NET 10: quatro bibliotecas, Worker, Web API e dois projetos de teste. O MVC é um projeto separado em `frontend`. O Worker apenas inicializa e respeita cancelamento; não consulta Copa Fácil nem importa dados. Habilitar `Imports:Enabled=true` falha explicitamente para evitar uma falsa execução de importação.
 
-## Preparação prevista
+A API expõe `/api/v1/system`, `/health/live` e, em Development, `/openapi/v1.json`. MVC consulta a API no servidor. Se ela estiver indisponível, a página retorna HTTP 503. Liveness não verifica banco e não significa que a importação esteja saudável.
 
-- SDK .NET 10 e Git.
-- SQL Server de desenvolvimento isolado, local em ambiente compatível ou remoto.
-- Storage de desenvolvimento quando a importação de imagens começar.
-- Node e ferramentas Angular apenas quando o Admin for implementado; a versão será fixada naquela etapa.
+## Requisitos
 
-No macOS, não presumir instalação nativa do SQL Server em Apple Silicon. Nunca apontar testes para o banco de produção.
+SDK .NET 10.0.301 (patches da mesma faixa permitidos por `backend/global.json` e `frontend/global.json`) ou Docker com serviço ativo. Banco não é necessário para iniciar esta fundação. Node/Angular só serão necessários na etapa do Admin.
 
-## Ao iniciar o Worker
+## Comandos na raiz
 
-1. Gerar solução e projetos em `backend/src`, com referências na direção documentada.
-2. Fixar SDK em `global.json` e adicionar ignore adequado antes de gerar artefatos.
-3. Definir opções tipadas e validação de configuração.
-4. Adicionar conexão por User Secrets ou ambiente, com exemplo sem credenciais.
-5. Criar modelo e migrações controladas.
-6. Documentar comandos reais de restore, build, test e execução após verificá-los.
+```sh
+dotnet restore backend/Viw.FuncionalSoccer.slnx
+dotnet build backend/Viw.FuncionalSoccer.slnx --configuration Release
+dotnet test backend/Viw.FuncionalSoccer.slnx --configuration Release
+dotnet build frontend/Viw.Mvc/Viw.Mvc.csproj --configuration Release
+```
 
-Configurar provedor, edições, timeouts, lotes e armazenamento. Não versionar senhas, tokens, banco local, dumps, snapshots pessoais ou logs. Fixtures de teste devem ser sanitizadas.
+Execute os hosts em terminais separados:
 
-Os testes devem cobrir mapeamento, idempotência, correções, concorrência e recuperação; não depender da disponibilidade do Copa Fácil em toda execução.
+```sh
+dotnet run --project backend/src/Viw.WebApi
+dotnet run --project frontend/Viw.Mvc
+dotnet run --project backend/src/Viw.Worker
+```
+
+API: `http://localhost:5080`; MVC: `http://localhost:5081`. Para verificar o Worker e encerrar: `dotnet run --project backend/src/Viw.Worker -- --Imports:RunOnce=true`.
+
+## Docker
+
+```sh
+docker compose config --quiet
+docker compose up --build webapi mvc worker
+docker compose --profile tests run --build --rm tests
+docker compose down
+```
+
+Os hosts .NET têm Dockerfiles próprios e executam como usuário sem privilégios. As portas são vinculadas ao localhost. O Compose usa Development somente para uso local; não é uma configuração pronta de produção. MVC usa `http://webapi:8080/` na rede Docker. `depends_on` ordena início, não garante prontidão; o MVC trata indisponibilidade e pode ser atualizado após a API iniciar.
+
+O perfil opcional de banco exige senha local forte em `.env`:
+
+```sh
+cp .env.example .env
+# Preencha SQLSERVER_SA_PASSWORD antes de executar.
+docker compose --profile sqlserver up -d sqlserver
+```
+
+Não há `platform: linux/amd64` forçando emulação no Mac ARM. A imagem SQL Server precisa de host compatível; banco remoto pode ser usado no lugar do container. `docker compose down` preserva o volume do banco; não usar `down -v` sem intenção de apagar os dados locais.
+
+## Configurações
+
+- Worker: `Imports__Enabled=false`, `Imports__RunOnce`, `Imports__PollIntervalSeconds` (5 a 86400; reservado ao futuro agendamento).
+- MVC: `ViwApi__BaseUrl` absoluta HTTP/HTTPS.
+- Backend: `ConnectionStrings__ViwDatabase` opcional nesta fundação e obrigatória para migrations.
+
+Use ambiente ou User Secrets dos hosts para segredos. Não versionar `.env`, tokens, dumps, logs ou snapshots pessoais. Consulte [banco e migrations](database.md) para a configuração da ferramenta design-time.
+
+## Testes
+
+Unidade: limites das opções de execução. Integração: pipeline HTTP real via WebApplicationFactory, contrato público de estado, liveness e 404. Não existem testes de persistência de negócio nesta etapa; serão adicionados com SQL Server real isolado quando o modelo de importação for implementado. Não usar produção para testes.
+
+A CI executa restore, build, testes e build dos containers; não publica aplicações nem aplica migrations automaticamente.
+
+## Validação desta entrega
+
+Compilação Release sem avisos; cinco casos de unidade e três de integração aprovados. Verificados também Worker em execução única, MVC consumindo API (HTTP 200), indisponibilidade da API (HTTP 503), sintaxe do Compose, geração de SQL idempotente e ausência de mudanças pendentes no modelo EF.
+
+O daemon Docker não estava ativo no ambiente desta entrega: build e execução das imagens, subida do SQL Server e aplicação real da migration ainda precisam ser validados com Docker ativo ou banco de desenvolvimento disponível. A geração de SQL não comprova conexão, permissões nem aplicação em SQL Server.
+
+As configurações e a ferramenta de migrations do backend ficam em `backend/`. O frontend tem seus próprios `global.json` e `Directory.Build.props`; MVC referencia apenas os contratos compartilhados. Compose, ignore de Docker e CI ficam na raiz porque coordenam ambas as aplicações.

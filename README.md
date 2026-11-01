@@ -6,7 +6,9 @@ O projeto importa dados do Copa Fácil, mantém uma cópia própria no banco e p
 
 ## Estado do projeto
 
-Este README registra as decisões iniciais e o plano de implementação. A solução .NET, o Worker, as migrações e as telas ainda serão criados. A estrutura e os comandos de execução descritos como planejados não representam funcionalidades já disponíveis.
+A estrutura inicial está implementada: solução `backend/Viw.FuncionalSoccer.slnx`, bibliotecas backend, Worker em modo de preparação, Web API, MVC conectado à API, testes de unidade/integração e Docker Compose. A importação, o modelo de campeonatos e o Admin Angular ainda não foram implementados.
+
+A persistência usa EF Core e migrations explícitas. A baseline inicial cria o banco/histórico; tabelas de negócio serão adicionadas na próxima etapa. Consulte [execução local](docs/development/getting-started.md) e [migrations](docs/development/database.md).
 
 **Primeira entrega:** importar uma edição encerrada e a La Liga, persistir dados rastreáveis e demonstrar que novas execuções atualizam os registros sem duplicação ou perda das decisões manuais.
 
@@ -55,6 +57,10 @@ As regras de negócio ficam fora de controllers e executores. Importador, Admin 
 
 ```text
 backend/
+  Viw.FuncionalSoccer.slnx
+  global.json
+  Directory.Build.props
+  dotnet-tools.json
   src/
     Viw.Domain/
     Viw.Application/
@@ -77,7 +83,7 @@ docs/
   planning/
 ```
 
-As pastas existem como estrutura de preparação. Os projetos, a solução e os testes ainda não foram gerados. `frontend` inclui o host MVC em C#, pois agrupa as aplicações de apresentação, não apenas arquivos executados no navegador.
+Os projetos .NET e os testes de fundação foram gerados. A solução do backend está em `backend/Viw.FuncionalSoccer.slnx`, sem incluir o projeto MVC; o Angular permanece reservado. `frontend` inclui o host MVC em C#, pois agrupa as aplicações de apresentação, não apenas arquivos executados no navegador.
 
 - **Worker:** consulta a fonte, persiste dados e processa projeções.
 - **Web API:** oferece consultas, comandos administrativos e acompanhamento das importações.
@@ -259,7 +265,7 @@ Pré-requisitos previstos:
 
 Em macOS, o SQL Server pode ser remoto ou executado em um ambiente compatível. Não presumir disponibilidade nativa de SQL Server em Apple Silicon.
 
-Na criação da solução, adicionar `global.json`, configuração de exemplo e instruções reproduzíveis de banco, migrações e execução. Até lá, não há comando de inicialização funcional neste repositório.
+O SDK está fixado em `backend/global.json` e `frontend/global.json`; `.env.example` documenta configuração local sem segredos. Os comandos de execução estão em [desenvolvimento local](docs/development/getting-started.md). Banco e alterações de esquema usam [migrations EF Core](docs/development/database.md).
 
 Configurações planejadas incluem conexão de banco, base URL do provedor, edições habilitadas, timeouts, intervalos, tamanho de lote e storage. Segredos devem usar User Secrets no desenvolvimento e configuração segura no ambiente publicado; nunca ser versionados.
 

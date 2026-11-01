@@ -1,6 +1,6 @@
 # Documentação
 
-Esta documentação descreve a arquitetura acordada e os critérios de implementação. Não indica que as funcionalidades já estejam disponíveis.
+Esta documentação descreve a arquitetura acordada e os critérios de implementação. A fundação .NET está disponível; as funcionalidades de negócio permanecem planejadas.
 
 | Documento | Conteúdo |
 | --- | --- |
@@ -12,6 +12,7 @@ Esta documentação descreve a arquitetura acordada e os critérios de implement
 | [Copa Fácil](integrations/copa-facil.md) | Descoberta e mapeamento da origem |
 | [Worker](worker/import-pipeline.md) | Execução, recuperação e aceite |
 | [Desenvolvimento](development/getting-started.md) | Preparação e configuração |
+| [Banco e migrations](development/database.md) | Criação controlada do banco com EF Core |
 | [Operação](operations/deployment.md) | Publicação, agendamento e backups |
 | [Roadmap](planning/roadmap.md) | Entregas e pendências |
 

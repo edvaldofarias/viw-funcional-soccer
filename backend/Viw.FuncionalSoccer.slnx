@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Viw.Application/Viw.Application.csproj" />
+    <Project Path="src/Viw.Contracts/Viw.Contracts.csproj" />
+    <Project Path="src/Viw.Domain/Viw.Domain.csproj" />
+    <Project Path="src/Viw.Infrastructure/Viw.Infrastructure.csproj" />
+    <Project Path="src/Viw.WebApi/Viw.WebApi.csproj" />
+    <Project Path="src/Viw.Worker/Viw.Worker.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Viw.IntegrationTests/Viw.IntegrationTests.csproj" />
+    <Project Path="tests/Viw.UnitTests/Viw.UnitTests.csproj" />
+  </Folder>
+</Solution>

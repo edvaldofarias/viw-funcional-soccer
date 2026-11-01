@@ -1,10 +1,11 @@
 # Roadmap
 
-Todas as entregas de software abaixo estão pendentes. Documentação inicial e diretórios de preparação foram criados.
+Fundação criada: solução `.slnx`, projetos .NET, hosts iniciais, Docker, testes básicos e baseline de migrations. As entregas de importação e telas de negócio abaixo continuam pendentes.
 
 ## 1. Fundação e Worker
 
-- Gerar solução e projetos backend.
+- [x] Gerar solução `.slnx`, projetos backend, MVC e infraestrutura Docker.
+- [x] Preparar EF Core e ferramenta de migrations.
 - Descobrir contratos de uma edição encerrada e da La Liga.
 - Modelar banco, snapshots, execuções, leases e checkpoints.
 - Implementar importação idempotente e testes de correção/retomada.

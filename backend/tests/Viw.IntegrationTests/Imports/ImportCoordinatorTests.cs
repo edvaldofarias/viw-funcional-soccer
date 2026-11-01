@@ -68,7 +68,10 @@ public sealed class ImportCoordinatorTests
         var source = new FixtureSource();
         var coordinator = Create(database, source);
         (await coordinator.RunAsync(default)).Failed.ShouldBe(0);
-        var original = await database.Context.SourcePlayerRecords.SingleAsync(x => x.ExternalId == "player-a");
+        // IDs externos podem se repetir em outras edições e provedores.
+        var edition = await database.Context.ChampionshipEditionRecords.SingleAsync(x => x.Slug == "fixture-import");
+        var original = await database.Context.SourcePlayerRecords.SingleAsync(x =>
+            x.EditionId == edition.Id && x.Provider == ChampionshipCatalog.Provider && x.ExternalId == "player-a");
         var link = await database.Context.PlayerIdentityLinkRecords.SingleAsync(x => x.SourcePlayerId == original.Id);
         var canonical = await database.Context.PlayerRecords.SingleAsync(x => x.Id == link.PlayerId);
         canonical.DisplayName = "Nome oficial definido no Admin";
@@ -83,6 +86,11 @@ public sealed class ImportCoordinatorTests
         // Assert
         result.Failed.ShouldBe(0);
         preserved.DisplayName.ShouldBe("Nome oficial definido no Admin");
+        original.Id.ShouldNotBe(database.Data.SourcePlayer.Id);
+        (await database.Context.SourcePlayerRecords.CountAsync(x => x.ExternalId == "player-a")).ShouldBe(2);
+        var unrelated = await database.Context.SourcePlayerRecords.AsNoTracking()
+            .SingleAsync(x => x.Id == database.Data.SourcePlayer.Id);
+        unrelated.OriginalName.ShouldBe(database.Data.SourcePlayer.OriginalName);
     }
 
     [SqlServerFact]

@@ -4,17 +4,52 @@ using Viw.Contracts.Catalog;
 
 namespace Viw.WebApi.Controllers;
 
+/// <summary>Consultas públicas de identidades e histórico dos jogadores.</summary>
+/// <param name="queries">Consultas de leitura da aplicação.</param>
 [Route("api/v1/players")]
 public sealed class PlayersController(IViwQueries queries) : ReadControllerBase
 {
+    /// <summary>Busca as identidades canônicas dos jogadores.</summary>
+    /// <remarks>A busca considera nome oficial, nomes originais e apelidos vinculados por identidades ativas. Vários cadastros de origem não duplicam a mesma identidade na lista.</remarks>
+    /// <param name="request">Busca opcional de até 100 caracteres, edição opcional e paginação.</param>
+    /// <param name="ct">Token de cancelamento associado à requisição; não é um parâmetro HTTP.</param>
+    /// <returns>Página de identidades oficiais ordenadas por nome e identificador.</returns>
+    /// <response code="200">Página de identidades oficiais ordenadas por nome e identificador. Listas podem estar vazias.</response>
+    /// <response code="400">Parâmetros inválidos; retorna ValidationProblemDetails.</response>
+    /// <response code="503">Banco não configurado ou indisponível; retorna ProblemDetails sem detalhes internos.</response>
+    /// <response code="500">Falha inesperada; retorna ProblemDetails sem detalhes internos.</response>
     [HttpGet]
+    [ProducesResponseType<PageResponse<PlayerResponse>>(StatusCodes.Status200OK)]
     public async Task<ActionResult<PageResponse<PlayerResponse>>> List([FromQuery] PlayerRequest request, CancellationToken ct) =>
         Ok(await queries.PlayersAsync(request, ct));
 
+    /// <summary>Consulta a identidade oficial e os totais da carreira.</summary>
+    /// <remarks>Soma os fatos disponíveis em partidas encerradas das edições vinculadas. Valores podem estar incompletos quando faltam súmulas; presenças desconhecidas não são confirmadas como zero.</remarks>
+    /// <param name="slug">Slug estável da identidade canônica, por exemplo jogador seguido de seu identificador.</param>
+    /// <param name="ct">Token de cancelamento da requisição; não é um parâmetro HTTP.</param>
+    /// <returns>Identidade canônica e totais registrados da carreira.</returns>
+    /// <response code="200">Identidade canônica e totais registrados da carreira.</response>
+    /// <response code="400">Parâmetros inválidos; retorna ValidationProblemDetails.</response>
+    /// <response code="404">Recurso inexistente ou não pertencente à edição solicitada; retorna ProblemDetails.</response>
+    /// <response code="503">Banco não configurado ou indisponível; retorna ProblemDetails sem detalhes internos.</response>
+    /// <response code="500">Falha inesperada; retorna ProblemDetails sem detalhes internos.</response>
     [HttpGet("{slug}")]
+    [ProducesResponseType<PlayerDetailResponse>(StatusCodes.Status200OK)]
     public async Task<ActionResult<PlayerDetailResponse>> Detail(string slug, CancellationToken ct) => Found(await queries.PlayerAsync(slug, ct));
 
+    /// <summary>Lista as participações observadas do jogador entre as copas.</summary>
+    /// <remarks>Usa vínculos de identidade ativos e preserva os nomes originais, equipes e edições. As datas descrevem o período observado pelo importador.</remarks>
+    /// <param name="slug">Slug estável da identidade canônica, por exemplo jogador seguido de seu identificador.</param>
+    /// <param name="request">Paginação: page entre 1 e 100000; pageSize entre 1 e 100; padrões 1 e 20.</param>
+    /// <param name="ct">Token de cancelamento associado à requisição; não é um parâmetro HTTP.</param>
+    /// <returns>Página de inscrições históricas da identidade canônica.</returns>
+    /// <response code="200">Página de inscrições históricas da identidade canônica. Listas podem estar vazias.</response>
+    /// <response code="400">Parâmetros inválidos; retorna ValidationProblemDetails.</response>
+    /// <response code="404">Recurso inexistente ou não pertencente à edição solicitada; retorna ProblemDetails.</response>
+    /// <response code="503">Banco não configurado ou indisponível; retorna ProblemDetails sem detalhes internos.</response>
+    /// <response code="500">Falha inesperada; retorna ProblemDetails sem detalhes internos.</response>
     [HttpGet("{slug}/history")]
+    [ProducesResponseType<PageResponse<PlayerHistoryResponse>>(StatusCodes.Status200OK)]
     public async Task<ActionResult<PageResponse<PlayerHistoryResponse>>> History(string slug, [FromQuery] PageRequest request, CancellationToken ct) =>
         Found(await queries.PlayerHistoryAsync(slug, request, ct));
 }

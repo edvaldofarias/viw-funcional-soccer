@@ -14,6 +14,14 @@ O documento OpenAPI fica em `http://localhost:5080/openapi/v1.json` no ambiente 
 
 Sem conexão configurada, a API inicia para permitir o diagnóstico: as consultas de dados respondem `503` com ProblemDetails, sem expor detalhes da conexão. `/health/live` verifica apenas o processo; `/health/ready` responde `200` quando o banco aceita conexão e `503` quando indisponível. Readiness não verifica se todas as migrations foram aplicadas; elas continuam sendo uma etapa explícita antes de liberar tráfego.
 
+## Comentários para Swagger/OpenAPI
+
+Os controllers e contratos públicos têm comentários XML em português: resumo, comportamento, parâmetros, limites, significado dos campos retornados e códigos de resposta. `GenerateDocumentationFile` está habilitado nos projetos `Viw.WebApi` e `Viw.Contracts`; o gerador nativo do .NET 10 incorpora essa documentação ao documento OpenAPI. O Swagger UI poderá consumir o mesmo `/openapi/v1.json` quando sua interface for adicionada.
+
+Os filtros agrupados em objetos `[FromQuery]` reutilizam as descrições XML dos schemas por meio de `QueryParameterDocumentationTransformer`. Mantenha a explicação na propriedade do contrato, sem duplicar o texto em um mapa manual. As respostas de sucesso têm tipo declarado com `ProducesResponseType`; respostas de erro também têm metadados, pois um comentário `response` sozinho não declara o código HTTP.
+
+Ao criar uma rota, documente `summary`, `remarks`, cada `param`, `returns` e os `response` aplicáveis. Documente os campos dos records por seus parâmetros e as propriedades dos filtros por `summary`. Não use exemplos com credenciais reais. Os testes de documentação verificam o documento gerado, incluindo descrições de parâmetros, schemas e códigos de erro.
+
 ## Consultas públicas
 
 As rotas abaixo usam `/api/v1` como prefixo. `{slug}` identifica uma edição cadastrada, por exemplo `la-liga-2026-2`; IDs de equipe/partida são os GUIDs retornados pela API, não IDs do Firebase.

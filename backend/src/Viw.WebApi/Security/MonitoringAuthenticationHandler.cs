@@ -7,20 +7,26 @@ using Microsoft.Extensions.Options;
 
 namespace Viw.WebApi.Security;
 
+/// <summary>Configuração privada da credencial de leitura do monitoramento.</summary>
 public sealed class MonitoringOptions
 {
+    /// <summary>Chave de 32 a 512 caracteres; vazia desabilita o monitoramento. Nunca expor ao navegador.</summary>
     public string ApiKey { get; set; } = "";
 }
 
-// Chave exclusivamente para consulta servidor-a-servidor; não é login de usuário do Admin.
+/// <summary>Autentica a leitura servidor-a-servidor; não substitui o login do Admin.</summary>
 public sealed class MonitoringAuthenticationHandler(IOptionsMonitor<AuthenticationSchemeOptions> schemes,
     ILoggerFactory logger, UrlEncoder encoder, IOptions<MonitoringOptions> monitoring, IHostEnvironment environment)
     : AuthenticationHandler<AuthenticationSchemeOptions>(schemes, logger, encoder)
 {
+    /// <summary>Nome do esquema de autenticação do monitoramento.</summary>
     public const string SchemeName = "ImportMonitor";
+    /// <summary>Política que exige a permissão de leitura de importações.</summary>
     public const string Policy = "Imports.Read";
+    /// <summary>Cabeçalho HTTP que recebe a chave privada do servidor.</summary>
     public const string HeaderName = "X-Viw-Monitor-Key";
 
+    /// <inheritdoc />
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
         var configured = monitoring.Value.ApiKey;
@@ -36,6 +42,7 @@ public sealed class MonitoringAuthenticationHandler(IOptionsMonitor<Authenticati
         return Task.FromResult(AuthenticateResult.Success(new AuthenticationTicket(new ClaimsPrincipal(identity), SchemeName)));
     }
 
+    /// <inheritdoc />
     protected override Task HandleChallengeAsync(AuthenticationProperties properties)
     {
         Response.StatusCode = StatusCodes.Status401Unauthorized;

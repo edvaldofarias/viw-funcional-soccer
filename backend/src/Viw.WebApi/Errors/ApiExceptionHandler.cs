@@ -5,8 +5,10 @@ using Viw.Application.Queries;
 
 namespace Viw.WebApi.Errors;
 
+/// <summary>Converte falhas inesperadas das consultas em respostas ProblemDetails seguras.</summary>
 public sealed class ApiExceptionHandler(IProblemDetailsService problems, ILogger<ApiExceptionHandler> logger) : IExceptionHandler
 {
+    /// <inheritdoc />
     public async ValueTask<bool> TryHandleAsync(HttpContext context, Exception exception, CancellationToken ct)
     {
         if (context.RequestAborted.IsCancellationRequested) return false;

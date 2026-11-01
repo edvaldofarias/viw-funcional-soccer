@@ -16,7 +16,7 @@ if (!string.IsNullOrWhiteSpace(connectionString))
 }
 else builder.Services.AddScoped<IViwQueries>(_ => throw new DataStoreUnavailableException());
 builder.Services.AddControllers().AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
-builder.Services.AddOpenApi(options => options.AddDocumentTransformer((document, context, ct) =>
+builder.Services.AddOpenApi(options => options.AddOperationTransformer<Viw.WebApi.OpenApi.QueryParameterDocumentationTransformer>().AddDocumentTransformer((document, context, ct) =>
 {
     document.AddComponent(MonitoringAuthenticationHandler.SchemeName, new Microsoft.OpenApi.OpenApiSecurityScheme {
         Type = Microsoft.OpenApi.SecuritySchemeType.ApiKey, In = Microsoft.OpenApi.ParameterLocation.Header,
@@ -53,4 +53,5 @@ app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.Health
 app.MapControllers();
 app.Run();
 
+/// <summary>Ponto de entrada da Web API, acessível ao host dos testes de integração.</summary>
 public partial class Program { }

@@ -8,7 +8,7 @@ A API expõe `/api/v1/system`, `/health/live` e, em Development, `/openapi/v1.js
 
 ## Requisitos
 
-SDK .NET 10.0.301 (patches da mesma faixa permitidos por `backend/global.json` e `frontend/global.json`) ou Docker com serviço ativo. Banco não é necessário para iniciar esta fundação. Node/Angular só serão necessários na etapa do Admin.
+SDK .NET 10.0.301 ou posterior da linha 10.0 (bandas de recursos mais novas permitidas por `rollForward: latestFeature` em `backend/global.json` e `frontend/global.json`; versões preview não são aceitas) ou Docker com serviço ativo. Banco não é necessário para iniciar esta fundação. Node/Angular só serão necessários na etapa do Admin.
 
 ## Comandos na raiz
 

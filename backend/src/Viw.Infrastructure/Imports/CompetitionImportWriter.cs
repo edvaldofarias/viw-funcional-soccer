@@ -8,7 +8,7 @@ namespace Viw.Infrastructure.Imports;
 
 public sealed partial class CompetitionImportWriter(ViwDbContext db)
 {
-    public const string MapperVersion = "copafacil-v1";
+    public const string MapperVersion = "copafacil-v2";
 
     public async Task WriteCoreAsync(Guid editionId, CopaFacilCoreDto core, CancellationToken ct)
     {

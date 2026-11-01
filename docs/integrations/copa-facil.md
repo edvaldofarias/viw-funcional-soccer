@@ -62,7 +62,7 @@ Em resultado registrado, **`null × 3` representa `0 × 3`**. O mesmo vale para 
 - Valor negativo ou inválido: rejeitar/quarentenar; não converter para zero.
 - Snapshot original continua intacto, inclusive campos omitidos e nulos explícitos.
 
-O adaptador do Worker identifica a existência do objeto de resultado antes de converter lados nulos em zero. A confirmação humana acima complementa o contrato observado, não altera o site antigo nesta tarefa.
+O adaptador do Worker usa o estado da partida: se encerrada (`st=3` ou `finished` positivo), o objeto de placar nulo/ausente representa 0 × 0, conforme confirmado pelo responsável nas telas de Liverpool × Wolves e Coritiba × Flamengo. Em partidas futuras ou em andamento sem objeto de placar, o resultado permanece desconhecido. A confirmação humana complementa o contrato observado; o site antigo não é alterado.
 
 ## Diferenças e lacunas verificadas
 
@@ -88,4 +88,4 @@ O adaptador usa `System.Text.Json`, DTOs com `[JsonPropertyName]` em `Viw.Infras
 
 Os dois conversores tratam apenas variações observadas: números em campos textuais e números inteiros representados com parte decimal zero. Strings numéricas em campos numéricos, frações em inteiros e tipos incompatíveis são rejeitados. Não há conversão permissiva que transforme erro em zero.
 
-`JsonElement` permanece para agregados ainda não normalizados e cópia fiel dos snapshots, inclusive campos desconhecidos e eventos originais. O formato textual de estatísticas `chave=valor#...` é tratado separadamente por `SourceStatisticsParser`; não é JSON. A mudança não exige migration nem altera o formato dos checkpoints.
+`JsonElement` permanece para agregados ainda não normalizados e cópia fiel dos snapshots, inclusive campos desconhecidos e eventos originais. O formato textual de estatísticas `chave=valor#...` é tratado separadamente por `SourceStatisticsParser`; não é JSON. A desserialização tipada não exige migration. A revisão `copafacil-v2` do mapeamento reprocessa os checkpoints para aplicar a regra confirmada de placar nulo em partidas encerradas.

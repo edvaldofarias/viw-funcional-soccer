@@ -99,17 +99,39 @@ public sealed class CopaFacilSourceTests
         score.ShouldBeNull();
     }
 
-    [Fact]
-    public void Finished_match_without_score_object_requires_review()
+    [Theory]
+    [InlineData("{\"st\":3,\"dt\":null}")]
+    [InlineData("{\"st\":3}")]
+    [InlineData("{\"finished\":1790000000000,\"dt\":null}")]
+    public void Finished_match_without_score_object_is_zero_to_zero(string json)
     {
         // Arrange
-        var match = CopaFacilJson.Deserialize<CopaFacilMatchDto>("{\"st\":3}");
+        var match = CopaFacilJson.Deserialize<CopaFacilMatchDto>(json);
 
         // Act
-        Action action = () => CopaFacilValidation.Score(match, CopaFacilValidation.Status(match));
+        var score = CopaFacilValidation.Score(match, CopaFacilValidation.Status(match));
 
         // Assert
-        Should.Throw<InvalidDataException>(action);
+        score.ShouldNotBeNull();
+        score.Home.ShouldBe(0);
+        score.Away.ShouldBe(0);
+    }
+
+    [Theory]
+    [InlineData("{\"st\":1,\"dt\":null}")]
+    [InlineData("{\"st\":1}")]
+    [InlineData("{\"st\":0,\"dt\":null}")]
+    [InlineData("{\"st\":2,\"dt\":null}")]
+    public void Unfinished_match_without_score_remains_unknown(string json)
+    {
+        // Arrange
+        var match = CopaFacilJson.Deserialize<CopaFacilMatchDto>(json);
+
+        // Act
+        var score = CopaFacilValidation.Score(match, CopaFacilValidation.Status(match));
+
+        // Assert
+        score.ShouldBeNull();
     }
 
     private sealed class SequenceHandler : HttpMessageHandler

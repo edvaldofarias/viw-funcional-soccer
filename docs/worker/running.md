@@ -42,7 +42,7 @@ Jogadores recebem identidade inicial própria; nomes semelhantes nunca são unid
 
 ## Placar e estatísticas
 
-Um lado `null` dentro do objeto de placar de uma partida em andamento/encerrada significa zero. Uma partida futura permanece sem placar. Uma partida encerrada sem nenhum objeto de placar é rejeitada, sem inventar um resultado. Em 01/11/2026, essa inconsistência foi observada em uma partida da Copa do Brasil 2023 e uma da Premier League 2024; essas edições exigem correção da origem antes da carga completa.
+Um lado `null` dentro do objeto de placar de uma partida em andamento/encerrada significa zero. Uma partida futura ou em andamento sem objeto de placar permanece sem resultado. Quando a partida está encerrada (`st=3` ou timestamp `finished` positivo), `dt` nulo ou ausente representa **0 × 0**, conforme confirmado pelo responsável com as telas de Liverpool × Wolves (Premier League 2024, 20/04/2024) e Coritiba × Flamengo (Copa do Brasil 2023, 30/09/2023). Objetos de placar com tipos inválidos continuam rejeitados. Os snapshots preservam o valor original; o mapeamento `copafacil-v2` força a revisão dos checkpoints anteriores no próximo ciclo.
 
 Gols e cartões são derivados dos eventos observados. Agregados da fonte também são preservados separadamente. Presença não é inferida apenas por jogador inscrito ou gol. O significado de reserva como ausência é habilitado apenas na edição cujo contrato foi conferido. Estatística calculada não concede automaticamente artilheiro oficial nem Ballon d’Or; essas decisões continuam administrativas.
 

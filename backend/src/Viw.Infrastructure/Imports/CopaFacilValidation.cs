@@ -46,7 +46,8 @@ public static class CopaFacilValidation
         if (match.Score is null)
         {
             if (status == MatchStatus.Live) return null;
-            throw new InvalidDataException("Resultado registrado sem objeto de placar.");
+            // Copa Fácil representa também o empate encerrado em 0 x 0 com dt nulo/ausente.
+            return MatchScore.FromRecordedResult(0, 0);
         }
         var home = match.Score.Home;
         var away = match.Score.Away;

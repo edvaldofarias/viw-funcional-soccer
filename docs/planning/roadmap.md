@@ -11,7 +11,8 @@ Fundação criada: solução `.slnx`, projetos .NET, hosts iniciais, Docker, tes
 - [ ] Aplicar e testar no SQL Server real (CI configurada; local sem servidor ativo).
 - [x] Implementar importação idempotente, consulta horária, fotos e testes de correção/retomada.
 - [x] Configurar as oito edições; conferir recursos principais da origem.
-- [ ] Executar carga real e resolver partidas antigas encerradas sem objeto de placar.
+- [x] Confirmar a representação de 0 × 0 em partidas encerradas com placar nulo e ajustar o mapeamento.
+- [ ] Executar a carga real e conferir os dados persistidos.
 
 ## 2. Web API
 

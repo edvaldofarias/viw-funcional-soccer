@@ -20,19 +20,22 @@ Fundação criada: solução `.slnx`, projetos .NET, hosts iniciais, Docker, tes
 - [x] Expor leitura do progresso, execuções e checkpoints com autorização servidor-a-servidor.
 - [ ] Validar as novas consultas contra SQL Server real na CI/Windows.
 - [ ] Implementar solicitações de importação como comandos persistidos, se necessário.
-- [ ] Definir login do Admin e comandos administrativos auditados.
+- [x] Login do Admin e comandos administrativos auditados.
 
 ## 3. MVC
 
-- Portal das copas, partidas, estatísticas e Wiki.
-- URLs permanentes e metadados de busca/compartilhamento.
-- Acompanhamento autorizado do Worker via API.
+- [x] Portal das copas, equipes, partidas, estatísticas, premiações e Wiki.
+- [x] URLs permanentes, metadados, robots e sitemaps.
+- [ ] Disponibilizar entrega pública de imagens do storage pela API.
+- [ ] Acompanhamento autorizado do Worker via API (área restrita futura).
 
 ## 4. Angular Admin
 
-- Identidades e vínculos reversíveis.
-- Artilheiro oficial, Ballon d’Or, craques, técnicos e seleções.
-- Fotos oficiais e revisão de divergências da importação.
+- [x] Identidades e vínculos reversíveis.
+- [x] Artilheiro oficial, Ballon d’Or, craques, técnicos e seleções.
+- [x] Login Identity, perfis Administrator/Editor e gestão inicial de contas.
+- [ ] Validar migrations e login contra SQL Server no ambiente de execução.
+- [ ] Upload de fotos oficiais e revisão ampliada das divergências da importação.
 
 ## 5. Operação
 

@@ -1,0 +1,10 @@
+@model EditionResponse
+<a class="edition-card" href="@PortalRoutes.Cup(Model.Slug)">
+    <div class="edition-card-top"><span class="edition-symbol" aria-hidden="true">✦</span><span
+        class="status status-@Model.Status.ToLowerInvariant()">@PortalFormat.Status(Model.Status)</span></div>
+        <div class="edition-watermark" aria-hidden="true">@Model.Year</div>
+        <div class="edition-card-body">
+            <p class="eyebrow">@Model.Year · @(Model.Semester)º semestre</p>
+            <h3>@Model.Name</h3><span class="text-link">Explorar edição <span aria-hidden="true">↗</span></span>
+        </div>
+    </a>

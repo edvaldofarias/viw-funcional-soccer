@@ -32,6 +32,9 @@ public sealed partial class ViwQueries
         return await PageAsync(ProjectPlayers(query.OrderBy(x => x.DisplayName).ThenBy(x => x.Id)), request, ct);
     }
 
+    public Task<PlayerResponse?> PlayerByIdAsync(Guid id, CancellationToken ct) =>
+        ProjectPlayers(db.PlayerRecords.AsNoTracking().Where(x => x.Id == id)).SingleOrDefaultAsync(ct);
+
     public async Task<PlayerDetailResponse?> PlayerAsync(string slug, CancellationToken ct)
     {
         var player = await ProjectPlayers(db.PlayerRecords.AsNoTracking().Where(x => x.Slug == slug)).SingleOrDefaultAsync(ct);

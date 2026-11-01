@@ -2,11 +2,11 @@
 
 Plataforma para preservar e apresentar o histórico dos campeonatos de futebol da VIW, reunindo partidas, classificações, jogadores, equipes, técnicos, estatísticas e premiações em um único lugar.
 
-O projeto importa dados do Copa Fácil, mantém uma cópia própria no banco e permite administrar identidades de jogadores e informações oficiais da VIW. O desenvolvimento começa pela ingestão de dados; a interface pública será construída depois, em ASP.NET Core MVC com Razor Views.
+O projeto importa dados do Copa Fácil, mantém uma cópia própria no banco e permite administrar identidades de jogadores e informações oficiais da VIW. A interface pública usa ASP.NET Core MVC com Razor Views e o painel administrativo usa Angular.
 
 ## Estado do projeto
 
-O Worker importa as oito edições configuradas, executa ao iniciar e repete a cada hora. Inclui snapshots, checkpoints, atualização idempotente, recuperação de falhas, estatísticas de súmula e armazenamento de fotos local ou R2. A Web API de consultas está implementada, com paginação, contratos OpenAPI e acompanhamento autorizado das importações. O MVC continua com a estrutura inicial; as telas de negócio e o Admin Angular serão desenvolvidos depois.
+O Worker importa as oito edições configuradas, executa ao iniciar e repete a cada hora. Inclui snapshots, checkpoints, atualização idempotente, recuperação de falhas, estatísticas de súmula e armazenamento de fotos local ou R2. A Web API de consultas está implementada, com paginação, contratos OpenAPI e acompanhamento autorizado das importações. O portal MVC exibe as copas e a Wiki; o Admin Angular gerencia identidades e decisões oficiais com acesso autenticado e auditoria.
 
 O banco é criado e atualizado por migrations explícitas. A execução real da carga e os testes que dependem de SQL Server serão realizados no Windows. Consulte [execução do Worker](docs/worker/running.md) para preparação, comandos, configuração e limitações conhecidas das fontes.
 
@@ -43,7 +43,7 @@ O cadastro deve separar a competição de suas edições. Novos campeonatos ser�
 
 - **.NET 10 / C#:** backend e processamento.
 - **ASP.NET Core MVC + Razor Views:** portal público, Wiki e acompanhamento autorizado das importações.
-- **Angular:** aplicação administrativa futura, consumindo a Web API.
+- **Angular 21:** aplicação administrativa, consumindo a Web API com cookies e CSRF.
 - **ASP.NET Core Web API:** consultas e comandos usados pelo MVC e pelo Admin.
 - **Entity Framework Core + SQL Server:** persistência inicial.
 - **ASP.NET Core Identity:** autenticação e permissões administrativas.
@@ -53,14 +53,14 @@ O cadastro deve separar a competição de suas edições. Novos campeonatos ser�
 
 As regras de negócio ficam fora de controllers e executores. Importador, Admin e páginas reutilizam os mesmos casos de uso. Não há necessidade inicial de microsserviços, broker de mensagens ou bancos separados para leitura e escrita.
 
-### Estrutura planejada
+### Estrutura do repositório
 
 ```text
 backend/
   Viw.FuncionalSoccer.slnx
   global.json
   Directory.Build.props
-  dotnet-tools.json
+  .config/dotnet-tools.json
   src/
     Viw.Domain/
     Viw.Application/
@@ -70,9 +70,13 @@ backend/
     Viw.WebApi/
   tests/
 frontend/
-  Viw.Mvc/
-  viw-admin/              Angular: implementação futura
-  tests/
+  viw-admin/              Angular, testes e build JavaScript
+  mvc/
+    Viw.Frontend.slnx
+    global.json
+    Directory.Build.props
+    Viw.Mvc/
+    tests/
 docs/
   architecture/
   decisions/
@@ -83,7 +87,7 @@ docs/
   planning/
 ```
 
-Os projetos .NET e os testes de fundação foram gerados. A solução do backend está em `backend/Viw.FuncionalSoccer.slnx`, sem incluir o projeto MVC; o Angular permanece reservado. `frontend` inclui o host MVC em C#, pois agrupa as aplicações de apresentação, não apenas arquivos executados no navegador.
+Os projetos .NET e os testes de fundação foram gerados. A solução do backend está em `backend/Viw.FuncionalSoccer.slnx`, sem incluir o projeto MVC; o Angular tem projeto próprio em `frontend/viw-admin`. `frontend` inclui o host MVC em C#, pois agrupa as aplicações de apresentação, não apenas arquivos executados no navegador.
 
 - **Worker:** consulta a fonte, persiste dados e processa projeções.
 - **Web API:** oferece consultas, comandos administrativos e acompanhamento das importações.
@@ -312,3 +316,11 @@ Consulte o [índice de documentação](docs/README.md) para arquitetura, decisõ
 ## Licença
 
 Consulte [LICENSE](LICENSE). A licença do código não substitui a verificação de permissões de uso e publicação dos dados e imagens importados.
+
+## Portal MVC implementado
+
+O portal público renderiza no servidor as copas, equipes e elencos, jogos e súmulas, estatísticas, premiações confirmadas e Wiki de jogadores. Consulte [execução e rotas do portal](docs/development/portal-mvc.md). O Admin Angular está documentado separadamente.
+
+## Admin implementado
+
+O Angular em `frontend/viw-admin` é servido pela API em `/admin/`, com ASP.NET Core Identity, perfis de administrador/editor e decisões esportivas auditadas. Todo o .NET do frontend está em `frontend/mvc`. Consulte [configuração, migrations e primeiro acesso](docs/development/admin.md).

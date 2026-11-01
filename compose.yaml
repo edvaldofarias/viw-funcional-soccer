@@ -10,15 +10,19 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__ViwDatabase: ${ConnectionStrings__ViwDatabase:-}
       Monitoring__ApiKey: ${VIW_MONITORING_API_KEY:-}
+      Admin__DataProtectionKeysPath: /data/keys
+    volumes:
+      - admin-keys:/data/keys
   mvc:
     build:
       context: .
-      dockerfile: frontend/Viw.Mvc/Dockerfile
+      dockerfile: frontend/mvc/Viw.Mvc/Dockerfile
     ports:
       - "127.0.0.1:5081:8080"
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ViwApi__BaseUrl: http://webapi:8080/
+      Site__PublicBaseUrl: ${VIW_PUBLIC_BASE_URL:-http://localhost:5081/}
     depends_on:
       - webapi
   worker:
@@ -37,11 +41,23 @@ services:
     build:
       context: .
       dockerfile: backend/tests/Dockerfile
+  mvc-tests:
+    profiles: [tests]
+    build:
+      context: .
+      dockerfile: frontend/mvc/tests/Dockerfile
   migrations:
     profiles: [migrations]
     build:
       context: .
       dockerfile: backend/src/Viw.Infrastructure/Dockerfile.migrations
+    environment:
+      ConnectionStrings__ViwDatabase: ${ConnectionStrings__ViwDatabase:-}
+  admin-migrations:
+    profiles: [migrations]
+    build:
+      context: .
+      dockerfile: backend/src/Viw.WebApi/Dockerfile.migrations
     environment:
       ConnectionStrings__ViwDatabase: ${ConnectionStrings__ViwDatabase:-}
   sqlserver:
@@ -55,5 +71,6 @@ services:
     volumes:
       - sqlserver-data:/var/opt/mssql
 volumes:
+  admin-keys:
   worker-media:
   sqlserver-data:

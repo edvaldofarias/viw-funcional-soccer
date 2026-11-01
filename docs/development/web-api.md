@@ -81,3 +81,7 @@ HTTPS é obrigatório para autenticar esse monitoramento fora de Development. At
 Os testes HTTP usam Moq para isolar o protocolo e validar paginação, respostas de erro, OpenAPI e autorização. Os testes de consulta SQL criam bancos descartáveis via migrations e verificam isolamento de edições, histórico/aliases, vínculos ativos, estatísticas, premiações e monitoramento. São executados na CI quando `ConnectionStrings__ViwTestServer` está definido. Sem servidor local, esses testes são explicitamente ignorados; isso não equivale a validar a consulta no SQL Server.
 
 A implantação real, a carga dos campeonatos e as verificações SQL permanecem necessárias no Windows/CI antes de usar os dados em produção. O Docker Compose foi preparado para receber a conexão da API e a credencial de monitoramento por ambiente.
+
+### Resolução de identidade para o portal
+
+`GET /api/v1/players/by-id/{id}` retorna o jogador canônico e seu slug atual; 404 se ausente. Usado pelo link permanente da Wiki sem deduzir slugs a partir dos nomes.

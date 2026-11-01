@@ -21,10 +21,22 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           global-json-file: backend/global.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: frontend/viw-admin/.nvmrc
+          cache: npm
+          cache-dependency-path: frontend/viw-admin/package-lock.json
+      - run: npm ci
+        working-directory: frontend/viw-admin
+      - run: npm test
+        working-directory: frontend/viw-admin
+      - run: npm run build
+        working-directory: frontend/viw-admin
       - run: dotnet restore backend/Viw.FuncionalSoccer.slnx
       - run: dotnet build backend/Viw.FuncionalSoccer.slnx --configuration Release --no-restore
       - run: dotnet test backend/Viw.FuncionalSoccer.slnx --configuration Release --no-build
-      - run: dotnet build frontend/Viw.Mvc/Viw.Mvc.csproj --configuration Release
+      - run: dotnet test frontend/mvc/Viw.Frontend.slnx --configuration Release
       - run: docker compose config --quiet
-      - run: docker compose build webapi mvc worker tests
+      - run: docker compose build webapi mvc worker tests mvc-tests
       - run: docker compose --profile tests run --rm tests
+      - run: docker compose --profile tests run --rm mvc-tests

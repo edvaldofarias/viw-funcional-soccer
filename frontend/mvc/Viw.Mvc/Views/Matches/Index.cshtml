@@ -1,0 +1,55 @@
+@model MatchesPage
+<partial name="_EditionHeader" model="Model.Edition" />
+<section class="shell section">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">CADA DISPUTA, CADA RESULTADO</p>
+            <h2>Jogos da copa</h2>
+        </div><span class="muted">@Model.Matches.TotalCount partidas encontradas</span>
+    </div>
+    <form class="filter-bar match-filters" method="get"
+          action="@(PortalRoutes.Cup(Model.Edition.Edition.Slug) + "/jogos")">
+        <div><label for="equipe">Equipe</label><select id="equipe" name="equipe">
+            <option value="">Todas as equipes</option>@foreach (var team in Model.Teams) {
+            <option value="@team.Id"
+                    selected="@(Model.Filters.Equipe == team.Id)">@team.Name</option>
+        }
+    </select></div>
+    <div><label for="fase">Fase</label><select id="fase" name="fase">
+        <option value="">Todas as fases</option>@foreach (var phase in Model.Edition.Phases) {
+        <option
+        value="@phase.Id" selected="@(Model.Filters.Fase == phase.Id)">@phase.Name</option>
+    }
+</select></div>
+<div><label for="rodada">Rodada</label><select id="rodada" name="rodada">
+    <option value="">Todas as rodadas</option>@foreach (var round in Model.Edition.Rounds) {
+    <option
+    value="@round.Id" selected="@(Model.Filters.Rodada == round.Id)">@round.Name</option>
+}
+</select></div>
+<div><label for="situacao">Situação</label><select id="situacao" name="situacao">
+    <option value="">Todos os jogos</option>@foreach (var state in Enum.GetValues<MatchState>()) {
+    <option
+        value="@state" selected="@(Model.Filters.Situacao == state)">@PortalFormat.Status(state.ToString())
+    </option>
+}
+</select></div><button type="submit" class="button button-primary">Aplicar filtros</button><a
+class="text-link" href="@(PortalRoutes.Cup(Model.Edition.Edition.Slug) + "/jogos")">Limpar</a>
+</form>
+@if (Model.Matches.Items.Count == 0)
+{
+    <div class="empty-state">
+        <h3>Nenhum jogo com esses filtros.</h3>
+        <p>Experimente outra combinação ou consulte a lista completa da copa.</p>
+    </div>
+}
+else
+{
+
+    <div class="match-grid">@foreach (var game in Model.Matches.Items) {
+        <partial name="_MatchCard" model="new MatchCard(Model.Edition.Edition, game)" />
+    }
+</div>
+    }
+<partial name="_Pagination" model="Model.Pager" />
+</section>

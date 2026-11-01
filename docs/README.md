@@ -23,3 +23,7 @@ Atualizar os documentos junto das mudanças de comportamento. Registrar decisõe
 - [Executar Worker no Windows, Docker e storage](worker/running.md)
 
 - [Web API: consultas públicas e acompanhamento autorizado](development/web-api.md)
+
+- [Portal MVC: execução, rotas e SEO](development/portal-mvc.md)
+
+- [Admin: primeiro acesso, permissões e gestão esportiva](development/admin.md)

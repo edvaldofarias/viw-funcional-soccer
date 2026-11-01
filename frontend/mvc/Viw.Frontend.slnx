@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Viw.Mvc/Viw.Mvc.csproj" />
+  <Folder Name="/tests/"><Project Path="tests/Viw.Mvc.Tests/Viw.Mvc.Tests.csproj" /></Folder>
+</Solution>

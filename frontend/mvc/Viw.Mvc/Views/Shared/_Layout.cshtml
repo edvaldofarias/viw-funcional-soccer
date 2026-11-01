@@ -1,0 +1,55 @@
+@inject SeoService Seo
+@{
+    var meta = ViewData["Seo"] as SeoMetadata ?? Seo.Create("VIW Funcional Soccer", "As copas, os jogos e a história do futebol da VIW.", Context.Request.Path.Value ?? "/", true);
+    var path = Context.Request.Path.Value ?? "/";
+    var title = meta.Title.Contains("VIW", StringComparison.OrdinalIgnoreCase) ? meta.Title : meta.Title + " · VIW Funcional Soccer";
+}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#102b2c" />
+    <title>@title</title>
+    <meta name="description" content="@meta.Description" />
+    <meta name="robots" content="@(meta.NoIndex ? "noindex, follow" : "index, follow")" />
+    <link rel="canonical" href="@meta.CanonicalUrl" />
+    <meta property="og:locale" content="pt_BR" />
+    <meta property="og:site_name" content="VIW Funcional Soccer" />
+    <meta property="og:type" content="@meta.Type" />
+    <meta property="og:title" content="@title" />
+    <meta property="og:description" content="@meta.Description" />
+    <meta property="og:url" content="@meta.CanonicalUrl" />
+    <meta property="og:image" content="@meta.ImageUrl" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="VIW Funcional Soccer — Todo jogo vira história." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="@title" />
+    <meta name="twitter:description" content="@meta.Description" />
+    <meta name="twitter:image" content="@meta.ImageUrl" />
+    <link rel="icon" href="~/images/viw-mark.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    @if (meta.JsonLd is not null) { <script type="application/ld+json">@Html.Raw(meta.JsonLd)</script> }
+    <script src="~/js/site.js" asp-append-version="true" defer></script>
+</head>
+<body>
+    <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
+    <header class="site-header">
+        <div class="shell header-inner">
+            <a href="/" class="brand" aria-label="VIW Funcional Soccer — início"><span class="brand-mark" aria-hidden="true">V<span>↗</span></span><span class="brand-name">VIW<small>FUNCIONAL SOCCER</small></span></a>
+            <nav class="main-nav" aria-label="Navegação principal">
+                <a href="/" class="@(path == "/" ? "active" : "")">Início</a>
+                <a href="/campeonatos" class="@(path.StartsWith("/campeonatos") ? "active" : "")">Campeonatos</a>
+                <a href="/wiki" class="@(path.StartsWith("/wiki") ? "active" : "")">Wiki VIW</a>
+            </nav>
+            <a class="header-search" href="/wiki/jogadores"><span aria-hidden="true">⌕</span> <span>Buscar jogador</span></a>
+        </div>
+    </header>
+    <main id="conteudo" tabindex="-1">@RenderBody()</main>
+    <footer class="site-footer">
+        <div class="shell footer-inner"><div><a class="footer-brand" href="/">VIW <span>FUNCIONAL SOCCER</span></a><p>O jogo passa. A história fica.</p></div><nav aria-label="Navegação do rodapé"><a href="/campeonatos">Todas as copas</a><a href="/wiki/jogadores">Nossos jogadores</a><a href="/wiki">Memória VIW</a></nav><p class="footer-note">Feito para quem vive o nosso futebol.</p></div>
+    </footer>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

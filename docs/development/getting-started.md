@@ -16,14 +16,14 @@ SDK .NET 10.0.301 ou posterior da linha 10.0 (bandas de recursos mais novas perm
 dotnet restore backend/Viw.FuncionalSoccer.slnx
 dotnet build backend/Viw.FuncionalSoccer.slnx --configuration Release
 dotnet test backend/Viw.FuncionalSoccer.slnx --configuration Release
-dotnet build frontend/Viw.Mvc/Viw.Mvc.csproj --configuration Release
+dotnet build frontend/mvc/Viw.Mvc/Viw.Mvc.csproj --configuration Release
 ```
 
 Execute os hosts em terminais separados:
 
 ```sh
 dotnet run --project backend/src/Viw.WebApi
-dotnet run --project frontend/Viw.Mvc
+dotnet run --project frontend/mvc/Viw.Mvc
 dotnet run --project backend/src/Viw.Worker
 ```
 

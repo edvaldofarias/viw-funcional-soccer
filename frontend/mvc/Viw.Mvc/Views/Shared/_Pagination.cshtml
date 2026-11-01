@@ -1,0 +1,13 @@
+@model Pager
+@if (Model.TotalCount > 0) {
+    <div class="pagination-wrap"><p>@Model.TotalCount registro@(Model.TotalCount == 1 ? "" : "s") · página @Model.Page de @Model.Pages</p>
+    @if (Model.Pages > 1) { <nav class="pagination" aria-label="Paginação">
+        @if (Model.Page > 1) { <a href="@Model.Url(Model.Page - 1)" rel="prev" aria-label="Página anterior">←</a> }
+        @if (Model.Page > 3) { <a href="@Model.Url(1)" aria-label="Página 1">1</a><span aria-hidden="true">…</span> }
+        @for (var p = Math.Max(1, Model.Page - 2); p <= Math.Min(Model.Pages, Model.Page + 2); p++) {
+            if (p == Model.Page) { <span class="current" aria-current="page">@p</span> } else { <a href="@Model.Url(p)" aria-label="Página @p">@p</a> }
+        }
+        @if (Model.Page < Model.Pages - 2) { <span aria-hidden="true">…</span><a href="@Model.Url(Model.Pages)" aria-label="Página @Model.Pages">@Model.Pages</a> }
+        @if (Model.Page < Model.Pages) { <a href="@Model.Url(Model.Page + 1)" rel="next" aria-label="Próxima página">→</a> }
+    </nav> }</div>
+}

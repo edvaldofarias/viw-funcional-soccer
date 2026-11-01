@@ -14,3 +14,7 @@ artifacts/
 *.log
 
 **/data/media/
+
+frontend/viw-admin/dist/
+frontend/viw-admin/.angular/
+backend/src/Viw.WebApi/wwwroot/admin/

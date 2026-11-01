@@ -23,6 +23,20 @@ public sealed class PlayersController(IViwQueries queries) : ReadControllerBase
     public async Task<ActionResult<PageResponse<PlayerResponse>>> List([FromQuery] PlayerRequest request, CancellationToken ct) =>
         Ok(await queries.PlayersAsync(request, ct));
 
+    /// <summary>Resolve uma identidade pelo identificador estável.</summary>
+    /// <remarks>Permite ao portal obter o slug canônico atual de um jogador referenciado em partidas ou premiações, sem deduzir o slug a partir do GUID.</remarks>
+    /// <param name="id">GUID interno da identidade canônica do jogador.</param>
+    /// <param name="ct">Token de cancelamento da requisição.</param>
+    /// <returns>Identidade pública e slug canônico atual.</returns>
+    /// <response code="200">Identidade pública encontrada.</response>
+    /// <response code="400">Identificador inválido.</response>
+    /// <response code="404">Identidade não cadastrada.</response>
+    /// <response code="503">Dados temporariamente indisponíveis.</response>
+    /// <response code="500">Falha inesperada na consulta.</response>
+    [HttpGet("by-id/{id:guid}")]
+    [ProducesResponseType<PlayerResponse>(StatusCodes.Status200OK)]
+    public async Task<ActionResult<PlayerResponse>> ById(Guid id, CancellationToken ct) => Found(await queries.PlayerByIdAsync(id, ct));
+
     /// <summary>Consulta a identidade oficial e os totais da carreira.</summary>
     /// <remarks>Soma os fatos disponíveis em partidas encerradas das edições vinculadas. Valores podem estar incompletos quando faltam súmulas; presenças desconhecidas não são confirmadas como zero.</remarks>
     /// <param name="slug">Slug estável da identidade canônica, por exemplo jogador seguido de seu identificador.</param>

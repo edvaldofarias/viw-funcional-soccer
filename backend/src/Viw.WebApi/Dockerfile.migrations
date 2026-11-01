@@ -1,0 +1,5 @@
+FROM mcr.microsoft.com/dotnet/sdk:10.0
+WORKDIR /src/backend
+COPY backend/ ./
+RUN dotnet tool restore && dotnet build src/Viw.WebApi/Viw.WebApi.csproj --configuration Release
+ENTRYPOINT ["dotnet", "ef", "database", "update", "--project", "src/Viw.WebApi", "--context", "AdminIdentityDbContext", "--configuration", "Release", "--no-build"]

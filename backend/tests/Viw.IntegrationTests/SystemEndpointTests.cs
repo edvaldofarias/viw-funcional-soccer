@@ -5,25 +5,47 @@ using Viw.Contracts.System;
 
 namespace Viw.IntegrationTests;
 
-public sealed class SystemEndpointTests : IClassFixture<WebApplicationFactory<Program>>
+public sealed class SystemEndpointTests(WebApplicationFactory<Program> factory)
+    : IClassFixture<WebApplicationFactory<Program>>
 {
-    private readonly HttpClient client;
-    public SystemEndpointTests(WebApplicationFactory<Program> factory) => client = factory.CreateClient();
-
     [Fact]
     public async Task System_endpoint_exposes_foundation_without_claiming_imports_exist()
     {
+        // Arrange
+        using var client = factory.CreateClient();
+
+        // Act
         var result = await client.GetFromJsonAsync<SystemStatusResponse>("/api/v1/system");
-        Assert.NotNull(result);
-        Assert.Equal("foundation", result.Stage);
-        Assert.False(result.ImportsImplemented);
+
+        // Assert
+        result.ShouldNotBeNull();
+        result.Stage.ShouldBe("foundation");
+        result.ImportsImplemented.ShouldBe(false);
     }
 
     [Fact]
-    public async Task Liveness_does_not_require_database_or_external_source() =>
-        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/health/live")).StatusCode);
+    public async Task Liveness_does_not_require_database_or_external_source()
+    {
+        // Arrange
+        using var client = factory.CreateClient();
+
+        // Act
+        using var response = await client.GetAsync("/health/live");
+
+        // Assert
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+    }
 
     [Fact]
-    public async Task Unknown_route_returns_not_found() =>
-        Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync("/api/v1/missing")).StatusCode);
+    public async Task Unknown_route_returns_not_found()
+    {
+        // Arrange
+        using var client = factory.CreateClient();
+
+        // Act
+        using var response = await client.GetAsync("/api/v1/missing");
+
+        // Assert
+        response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+    }
 }

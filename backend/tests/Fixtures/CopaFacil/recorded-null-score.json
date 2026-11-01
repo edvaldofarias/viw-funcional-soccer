@@ -1,0 +1,15 @@
+{
+  "match": {
+    "st": 3,
+    "team1": "team-a",
+    "team2": "team-b",
+    "dt": {
+      "qt_g1": null,
+      "qt_g2": 3
+    }
+  },
+  "expected": {
+    "homeScore": 0,
+    "awayScore": 3
+  }
+}

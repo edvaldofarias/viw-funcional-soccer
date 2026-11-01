@@ -6,8 +6,9 @@ Fundação criada: solução `.slnx`, projetos .NET, hosts iniciais, Docker, tes
 
 - [x] Gerar solução `.slnx`, projetos backend, MVC e infraestrutura Docker.
 - [x] Preparar EF Core e ferramenta de migrations.
-- Descobrir contratos de uma edição encerrada e da La Liga.
-- Modelar banco, snapshots, execuções, leases e checkpoints.
+- [x] Documentar contrato observado de uma edição encerrada e da La Liga, com fixtures sanitizadas.
+- [x] Modelar banco, snapshots, execuções, leases e checkpoints; gerar migration.
+- [ ] Aplicar e testar no SQL Server real (CI configurada; local sem servidor ativo).
 - Implementar importação idempotente e testes de correção/retomada.
 - Conferir dados e importar demais edições.
 

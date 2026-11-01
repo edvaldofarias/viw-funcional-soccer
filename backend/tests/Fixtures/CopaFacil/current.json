@@ -1,0 +1,60 @@
+{
+  "info": {
+    "info": {
+      "title": "Liga Exemplo"
+    },
+    "st": 1
+  },
+  "teams": {
+    "team-a": {
+      "name": "Equipe A"
+    },
+    "team-b": {
+      "name": "Equipe B"
+    }
+  },
+  "player": {
+    "player-a": {
+      "name": "Jogador Exemplo",
+      "team": "team-a",
+      "fs": {
+        "phase-a": {
+          "dt": "0=1"
+        }
+      },
+      "ART": 0.5
+    }
+  },
+  "matchs": {
+    "match-a": {
+      "st": 3,
+      "finished": 1790000000000,
+      "team1": "team-a",
+      "team2": "team-b",
+      "title": "Q1",
+      "dt": {
+        "qt_g2": 3
+      }
+    },
+    "match-future": {
+      "team1": "unresolved-slot",
+      "title": "Final"
+    }
+  },
+  "details": {
+    "match-a": {
+      "clock": {
+        "isRunning": false,
+        "currentPeriod": 2
+      },
+      "list": {
+        "player-a": {
+          "ac": 7,
+          "pl_id1": "player-a",
+          "team1": "team-a",
+          "val1": 0
+        }
+      }
+    }
+  }
+}

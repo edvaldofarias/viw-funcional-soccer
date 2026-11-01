@@ -2,7 +2,7 @@ using Viw.Application.Imports;
 
 namespace Viw.UnitTests;
 
-public class ImportExecutionOptionsTests
+public sealed class ImportExecutionOptionsTests
 {
     [Theory]
     [InlineData(0, false)]
@@ -10,6 +10,15 @@ public class ImportExecutionOptionsTests
     [InlineData(5, true)]
     [InlineData(86400, true)]
     [InlineData(86401, false)]
-    public void Poll_interval_must_stay_within_operational_limits(int seconds, bool expected) =>
-        Assert.Equal(expected, ImportExecutionOptions.IsValidInterval(seconds));
+    public void Poll_interval_must_stay_within_operational_limits(int seconds, bool expected)
+    {
+        // Arrange
+        var interval = seconds;
+
+        // Act
+        var valid = ImportExecutionOptions.IsValidInterval(interval);
+
+        // Assert
+        valid.ShouldBe(expected);
+    }
 }

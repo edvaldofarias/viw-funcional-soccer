@@ -1,23 +1,83 @@
-# Integração Copa Fácil
+# Copa Fácil — contrato observado v1
 
-Base observada na integração existente:
+Inspeção realizada em 01/11/2026, com consultas somente de leitura a uma edição histórica (Copa do Nordeste 2023/1) e à La Liga 2026/2. Não generalizar automaticamente os resultados para todas as outras edições. IDs externos reais, nomes pessoais e URLs de fotos não estão reproduzidos nesta documentação.
+
+Base consultada:
 
 ```text
 https://copafacil-web.firebaseio.com/events/{externalChampionshipId}/
 ```
 
-Verificar por edição os recursos `info.json`, `matchs.json`, `teams.json` e `player.json`. `matchs.json` é a grafia observada; não assumir `matches.json`. Os identificadores reais não são publicados nesta documentação.
+## Recursos confirmados
 
-## Descoberta antes de implementar
+| Caminho | Formato observado | Histórico | La Liga |
+| --- | --- | --- | --- |
+| `info.json` | Objeto de metadados | 12 campos de topo | 17 campos de topo |
+| `matchs.json` | Objeto indexado pelo ID da partida | 26 partidas, todas `st=3` | 43 registros; 30 `st=3`, 13 sem `st` |
+| `matches.json` | `null` nas duas consultas | Sem recurso | Sem recurso |
+| `teams.json` | Objeto indexado pelo ID da equipe | 8 equipes | 12 equipes |
+| `player.json` | Objeto indexado pelo ID do cadastro | 99 cadastros | 156 cadastros |
+| `details/{matchId}.json` | Súmula com `info`, `list` e eventualmente `clock` | Duas súmulas inspecionadas | Duas súmulas inspecionadas |
 
-- Confirmar disponibilidade, estrutura, tipos, datas e estados das partidas.
-- Identificar chaves de equipe, jogador e partida e suas referências.
-- Distinguir placar válido, jogo sem resultado e estatística ausente.
-- Identificar fotos, URLs temporárias e possíveis diferenças entre anos.
-- Criar fixtures sanitizadas e uma tabela de mapeamento por versão do contrato.
+Contagens representam o instante da consulta, não limites, asserções permanentes ou totais de importação. `null` em um recurso inteiro significa ausência/indisponibilidade, não autorização para apagar dados.
 
-O adaptador usa DTOs da origem separados do domínio. Validar resposta HTTP e conteúdo, timeout, cancelamento e retentativas limitadas. Resposta nula não autoriza apagar o acervo. Não presumir que IDs sejam globais entre edições.
+## Mapeamento
 
-## Configuração e dados
+| Origem | Destino e interpretação |
+| --- | --- |
+| Chave de cada objeto | ID externo textual, exato e sensível a maiúsculas; nunca chave baseada no nome |
+| `info.info.title` | Nome recebido da edição; nome/slug oficial podem ser administrados |
+| `info.d_i`, `info.d_f` | Datas brutas da edição; validar significado antes de usá-las como calendário oficial |
+| `info.url`, `info.url_c` | Referências de mídia; guardar origem, não presumir URL permanente |
+| `teams.*.name` | `TeamEntry.Name` |
+| `teams.*.url` | Referência de imagem original, separada da imagem oficial |
+| `teams.*.dt` | Estatísticas agrupadas por chave da fonte; não substituir o cálculo por partida sem validar o contrato |
+| `player.*.name`, `nickname` | Nome original e apelido; não unificar pessoas automaticamente |
+| `player.*.team` | Equipe atual declarada; não reescrever participações antigas após transferência |
+| `player.*.n`, `p` | Número/posição quando disponíveis, preservados como texto |
+| `player.*.dt` | Estatísticas acumuladas em texto `chave=valor#...`; não são um documento JSON nem fatos individuais por partida |
+| `player.*.fs` | Agregados por fase, observados na La Liga; contrato a validar por edição |
+| `ART`, `CAR` | Campos auxiliares numéricos; aparecem como inteiros em 2023 e decimais em 2026. Sem significado universal confirmado, não usar como gols/cartões |
+| `SUSP`, `SUSP2`, `id_susp` | Metadados de suspensão observados na La Liga; validar regras específicas antes de derivar elegibilidade |
+| `matchs.*.team1`, `team2` | Referências de equipes; guardar também as referências brutas quando não resolvidas |
+| `matchs.*.fs`, `m_set` | Referências opacas de fase/conjunto. Não converter `m_set` diretamente em número de rodada |
+| `matchs.*.title` | Título original; na La Liga há rótulos de quadra (`Q1`), não necessariamente número de rodada |
+| `matchs.*.d_i`, `gmt` | Timestamp e ajuste temporal brutos em milissegundos; preservar valores e validar convenção de sinal antes de converter; evitar aplicar offset duas vezes |
+| `matchs.*.st` | `3` foi observado em jogos encerrados; valores ausentes/desconhecidos precisam de política explícita |
+| `matchs.*.finished` | Na La Liga é timestamp numérico em ms, não booleano. Ausente nos jogos históricos encerrados |
+| `matchs.*.dt.qt_g1`, `qt_g2` | Placar por lado; ver regra de zero abaixo |
+| `matchs.*.l` | Local recebido, quando presente |
+| `details.*.list` | Eventos por chave textual, não uma lista sequencial |
+| Evento `ac`, `pl_id1`, `team1`, `val1` | Código, cadastro do jogador, equipe e valor opcionais; preservar JSON original e referências não resolvidas |
 
-A base URL é configuração do provedor. O vínculo entre edição interna e ID externo é dado de integração persistido conforme o modelo de origem; não há mudança para remover esses vínculos do banco. Segredos ficam fora do Git. O cadastro inicial e seu mecanismo de provisionamento serão definidos na implementação, sem IDs reais em exemplos do README.
+`qc`, `qm`, `pos_eli`, `clock` e campos desconhecidos permanecem nos snapshots. Não inventar uma semântica para preencher colunas obrigatórias.
+
+## Regra de placar confirmada pelo responsável
+
+Em resultado registrado, **`null × 3` representa `0 × 3`**. O mesmo vale para o outro lado. Campo de gols omitido em resultado conhecido recebe o mesmo tratamento. A função de domínio `MatchScore.FromRecordedResult` normaliza os lados nulos; nunca deve ser usada para criar placar de um jogo ainda não iniciado.
+
+- Resultado registrado e lado nulo: zero.
+- Resultado registrado com ambos os lados nulos: ambos normalizados a zero, quando o adaptador já confirmou que se trata de resultado.
+- Partida futura sem resultado: `HomeScore`/`AwayScore` continuam `null`.
+- Valor negativo ou inválido: rejeitar/quarentenar; não converter para zero.
+- Snapshot original continua intacto, inclusive campos omitidos e nulos explícitos.
+
+O adaptador que identifica a existência do resultado será implementado na etapa do Worker. A confirmação humana acima complementa o contrato observado, não altera o site antigo nesta tarefa.
+
+## Diferenças e lacunas verificadas
+
+- La Liga contém sete partidas com referências que não resolvem equipes cadastradas; preservar como confrontos futuros/pendentes, sem fabricar times. O modelo permite participantes nulos antes da conclusão.
+- Todas as referências de equipe nos cadastros de jogadores resolviam na amostra, mas isso não garante integridade futura.
+- Nas súmulas históricas amostradas foram vistos códigos `ac=1` e `9`; na La Liga, `1`, `3`, `4`, `7` e `9`.
+- O portal antigo interpreta `ac=7` como relação/presença, com `val1=0` presente e `val1=1` reserva ausente na regra da La Liga. Não extrapolar essa regra para 2023, cuja amostra não tem `ac=7`.
+- Sem súmula de presença válida, jogos disputados pelo jogador ficam desconhecidos. Não inferir presença apenas por estar no elenco ou ter agregado acumulado.
+- Não inferir um gol individual para cada valor agregado. `MatchSourceEvent` preserva cada evento e `PlayerMatchStatistics` só recebe informação validada.
+- A lista completa de fases/rodadas e todos os códigos de evento ainda precisam ser confirmados; as entidades já suportam essas informações sem adivinhar os valores.
+
+## Fixtures e privacidade
+
+[Fixtures sintéticas sanitizadas](../../backend/tests/Fixtures/CopaFacil/README.md) reproduzem as variações de estrutura observadas e o caso de placar nulo informado. Nenhuma resposta bruta foi adicionada ao Git. Respostas completas foram mantidas apenas em diretório temporário para a inspeção.
+
+## Contrato de ingestão da próxima etapa
+
+DTOs de origem ficam na Infrastructure, separados do domínio. Usar timeout, cancelamento, retentativas limitadas, hash de conteúdo e checkpoint. Preservar campos não reconhecidos. Recursos, referências ou eventos inválidos não devem sobrescrever o último estado válido. Cadastro de IDs de origem pertence a `EditionSource`; não publicar esses valores no README.

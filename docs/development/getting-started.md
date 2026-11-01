@@ -60,14 +60,16 @@ Use ambiente ou User Secrets dos hosts para segredos. Não versionar `.env`, tok
 
 ## Testes
 
-Unidade: limites das opções de execução. Integração: pipeline HTTP real via WebApplicationFactory, contrato público de estado, liveness e 404. Não existem testes de persistência de negócio nesta etapa; serão adicionados com SQL Server real isolado quando o modelo de importação for implementado. Não usar produção para testes.
+Unidade: limites das opções de execução. Integração: pipeline HTTP real via WebApplicationFactory, contrato público de estado, liveness e 404. Há testes do modelo/migrations e oito cenários com SQL Server real isolado, habilitado por `ConnectionStrings__ViwTestServer`. Sem servidor, esses cenários são explicitamente ignorados. Não usar produção para testes.
 
 A CI executa restore, build, testes e build dos containers; não publica aplicações nem aplica migrations automaticamente.
 
 ## Validação desta entrega
 
-Compilação Release sem avisos; cinco casos de unidade e três de integração aprovados. Verificados também Worker em execução única, MVC consumindo API (HTTP 200), indisponibilidade da API (HTTP 503), sintaxe do Compose, geração de SQL idempotente e ausência de mudanças pendentes no modelo EF.
+Compilação Release sem avisos; 12 casos de unidade e nove de integração aprovados; oito cenários SQL Server explicitamente ignorados sem conexão de testes. Verificados também Worker em execução única, MVC consumindo API (HTTP 200), indisponibilidade da API (HTTP 503), sintaxe do Compose, geração de SQL idempotente e ausência de mudanças pendentes no modelo EF.
 
 O daemon Docker não estava ativo no ambiente desta entrega: build e execução das imagens, subida do SQL Server e aplicação real da migration ainda precisam ser validados com Docker ativo ou banco de desenvolvimento disponível. A geração de SQL não comprova conexão, permissões nem aplicação em SQL Server.
 
 As configurações e a ferramenta de migrations do backend ficam em `backend/`. O frontend tem seus próprios `global.json` e `Directory.Build.props`; MVC referencia apenas os contratos compartilhados. Compose, ignore de Docker e CI ficam na raiz porque coordenam ambas as aplicações.
+
+Organização dos cenários, AAA e uso de Moq: [convenções de testes](testing.md).

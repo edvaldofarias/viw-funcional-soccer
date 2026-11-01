@@ -1,0 +1,53 @@
+{
+  "info": {
+    "info": {
+      "title": "Copa Exemplo"
+    },
+    "d_i": 1680000000000
+  },
+  "teams": {
+    "team-a": {
+      "name": "Equipe A"
+    },
+    "team-b": {
+      "name": "Equipe B"
+    }
+  },
+  "player": {
+    "player-a": {
+      "name": "Jogador Exemplo",
+      "team": "team-a",
+      "n": "9",
+      "p": "Atacante",
+      "dt": "0=2#14=1"
+    }
+  },
+  "matchs": {
+    "match-a": {
+      "st": 3,
+      "team1": "team-a",
+      "team2": "team-b",
+      "fs": "phase-a",
+      "m_set": "set-a",
+      "title": "",
+      "dt": {
+        "qt_g1": 2,
+        "qt_g2": 1
+      }
+    }
+  },
+  "details": {
+    "match-a": {
+      "info": {
+        "d": 1
+      },
+      "list": {
+        "event-a": {
+          "ac": 1,
+          "pl_id1": "player-a",
+          "team1": "team-a"
+        }
+      }
+    }
+  }
+}

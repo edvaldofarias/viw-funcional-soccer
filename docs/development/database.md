@@ -2,7 +2,7 @@
 
 A solução usa EF Core 10 com SQL Server e migrations versionadas em `backend/src/Viw.Infrastructure/Persistence/Migrations`. Não usar `EnsureCreated`, SQL manual para modelar tabelas ou migrations automáticas no startup dos hosts.
 
-A migration `InitialCreate` é uma baseline sem tabelas de negócio: permite criar o banco e o histórico do EF. As entidades de importação e campeonatos serão adicionadas em migrations posteriores. Nenhum banco é criado ao apenas iniciar API, MVC ou Worker.
+A migration `InitialCreate` é a baseline; `CreateCompetitionModel` cria as 25 tabelas iniciais de competição, identidade, premiações e controle de importação. A migration `ApplyDefaultColumnConventions` define o padrão de campos curtos e suas exceções. Consulte [o modelo](../architecture/database-model.md). Nenhum banco é criado ao apenas iniciar API, MVC ou Worker.
 
 ## Comandos dentro de `backend`
 
@@ -37,3 +37,13 @@ docker compose --profile migrations run --rm migrations
 ```
 
 Exporte `ConnectionStrings__ViwDatabase` no shell que executa o Compose ou configure em `.env`. Banco e migrações são etapas explícitas; os serviços básicos não dependem de SQL Server nesta primeira entrega.
+
+## Testes reais de banco
+
+Dentro de `backend`, defina `ConnectionStrings__ViwTestServer` com acesso a um servidor exclusivo de testes e permissão para criar/apagar bancos temporários. O teste cria um banco `ViwTests_<guid>` próprio e não usa o catálogo informado na conexão.
+
+```sh
+dotnet test Viw.FuncionalSoccer.slnx --configuration Release
+```
+
+Sem a variável, o teste SQL é explicitamente ignorado. A CI executa esse teste com SQL Server isolado em runner x64. Os demais testes não exigem servidor. Nunca fornecer credenciais de produção.

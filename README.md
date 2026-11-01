@@ -6,9 +6,9 @@ O projeto importa dados do Copa Fácil, mantém uma cópia própria no banco e p
 
 ## Estado do projeto
 
-A estrutura inicial está implementada: solução `backend/Viw.FuncionalSoccer.slnx`, bibliotecas backend, Worker em modo de preparação, Web API, MVC conectado à API, testes de unidade/integração e Docker Compose. A importação, o modelo de campeonatos e o Admin Angular ainda não foram implementados.
+A estrutura inicial está implementada: solução `backend/Viw.FuncionalSoccer.slnx`, bibliotecas backend, Worker em modo de preparação, Web API, MVC conectado à API, testes de unidade/integração e Docker Compose. O contrato inicial do Copa Fácil foi documentado e o modelo EF Core com 25 tabelas e migration foi criado. A importação e o Admin Angular ainda não foram implementados.
 
-A persistência usa EF Core e migrations explícitas. A baseline inicial cria o banco/histórico; tabelas de negócio serão adicionadas na próxima etapa. Consulte [execução local](docs/development/getting-started.md) e [migrations](docs/development/database.md).
+A persistência usa EF Core e migrations explícitas. A baseline e a migration `CreateCompetitionModel` preparam o banco e as tabelas; ainda não foram aplicadas a um SQL Server local. Consulte [execução local](docs/development/getting-started.md) e [migrations](docs/development/database.md).
 
 **Primeira entrega:** importar uma edição encerrada e a La Liga, persistir dados rastreáveis e demonstrar que novas execuções atualizam os registros sem duplicação ou perda das decisões manuais.
 
@@ -119,7 +119,7 @@ A integração atual da La Liga usa a base:
 https://copafacil-web.firebaseio.com/events/{externalChampionshipId}/
 ```
 
-Entre os recursos a verificar estão `info.json`, `matchs.json`, `teams.json` e `player.json`. O recurso de partidas observado na integração atual é `matchs.json`; não presumir `matches.json`. O contrato, a disponibilidade e os detalhes de cada edição devem ser inspecionados antes de implementar o mapeamento.
+A inspeção inicial confirmou `info.json`, `matchs.json`, `teams.json` e `player.json`. O recurso de partidas observado na integração atual é `matchs.json`; não presumir `matches.json`. O contrato observado e suas lacunas estão em [Copa Fácil](docs/integrations/copa-facil.md). As demais edições ainda exigem conferência.
 
 O acesso será encapsulado em um adaptador Copa Fácil, com DTOs próprios, timeout, cancelamento, limites de concorrência e retentativas limitadas para falhas transitórias. Não registrar credenciais ou dados sensíveis nos logs.
 

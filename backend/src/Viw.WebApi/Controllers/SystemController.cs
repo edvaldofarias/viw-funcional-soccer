@@ -9,5 +9,5 @@ public sealed class SystemController : ControllerBase
 {
     [HttpGet]
     public ActionResult<SystemStatusResponse> Get() =>
-        new SystemStatusResponse("VIW Funcional Soccer", "foundation", false);
+        new SystemStatusResponse("VIW Funcional Soccer", "read-api", true);
 }

@@ -6,9 +6,11 @@ O projeto importa dados do Copa Fácil, mantém uma cópia própria no banco e p
 
 ## Estado do projeto
 
-O Worker importa as oito edições configuradas, executa ao iniciar e repete a cada hora. Inclui snapshots, checkpoints, atualização idempotente, recuperação de falhas, estatísticas de súmula e armazenamento de fotos local ou R2. Web API e MVC continuam com a estrutura inicial; interfaces de negócio e Admin Angular serão desenvolvidos depois.
+O Worker importa as oito edições configuradas, executa ao iniciar e repete a cada hora. Inclui snapshots, checkpoints, atualização idempotente, recuperação de falhas, estatísticas de súmula e armazenamento de fotos local ou R2. A Web API de consultas está implementada, com paginação, contratos OpenAPI e acompanhamento autorizado das importações. O MVC continua com a estrutura inicial; as telas de negócio e o Admin Angular serão desenvolvidos depois.
 
 O banco é criado e atualizado por migrations explícitas. A execução real da carga e os testes que dependem de SQL Server serão realizados no Windows. Consulte [execução do Worker](docs/worker/running.md) para preparação, comandos, configuração e limitações conhecidas das fontes.
+
+Consulte [a Web API](docs/development/web-api.md) para rotas, execução, autorização e semântica das estatísticas.
 
 ## Objetivos
 

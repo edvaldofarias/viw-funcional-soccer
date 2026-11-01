@@ -10,4 +10,7 @@
   <ItemGroup>
     <ProjectReference Include="../Viw.Domain/Viw.Domain.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Viw.Contracts/Viw.Contracts.csproj" />
+  </ItemGroup>
 </Project>

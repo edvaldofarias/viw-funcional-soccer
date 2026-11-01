@@ -27,10 +27,10 @@ Gerencia identidades, técnicos, seleções, prêmios e correções pela API. `/
 
 ## Web API
 
-Contratos HTTP versionados sob `/api/v1`, documentados por OpenAPI quando implementados. Separar consultas públicas, comandos administrativos e endpoints internos do agendador. Comandos longos retornam referência de tarefa, com autorização para consultar seu progresso. Nenhum endpoint de saúde público revela segredos.
+Consultas HTTP implementadas sob `/api/v1`, documentadas por OpenAPI no ambiente Development. Veja [rotas e execução](../development/web-api.md). Separar consultas públicas, comandos administrativos e endpoints internos do agendador. Comandos longos retornam referência de tarefa, com autorização para consultar seu progresso. Nenhum endpoint de saúde público revela segredos.
 
 ## Autenticação
 
 Identidade e permissões são verificadas no servidor; esconder botões no Angular não é autorização. Priorizar publicação sob a mesma origem para simplificar cookies seguros e política de acesso. Cookies autenticados exigem proteção CSRF, inclusive no Angular. MVC encaminha a identidade de forma explícita e confiável, sem um token administrativo global compartilhado entre usuários.
 
-O mecanismo final entre MVC, API e Angular será definido em ADR antes da implementação de login. Se houver origens distintas, definir CORS restrito e fluxo de autenticação apropriado; não liberar origem curinga com credenciais. Adotar ASP.NET Core Identity para os cadastros administrativos e MFA conforme a implementação do acesso.
+O monitoramento usa atualmente uma chave exclusiva de leitura servidor-a-servidor, sem acesso administrativo. Essa chave não será distribuída aos usuários. O mecanismo final de identidade entre MVC, API e Angular será definido em ADR antes da implementação de login. Se houver origens distintas, definir CORS restrito e fluxo de autenticação apropriado; não liberar origem curinga com credenciais. Adotar ASP.NET Core Identity para os cadastros administrativos e MFA conforme a implementação do acesso.

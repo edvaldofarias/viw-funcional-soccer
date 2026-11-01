@@ -16,9 +16,11 @@ Fundação criada: solução `.slnx`, projetos .NET, hosts iniciais, Docker, tes
 
 ## 2. Web API
 
-- Publicar consultas e contratos OpenAPI.
-- Expor progresso e tarefas de importação com autorização.
-- Definir autenticação e comandos administrativos auditados.
+- [x] Implementar consultas públicas paginadas e contratos OpenAPI.
+- [x] Expor leitura do progresso, execuções e checkpoints com autorização servidor-a-servidor.
+- [ ] Validar as novas consultas contra SQL Server real na CI/Windows.
+- [ ] Implementar solicitações de importação como comandos persistidos, se necessário.
+- [ ] Definir login do Admin e comandos administrativos auditados.
 
 ## 3. MVC
 

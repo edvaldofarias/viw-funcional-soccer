@@ -1,6 +1,33 @@
-@Viw.WebApi_HostAddress = http://localhost:0
+@baseUrl = http://localhost:5080
+@edition = la-liga-2026-2
 
-GET {{Viw.WebApi_HostAddress}}/weatherforecast/
+GET {{baseUrl}}/api/v1/system
 Accept: application/json
 
-###
+### Edições
+GET {{baseUrl}}/api/v1/championships?year=2026&page=1&pageSize=20
+Accept: application/json
+
+### Edição, fases e rodadas
+GET {{baseUrl}}/api/v1/championships/{{edition}}
+Accept: application/json
+
+### Partidas encerradas
+GET {{baseUrl}}/api/v1/championships/{{edition}}/matches?status=Finished
+Accept: application/json
+
+### Estatísticas registradas
+GET {{baseUrl}}/api/v1/championships/{{edition}}/statistics/players
+Accept: application/json
+
+### Buscar pelo nome oficial ou por apelidos históricos
+GET {{baseUrl}}/api/v1/players?search=Leo
+Accept: application/json
+
+### Preparação do banco
+GET {{baseUrl}}/health/ready
+
+### Monitoramento: fornecer X-Viw-Monitor-Key pelo gerenciador de segredos do cliente HTTP.
+# Não salvar a chave neste arquivo. Sem credencial, a resposta esperada é 401.
+GET {{baseUrl}}/api/v1/imports/runs?page=1&pageSize=20
+Accept: application/json

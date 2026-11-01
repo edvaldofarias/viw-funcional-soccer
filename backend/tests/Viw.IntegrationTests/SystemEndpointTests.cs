@@ -9,7 +9,7 @@ public sealed class SystemEndpointTests(WebApplicationFactory<Program> factory)
     : IClassFixture<WebApplicationFactory<Program>>
 {
     [Fact]
-    public async Task System_endpoint_exposes_foundation_without_claiming_imports_exist()
+    public async Task System_endpoint_exposes_read_api_and_implemented_imports()
     {
         // Arrange
         using var client = factory.CreateClient();
@@ -19,8 +19,8 @@ public sealed class SystemEndpointTests(WebApplicationFactory<Program> factory)
 
         // Assert
         result.ShouldNotBeNull();
-        result.Stage.ShouldBe("foundation");
-        result.ImportsImplemented.ShouldBe(false);
+        result.Stage.ShouldBe("read-api");
+        result.ImportsImplemented.ShouldBe(true);
     }
 
     [Fact]

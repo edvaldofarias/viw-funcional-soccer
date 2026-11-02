@@ -12,8 +12,8 @@ using Viw.WebApi.Admin;
 namespace Viw.WebApi.Admin.Migrations
 {
     [DbContext(typeof(AdminIdentityDbContext))]
-    [Migration("20261101222329_AdminIdentityInitial")]
-    partial class AdminIdentityInitial
+    [Migration("20261102165545_InitialAdmin")]
+    partial class InitialAdmin
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

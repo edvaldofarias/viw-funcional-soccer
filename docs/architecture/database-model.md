@@ -1,6 +1,6 @@
 # Modelo inicial do banco
 
-Etapa 3: modelo EF Core para SQL Server, schema `viw`, com migration `CreateCompetitionModel` após a baseline `InitialCreate`. Nenhum dado real foi importado e nenhuma migration é aplicada automaticamente ao iniciar os hosts.
+Etapa 3: modelo EF Core para SQL Server, schema `viw`, com baseline única `InitialCompetition` (reiniciada em 02/11/2026 durante desenvolvimento). O schema administrativo usa `InitialAdmin`. Dados são importados pelo Worker e nenhuma migration é aplicada automaticamente ao iniciar os hosts.
 
 ## Tabelas
 
@@ -77,3 +77,5 @@ O teste real exige `ConnectionStrings__ViwTestServer`; sem essa variável aparec
 Nomes, slugs e alguns campos administrativos continuam com 200 caracteres; referências externas mantêm seus limites próprios; URLs aceitam 2048; chaves de storage, 400 quando configuradas. JSON permanece `nvarchar(max)`, sem o limite de 100, e hashes continuam `varchar(64)` por serem ASCII. Nenhuma configuração converte automaticamente datas locais para UTC: essa responsabilidade permanece nos casos de uso.
 
 A migration `ApplyDefaultColumnConventions` registra a redução dos campos curtos antes configurados como 200. Não altera nem trunca valores de registros; caso já exista banco com conteúdo maior que o novo limite, conferir e corrigir esses dados antes de aplicar. A migration não foi aplicada a um servidor nesta entrega.
+
+As identidades confirmadas e posições por copa seguem [domínio](domain.md) e [Admin](../development/admin.md). AwardGrant referencia SourcePlayer pela chave composta edição/cadastro.

@@ -90,8 +90,8 @@ public sealed class SqlServerReadQueriesTests
         history.Items.Single().Statistics!.Goals.ShouldBe(2);
         history.Items.Single().Statistics!.UnknownAppearances.ShouldBe(1);
         history.Items.Single().Results!.Played.ShouldBe(0);
-        roster!.Items.Single().Player.Id.ShouldBe(data.Player.Id);
-        sheet!.Items.Single().Name.ShouldBe("Nome oficial");
+        roster!.Items.Single().Player.Id.ShouldBe(data.SourcePlayer.Id);
+        sheet!.Items.Single().Name.ShouldBe("Nome original");
         matches!.Items.Single().Id.ShouldBe(finished.Id);
         database.Context.ChangeTracker.Entries().ShouldBeEmpty();
     }
@@ -118,7 +118,7 @@ public sealed class SqlServerReadQueriesTests
         // Assert
         original!.Statistics.Goals.ShouldBe(0);
         reassigned!.Statistics.Goals.ShouldBe(2);
-        statistics!.Items.Single().Player.Id.ShouldBe(data.OtherPlayer.Id);
+        statistics!.Items.Single().Player.Id.ShouldBe(data.SourcePlayer.Id);
     }
 
     [SqlServerFact]
@@ -128,7 +128,7 @@ public sealed class SqlServerReadQueriesTests
         await using var database = await SqlServerTestDatabase.CreateAsync();
         var data = database.Data;
         var award = data.CreateTopScorerAward();
-        var draft = data.CreateTopScorerAward(data.OtherPlayer.Id); draft.Status = AwardStatus.Draft; draft.ConfirmedAt = null;
+        var draft = data.CreateTopScorerAward(); draft.Position="Outra concessão"; draft.Status = AwardStatus.Draft; draft.ConfirmedAt = null;
         var run = new ImportRun { EditionId = data.Edition.Id, Status = ImportStatus.Running,
             StartedAt = DateTimeOffset.UtcNow, SummaryJson = "{\"private\":true}" };
         database.Context.AddRange(award, draft, run,
@@ -200,7 +200,7 @@ public sealed class SqlServerReadQueriesTests
         var alias = new SourcePlayer { EditionId = data.OtherEdition.Id, Provider = "fixture", ExternalId = "player-a",
             OriginalName = "Apelido antigo", Nickname = "Reis" };
         database.Context.AddRange(alias, data.CreateIdentityLink(), new PlayerIdentityLink {
-            SourcePlayerId = alias.Id, PlayerId = data.Player.Id, LinkedAt = DateTimeOffset.UtcNow,
+            EditionId = data.OtherEdition.Id, SourcePlayerId = alias.Id, PlayerId = data.Player.Id, LinkedAt = DateTimeOffset.UtcNow,
             LinkedBy = "admin-test", Reason = "Identidade conferida"
         }, new PlayerRegistration { EditionId = data.Edition.Id, SourcePlayerId = data.SourcePlayer.Id,
             TeamEntryId = data.Home.Id, ValidFrom = DateTimeOffset.UtcNow },

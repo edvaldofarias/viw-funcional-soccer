@@ -145,8 +145,10 @@ public sealed class SqlServerSchemaTests
     {
         // Arrange
         await using var database = await SqlServerTestDatabase.CreateAsync();
+        var other = new SourcePlayer { EditionId=database.Data.Edition.Id, Provider="fixture", ExternalId="second", OriginalName="Outro" };
+        database.Context.Add(other);
         database.Context.AddRange(database.Data.CreateTopScorerAward(),
-            database.Data.CreateTopScorerAward(database.Data.OtherPlayer.Id));
+            database.Data.CreateTopScorerAward(other.Id));
         await database.Context.SaveChangesAsync();
         database.Context.ChangeTracker.Clear();
         database.Context.Add(database.Data.CreateTopScorerAward());

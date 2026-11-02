@@ -18,7 +18,7 @@ public sealed class AvatarTagHelper : TagHelper
         output.Attributes.SetAttribute("class", Class + " media-avatar");
         output.Attributes.SetAttribute("aria-hidden", "true");
         output.Content.SetContent(PortalFormat.Initials(Name));
-        if (EntityId is not {} id || Kind is not ("players" or "teams" or "editions")) return;
+        if (EntityId is not {} id || Kind is not ("players" or "sourceplayers" or "teams" or "editions")) return;
         var image = new TagBuilder("img"); image.Attributes["src"] = $"/imagens/{Kind}/{id:D}" + (EditionId is {} edition ? $"?editionId={edition:D}" : "");
         image.Attributes["alt"] = ""; image.Attributes["loading"] = "lazy"; image.Attributes["data-media-avatar"] = "";
         output.Content.AppendHtml(image);

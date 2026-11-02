@@ -7,6 +7,7 @@ namespace Viw.Domain.Competition;
 /// </summary>
 public sealed class PlayerIdentityLink : Entity
 {
+    public Guid EditionId { get; set; }
     public Guid SourcePlayerId { get; set; }
     public Guid PlayerId { get; set; }
     public DateTimeOffset LinkedAt { get; set; }

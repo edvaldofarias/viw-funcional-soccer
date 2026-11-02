@@ -324,3 +324,7 @@ O portal público renderiza no servidor as copas, equipes e elencos, jogos e sú
 ## Admin implementado
 
 O Angular em `frontend/viw-admin` é servido pela API em `/admin/`, com ASP.NET Core Identity, perfis de administrador/editor e decisões esportivas auditadas. Todo o .NET do frontend está em `frontend/mvc`. Consulte [configuração, migrations e primeiro acesso](docs/development/admin.md).
+
+## Atualização de identidade — 02/11/2026
+
+O Worker importa SourcePlayer sem criar Player. O Admin confirma identidades na Wiki e posições por copa; consulte [guia do Admin](docs/development/admin.md). As migrations de desenvolvimento foram consolidadas em InitialCompetition e InitialAdmin. Não aplicar essa baseline sobre banco antigo: esta alteração pressupõe recriação explícita do banco de desenvolvimento. Depois, aplicar ambas as migrations, criar o administrador e executar o Worker. A Wiki começa vazia até a confirmação das pessoas; os jogadores das copas aparecem normalmente.

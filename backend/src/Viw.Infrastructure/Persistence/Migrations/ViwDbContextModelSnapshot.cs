@@ -153,9 +153,6 @@ namespace Viw.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("MatchId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("PlayerId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<string>("Position")
                         .HasMaxLength(100)
                         .IsUnicode(true)
@@ -176,6 +173,9 @@ namespace Viw.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("rowversion");
 
+                    b.Property<Guid?>("SourcePlayerId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
@@ -185,13 +185,13 @@ namespace Viw.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("CoachId");
 
-                    b.HasIndex("PlayerId");
-
                     b.HasIndex("EditionId", "MatchId");
 
                     b.HasIndex("EditionId", "RoundId");
 
-                    b.HasIndex("EditionId", "AwardDefinitionId", "MatchId", "RoundId", "PlayerId", "CoachId", "Position")
+                    b.HasIndex("EditionId", "SourcePlayerId");
+
+                    b.HasIndex("EditionId", "AwardDefinitionId", "MatchId", "RoundId", "SourcePlayerId", "CoachId", "Position")
                         .IsUnique()
                         .HasFilter("[Status] <> 2");
 
@@ -201,7 +201,7 @@ namespace Viw.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("CK_AwardGrant_Context", "[MatchId] IS NULL OR [RoundId] IS NULL");
 
-                            t.HasCheckConstraint("CK_AwardGrant_Recipient", "([PlayerId] IS NOT NULL AND [CoachId] IS NULL) OR ([CoachId] IS NOT NULL AND [PlayerId] IS NULL)");
+                            t.HasCheckConstraint("CK_AwardGrant_Recipient", "([SourcePlayerId] IS NOT NULL AND [CoachId] IS NULL) OR ([CoachId] IS NOT NULL AND [SourcePlayerId] IS NULL)");
 
                             t.HasCheckConstraint("CK_AwardGrant_Status", "[Status] IN (0,1,2)");
                         });
@@ -1042,6 +1042,9 @@ namespace Viw.Infrastructure.Persistence.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("datetimeoffset");
 
+                    b.Property<Guid>("EditionId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<DateTimeOffset>("LinkedAt")
                         .HasColumnType("datetimeoffset");
 
@@ -1079,9 +1082,13 @@ namespace Viw.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("PlayerId");
-
                     b.HasIndex("SourcePlayerId")
+                        .IsUnique()
+                        .HasFilter("[UnlinkedAt] IS NULL");
+
+                    b.HasIndex("EditionId", "SourcePlayerId");
+
+                    b.HasIndex("PlayerId", "EditionId")
                         .IsUnique()
                         .HasFilter("[UnlinkedAt] IS NULL");
 
@@ -1250,6 +1257,11 @@ namespace Viw.Infrastructure.Persistence.Migrations
                         .IsUnicode(true)
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("AssignedPosition")
+                        .HasMaxLength(30)
+                        .IsUnicode(true)
+                        .HasColumnType("nvarchar(30)");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("datetimeoffset");
 
@@ -1312,7 +1324,10 @@ namespace Viw.Infrastructure.Persistence.Migrations
                     b.HasIndex("EditionId", "Provider", "ExternalId")
                         .IsUnique();
 
-                    b.ToTable("SourcePlayer", "viw");
+                    b.ToTable("SourcePlayer", "viw", t =>
+                        {
+                            t.HasCheckConstraint("CK_SourcePlayer_Position", "[AssignedPosition] IS NULL OR [AssignedPosition] IN (N'Goleiro',N'Zagueiro',N'Meio-campo',N'Ala',N'Atacante')");
+                        });
                 });
 
             modelBuilder.Entity("Viw.Domain.Competition.SourceSnapshot", b =>
@@ -1463,11 +1478,6 @@ namespace Viw.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Viw.Domain.Competition.Player", null)
-                        .WithMany()
-                        .HasForeignKey("PlayerId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.HasOne("Viw.Domain.Competition.Match", null)
                         .WithMany()
                         .HasForeignKey("EditionId", "MatchId")
@@ -1477,6 +1487,12 @@ namespace Viw.Infrastructure.Persistence.Migrations
                     b.HasOne("Viw.Domain.Competition.CompetitionRound", null)
                         .WithMany()
                         .HasForeignKey("EditionId", "RoundId")
+                        .HasPrincipalKey("EditionId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Viw.Domain.Competition.SourcePlayer", null)
+                        .WithMany()
+                        .HasForeignKey("EditionId", "SourcePlayerId")
                         .HasPrincipalKey("EditionId", "Id")
                         .OnDelete(DeleteBehavior.Restrict);
                 });
@@ -1682,7 +1698,8 @@ namespace Viw.Infrastructure.Persistence.Migrations
 
                     b.HasOne("Viw.Domain.Competition.SourcePlayer", null)
                         .WithMany()
-                        .HasForeignKey("SourcePlayerId")
+                        .HasForeignKey("EditionId", "SourcePlayerId")
+                        .HasPrincipalKey("EditionId", "Id")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });

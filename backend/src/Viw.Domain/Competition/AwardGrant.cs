@@ -11,7 +11,7 @@ public sealed class AwardGrant : Entity
     public Guid AwardDefinitionId { get; set; }
     public Guid? MatchId { get; set; }
     public Guid? RoundId { get; set; }
-    public Guid? PlayerId { get; set; }
+    public Guid? SourcePlayerId { get; set; }
     public Guid? CoachId { get; set; }
     public string? Position { get; set; }
     public AwardStatus Status { get; set; }

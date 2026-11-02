@@ -12,12 +12,14 @@ public sealed class PlayerIdentityLinkConfiguration : IEntityTypeConfiguration<P
 
         builder.HasOne<SourcePlayer>()
             .WithMany()
-            .HasForeignKey(x => x.SourcePlayerId)
+            .HasForeignKey(x => new { x.EditionId, x.SourcePlayerId })
+            .HasPrincipalKey(x => new { x.EditionId, x.Id })
             .OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<Player>()
             .WithMany()
             .HasForeignKey(x => x.PlayerId)
             .OnDelete(DeleteBehavior.Restrict);
+        builder.HasIndex(x => new { x.PlayerId, x.EditionId }).IsUnique().HasFilter("[UnlinkedAt] IS NULL");
         builder.HasIndex(x => x.SourcePlayerId).IsUnique().HasFilter("[UnlinkedAt] IS NULL");
         builder.ToTable(table => table.HasCheckConstraint(
             "CK_PlayerIdentityLink_Interval", "([UnlinkedAt] IS NULL AND [UnlinkedBy] IS NULL) OR ([UnlinkedAt] >= [LinkedAt] AND [UnlinkedBy] IS NOT NULL)"));

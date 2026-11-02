@@ -26,6 +26,9 @@ public sealed class MediaController(ViwDbContext db, MediaReader reader, IOption
             var photo = photos.FirstOrDefault(x => x.SourceImageAssetId != null || x.SourceImageUrl != null);
             assetId = photo?.SourceImageAssetId; source = photo?.SourceImageUrl;
             if (editionId == null) assetId = await db.PlayerRecords.Where(x => x.Id == id).Select(x => x.OfficialImageId).FirstOrDefaultAsync(ct) ?? assetId;
+        } else if (kind == "sourceplayers") {
+            var player=await db.SourcePlayerRecords.AsNoTracking().SingleOrDefaultAsync(x=>x.Id==id,ct);
+            assetId=player?.SourceImageAssetId;source=player?.SourceImageUrl;
         } else if (kind == "teams") {
             var team = await db.TeamEntryRecords.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id, ct);
             assetId = team?.OfficialImageId ?? team?.SourceImageAssetId; source = team?.SourceImageUrl;

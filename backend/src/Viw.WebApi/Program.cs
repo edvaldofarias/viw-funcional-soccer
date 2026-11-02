@@ -43,7 +43,7 @@ builder.Services.AddOpenApi(options => options.AddOperationTransformer<Viw.WebAp
             if(!anonymous) requirement[new Microsoft.OpenApi.OpenApiSecuritySchemeReference("AdminCookie",document)]=[];
             if(pair.Key!=HttpMethod.Get) requirement[new Microsoft.OpenApi.OpenApiSecuritySchemeReference("AdminCsrf",document)]=[];
             pair.Value.Security=requirement.Count==0?[]:[requirement];
-            pair.Value.Description ??= "Consulta ou decisão manual auditada. Alterações exigem motivo e, na edição, versão atual; não modificam a origem importada.";
+            pair.Value.Description ??= "Consulta ou decisão manual auditada. Identidades e posições usam justificativa automática; demais decisões exigem motivo. Edições exigem versão atual; não modificam a origem importada.";
         }
     return Task.CompletedTask;
 }));

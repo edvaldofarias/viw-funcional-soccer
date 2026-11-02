@@ -23,9 +23,17 @@ public sealed class AdminCatalogController(IAdminService service) : ControllerBa
     /// <summary>Cadastra técnico oficial sem alterar a origem importada.</summary>
     [HttpPost("coaches")] public async Task<IActionResult> NewCoach(CoachCommand c,CancellationToken ct)=>Ok(await service.CreateCoachAsync(c,Actor,ct));
     /// <summary>Lista cadastros originais e seus vínculos atuais para comparação.</summary>
-    [HttpGet("sources")] public async Task<IActionResult> Sources(Guid? editionId,[StringLength(100)] string? search,[Range(1,100000)] int page=1,CancellationToken ct=default)=>Ok(await service.SourcesAsync(editionId,search,page,ct));
-    /// <summary>Une ou separa o cadastro original reatribuindo sua identidade; preserva o vínculo anterior e motivo.</summary>
-    [HttpPut("sources/{id:guid}/identity")] public async Task<IActionResult> Link(Guid id,LinkCommand c,CancellationToken ct){await service.LinkAsync(id,c,Actor,ct);return NoContent();}
+    [HttpGet("sources")] public async Task<IActionResult> Sources(Guid? editionId,Guid? teamId,bool goalkeepers,[StringLength(100)] string? search,[Range(1,100000)] int page=1,CancellationToken ct=default)=>Ok(await service.SourcesAsync(editionId,search,page,ct,teamId,goalkeepers));
+    /// <summary>Retorna identidade e cadastros associados para edição, ou 404.</summary>
+    [HttpGet("identities/{id:guid}")] public async Task<IActionResult> Identity(Guid id,CancellationToken ct)=>Ok(await service.IdentityAsync(id,ct));
+    /// <summary>Cria Player somente após revisão. Espera nome final e IDs de SourcePlayer, um por copa; conflitos retornam 409.</summary>
+    [HttpPost("identities")] public async Task<IActionResult> CreateIdentity(IdentityCommand c,CancellationToken ct)=>Ok(await service.SaveIdentityAsync(null,c,Actor,ct));
+    /// <summary>Substitui vínculos e nome final, preservando estatísticas da fonte. Exige versão atual, pelo menos um cadastro e exclusividade.</summary>
+    [HttpPut("identities/{id:guid}")] public async Task<IActionResult> SaveIdentity(Guid id,IdentityCommand c,CancellationToken ct)=>Ok(await service.SaveIdentityAsync(id,c,Actor,ct));
+    /// <summary>Exclui identidade da Wiki e libera seus cadastros. Mantém fontes, fotos, fatos e auditoria; exige versão atual.</summary>
+    [HttpDelete("identities/{id:guid}")] public async Task<IActionResult> DeleteIdentity(Guid id,[FromQuery] string version,CancellationToken ct){await service.DeleteIdentityAsync(id,version,Actor,ct);return NoContent();}
+    /// <summary>Define a posição do cadastro nesta copa; nulo significa jogador de linha. Retorna 204; versão desatualizada retorna 409.</summary>
+    [HttpPut("sources/{id:guid}/position")] public async Task<IActionResult> Position(Guid id,PositionCommand c,CancellationToken ct){await service.SetPositionAsync(id,c,Actor,ct);return NoContent();}
     /// <summary>Lista categorias, âmbitos e tipos de destinatário dos prêmios oficiais.</summary>
     [HttpGet("award-definitions")] public async Task<IActionResult> Definitions(CancellationToken ct)=>Ok(await service.DefinitionsAsync(ct));
     /// <summary>Lista prêmios, inclusive rascunhos e revogados, da edição.</summary>

@@ -18,6 +18,7 @@
 <nav class="wiki-toc" aria-label="Sumário"><strong>Sumário</strong><ol><li><a href="#carreira">Carreira</a></li><li><a href="#estatisticas">Estatísticas por campeonato</a></li><li><a href="#marcas">Recordes e marcas</a></li><li><a href="#galeria">Galeria</a></li><li><a href="#metodologia">Notas e metodologia</a></li></ol></nav>
 <section id="carreira"><h2>Carreira</h2>
 @if (history.Length == 0) { <p>As participações ainda não estão disponíveis.</p> }
+<p><strong>Nomes usados:</strong> @string.Join(", ", Model.Player.Aliases ?? [])</p>
 <div class="wiki-career">@foreach (var entry in history) { <article><small>@(entry.Edition.Semester)º semestre de @entry.Edition.Year</small><h3><a href="@PortalRoutes.Team(entry.Edition.Slug, entry.Team.Id)">@entry.Team.Name</a></h3><a href="@PortalRoutes.Cup(entry.Edition.Slug)">@entry.Edition.Name</a><p>@PortalFormat.Status(entry.Edition.Status) · Nome na origem: @entry.OriginalName</p></article> }</div>
 </section>
 <section id="estatisticas"><h2>Estatísticas por campeonato</h2><p>Resultados das equipes nos jogos com presença registrada do jogador. Pontos abaixo usam a referência de 3 por vitória e 1 por empate; não substituem a classificação oficial da copa.</p>

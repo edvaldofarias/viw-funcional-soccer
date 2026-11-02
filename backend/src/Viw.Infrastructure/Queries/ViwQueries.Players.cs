@@ -48,7 +48,9 @@ public sealed partial class ViwQueries
                 facts.Sum(x => (long)(x.fact.RedCards ?? 0)), facts.Sum(x => (long)(x.fact.Appearances ?? 0)),
                 facts.Count(x => x.fact.Appearances == null), facts.Count(x => !x.fact.IsComplete || x.fact.Revision != x.match.Revision)))
             .SingleOrDefaultAsync(ct);
-        return new(player, totals ?? new PlayerTotalsResponse(0, 0, 0, 0, 0, 0));
+        var names=await (from l in db.PlayerIdentityLinkRecords join s in db.SourcePlayerRecords on l.SourcePlayerId equals s.Id
+            where l.PlayerId==player.Id && l.UnlinkedAt==null select new {s.OriginalName,s.Nickname}).ToArrayAsync(ct);
+        return new(player, totals ?? new PlayerTotalsResponse(0, 0, 0, 0, 0, 0),names.SelectMany(x=>new[]{x.OriginalName,x.Nickname}).Where(x=>!string.IsNullOrWhiteSpace(x)).Select(x=>x!).Distinct(StringComparer.OrdinalIgnoreCase).Order().ToArray());
     }
 
     public async Task<PageResponse<PlayerHistoryResponse>?> PlayerHistoryAsync(string slug, PageRequest request, CancellationToken ct)
@@ -91,13 +93,16 @@ public sealed partial class ViwQueries
         var edition = await FindEdition(slug, ct);
         if (edition is null) return null;
         var query = from fact in db.PlayerMatchStatisticsRecords.AsNoTracking()
-            join link in db.PlayerIdentityLinkRecords.AsNoTracking() on fact.SourcePlayerId equals link.SourcePlayerId
-            join player in db.PlayerRecords.AsNoTracking() on link.PlayerId equals player.Id
+            join source in db.SourcePlayerRecords.AsNoTracking() on fact.SourcePlayerId equals source.Id
+            join link in db.PlayerIdentityLinkRecords.AsNoTracking().Where(x=>x.UnlinkedAt==null) on source.Id equals link.SourcePlayerId into links
+            from link in links.DefaultIfEmpty()
+            join player in db.PlayerRecords.AsNoTracking() on link.PlayerId equals player.Id into people
+            from player in people.DefaultIfEmpty()
             join match in db.MatchRecords.AsNoTracking() on fact.MatchId equals match.Id
-            where fact.EditionId == edition.Id && link.UnlinkedAt == null && match.Status == MatchStatus.Finished
-            group new { fact, match } by new { player.Id, player.Slug, player.DisplayName, player.OfficialImageId } into facts
-            orderby facts.Sum(x => (long)(x.fact.Goals ?? 0)) descending, facts.Key.DisplayName, facts.Key.Id
-            select new PlayerStatisticsResponse(new PlayerResponse(facts.Key.Id, facts.Key.Slug, facts.Key.DisplayName, facts.Key.OfficialImageId),
+            where fact.EditionId == edition.Id && match.Status == MatchStatus.Finished
+            group new { fact, match } by new { source.Id, Slug=player==null?"":player.Slug, source.OriginalName, source.SourceImageAssetId } into facts
+            orderby facts.Sum(x => (long)(x.fact.Goals ?? 0)) descending, facts.Key.OriginalName, facts.Key.Id
+            select new PlayerStatisticsResponse(new PlayerResponse(facts.Key.Id, facts.Key.Slug, facts.Key.OriginalName, facts.Key.SourceImageAssetId),
                 new PlayerTotalsResponse(facts.Sum(x => (long)(x.fact.Goals ?? 0)), facts.Sum(x => (long)(x.fact.YellowCards ?? 0)),
                     facts.Sum(x => (long)(x.fact.RedCards ?? 0)), facts.Sum(x => (long)(x.fact.Appearances ?? 0)),
                     facts.Count(x => x.fact.Appearances == null), facts.Count(x => !x.fact.IsComplete || x.fact.Revision != x.match.Revision)));
@@ -132,14 +137,14 @@ public sealed partial class ViwQueries
         if (edition is null) return null;
         var query = from grant in db.AwardGrantRecords.AsNoTracking()
             join definition in db.AwardDefinitionRecords.AsNoTracking() on grant.AwardDefinitionId equals definition.Id
-            join player in db.PlayerRecords.AsNoTracking() on grant.PlayerId equals player.Id into players
+            join player in db.SourcePlayerRecords.AsNoTracking() on grant.SourcePlayerId equals player.Id into players
             from player in players.DefaultIfEmpty()
             join coach in db.CoachRecords.AsNoTracking() on grant.CoachId equals coach.Id into coaches
             from coach in coaches.DefaultIfEmpty()
             where grant.EditionId == edition.Id && grant.Status == AwardStatus.Confirmed
             orderby grant.ConfirmedAt descending, grant.Id
             select new AwardResponse(grant.Id, definition.Code, definition.Name, definition.Scope.ToString(), grant.MatchId,
-                grant.RoundId, grant.PlayerId, player == null ? null : player.DisplayName, grant.CoachId,
+                grant.RoundId, grant.SourcePlayerId, player == null ? null : player.OriginalName, grant.CoachId,
                 coach == null ? null : coach.DisplayName, grant.Position, grant.ConfirmedAt);
         return await PageAsync(query, request, ct);
     }

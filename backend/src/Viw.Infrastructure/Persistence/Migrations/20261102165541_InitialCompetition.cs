@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Viw.Infrastructure.Persistence.Migrations
 {
     /// <inheritdoc />
-    public partial class CreateCompetitionModel : Migration
+    public partial class InitialCompetition : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -42,7 +42,7 @@ namespace Viw.Infrastructure.Persistence.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Code = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    Code = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     Scope = table.Column<int>(type: "int", nullable: false),
                     RecipientKind = table.Column<int>(type: "int", nullable: false),
@@ -80,7 +80,7 @@ namespace Viw.Infrastructure.Persistence.Migrations
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     StorageKey = table.Column<string>(type: "nvarchar(400)", maxLength: 400, nullable: false, collation: "Latin1_General_100_BIN2"),
                     ContentHash = table.Column<string>(type: "varchar(64)", unicode: false, maxLength: 64, nullable: false, collation: "Latin1_General_100_BIN2"),
-                    ContentType = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    ContentType = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     SizeBytes = table.Column<long>(type: "bigint", nullable: false),
                     SourceUrl = table.Column<string>(type: "nvarchar(2048)", maxLength: 2048, nullable: true),
                     IsPublic = table.Column<bool>(type: "bit", nullable: false),
@@ -104,7 +104,7 @@ namespace Viw.Infrastructure.Persistence.Migrations
                     OccurredAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
                     ProcessedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true),
                     Attempts = table.Column<int>(type: "int", nullable: false),
-                    LastErrorCode = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    LastErrorCode = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
                     CreatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
                     RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: false)
                 },
@@ -127,7 +127,11 @@ namespace Viw.Infrastructure.Persistence.Migrations
                     Year = table.Column<int>(type: "int", nullable: false),
                     Semester = table.Column<int>(type: "int", nullable: false),
                     Status = table.Column<int>(type: "int", nullable: false),
-                    TimeZoneId = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    TimeZoneId = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    SourceImageAssetId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    SourceCoverAssetId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    SourceImageUrl = table.Column<string>(type: "nvarchar(2048)", maxLength: 2048, nullable: true),
+                    SourceCoverUrl = table.Column<string>(type: "nvarchar(2048)", maxLength: 2048, nullable: true),
                     CreatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
                     RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: false)
                 },
@@ -141,6 +145,20 @@ namespace Viw.Infrastructure.Persistence.Migrations
                         column: x => x.CompetitionId,
                         principalSchema: "viw",
                         principalTable: "Competition",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_ChampionshipEdition_MediaAsset_SourceCoverAssetId",
+                        column: x => x.SourceCoverAssetId,
+                        principalSchema: "viw",
+                        principalTable: "MediaAsset",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_ChampionshipEdition_MediaAsset_SourceImageAssetId",
+                        column: x => x.SourceImageAssetId,
+                        principalSchema: "viw",
+                        principalTable: "MediaAsset",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                 });
@@ -282,7 +300,7 @@ namespace Viw.Infrastructure.Persistence.Migrations
                     CompletedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true),
                     RecordsRead = table.Column<int>(type: "int", nullable: false),
                     RecordsChanged = table.Column<int>(type: "int", nullable: false),
-                    FailureCode = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    FailureCode = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
                     SummaryJson = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     CreatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
                     RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: false)
@@ -340,10 +358,13 @@ namespace Viw.Infrastructure.Persistence.Migrations
                     Provider = table.Column<string>(type: "nvarchar(32)", maxLength: 32, nullable: false, collation: "Latin1_General_100_BIN2"),
                     ExternalId = table.Column<string>(type: "nvarchar(128)", maxLength: 128, nullable: false, collation: "Latin1_General_100_BIN2"),
                     OriginalName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    Nickname = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
-                    ShirtNumber = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
-                    Position = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    Nickname = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    ShirtNumber = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    Position = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    AssignedPosition = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: true),
                     SourceImageUrl = table.Column<string>(type: "nvarchar(2048)", maxLength: 2048, nullable: true),
+                    AggregateStatisticsJson = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    SourceImageAssetId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     CreatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
                     RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: false)
                 },
@@ -351,11 +372,19 @@ namespace Viw.Infrastructure.Persistence.Migrations
                 {
                     table.PrimaryKey("PK_SourcePlayer", x => x.Id);
                     table.UniqueConstraint("AK_SourcePlayer_EditionId_Id", x => new { x.EditionId, x.Id });
+                    table.CheckConstraint("CK_SourcePlayer_Position", "[AssignedPosition] IS NULL OR [AssignedPosition] IN (N'Goleiro',N'Zagueiro',N'Meio-campo',N'Ala',N'Atacante')");
                     table.ForeignKey(
                         name: "FK_SourcePlayer_ChampionshipEdition_EditionId",
                         column: x => x.EditionId,
                         principalSchema: "viw",
                         principalTable: "ChampionshipEdition",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_SourcePlayer_MediaAsset_SourceImageAssetId",
+                        column: x => x.SourceImageAssetId,
+                        principalSchema: "viw",
+                        principalTable: "MediaAsset",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                 });
@@ -372,6 +401,8 @@ namespace Viw.Infrastructure.Persistence.Migrations
                     Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     SourceImageUrl = table.Column<string>(type: "nvarchar(2048)", maxLength: 2048, nullable: true),
                     OfficialImageId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    AggregateStatisticsJson = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    SourceImageAssetId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     CreatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
                     RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: false)
                 },
@@ -393,6 +424,13 @@ namespace Viw.Infrastructure.Persistence.Migrations
                         principalTable: "MediaAsset",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_TeamEntry_MediaAsset_SourceImageAssetId",
+                        column: x => x.SourceImageAssetId,
+                        principalSchema: "viw",
+                        principalTable: "MediaAsset",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -405,6 +443,7 @@ namespace Viw.Infrastructure.Persistence.Migrations
                     PhaseId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Number = table.Column<int>(type: "int", nullable: false),
                     Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    ExternalId = table.Column<string>(type: "nvarchar(128)", maxLength: 128, nullable: true, collation: "Latin1_General_100_BIN2"),
                     CreatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
                     RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: false)
                 },
@@ -440,7 +479,7 @@ namespace Viw.Infrastructure.Persistence.Migrations
                     ImportRunId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     ResourcePath = table.Column<string>(type: "nvarchar(128)", maxLength: 128, nullable: false, collation: "Latin1_General_100_BIN2"),
                     ContentHash = table.Column<string>(type: "varchar(64)", unicode: false, maxLength: 64, nullable: false, collation: "Latin1_General_100_BIN2"),
-                    MapperVersion = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    MapperVersion = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     FetchedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
                     PayloadJson = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     PrivateStorageKey = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
@@ -474,6 +513,7 @@ namespace Viw.Infrastructure.Persistence.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    EditionId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     SourcePlayerId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     PlayerId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     LinkedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
@@ -496,11 +536,11 @@ namespace Viw.Infrastructure.Persistence.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_PlayerIdentityLink_SourcePlayer_SourcePlayerId",
-                        column: x => x.SourcePlayerId,
+                        name: "FK_PlayerIdentityLink_SourcePlayer_EditionId_SourcePlayerId",
+                        columns: x => new { x.EditionId, x.SourcePlayerId },
                         principalSchema: "viw",
                         principalTable: "SourcePlayer",
-                        principalColumn: "Id",
+                        principalColumns: new[] { "EditionId", "Id" },
                         onDelete: ReferentialAction.Restrict);
                 });
 
@@ -621,6 +661,8 @@ namespace Viw.Infrastructure.Persistence.Migrations
                     Status = table.Column<int>(type: "int", nullable: false),
                     HomeScore = table.Column<int>(type: "int", nullable: true),
                     AwayScore = table.Column<int>(type: "int", nullable: true),
+                    HomePenalties = table.Column<int>(type: "int", nullable: true),
+                    AwayPenalties = table.Column<int>(type: "int", nullable: true),
                     Revision = table.Column<int>(type: "int", nullable: false),
                     CreatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
                     RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: false)
@@ -715,9 +757,9 @@ namespace Viw.Infrastructure.Persistence.Migrations
                     AwardDefinitionId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     MatchId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     RoundId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    PlayerId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    SourcePlayerId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     CoachId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    Position = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    Position = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
                     Status = table.Column<int>(type: "int", nullable: false),
                     ConfirmedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true),
                     DecidedBy = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
@@ -730,7 +772,7 @@ namespace Viw.Infrastructure.Persistence.Migrations
                     table.PrimaryKey("PK_AwardGrant", x => x.Id);
                     table.CheckConstraint("CK_AwardGrant_Confirmed", "[Status] <> 1 OR [ConfirmedAt] IS NOT NULL");
                     table.CheckConstraint("CK_AwardGrant_Context", "[MatchId] IS NULL OR [RoundId] IS NULL");
-                    table.CheckConstraint("CK_AwardGrant_Recipient", "([PlayerId] IS NOT NULL AND [CoachId] IS NULL) OR ([CoachId] IS NOT NULL AND [PlayerId] IS NULL)");
+                    table.CheckConstraint("CK_AwardGrant_Recipient", "([SourcePlayerId] IS NOT NULL AND [CoachId] IS NULL) OR ([CoachId] IS NOT NULL AND [SourcePlayerId] IS NULL)");
                     table.CheckConstraint("CK_AwardGrant_Status", "[Status] IN (0,1,2)");
                     table.ForeignKey(
                         name: "FK_AwardGrant_AwardDefinition_AwardDefinitionId",
@@ -768,11 +810,11 @@ namespace Viw.Infrastructure.Persistence.Migrations
                         principalColumns: new[] { "EditionId", "Id" },
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_AwardGrant_Player_PlayerId",
-                        column: x => x.PlayerId,
+                        name: "FK_AwardGrant_SourcePlayer_EditionId_SourcePlayerId",
+                        columns: x => new { x.EditionId, x.SourcePlayerId },
                         principalSchema: "viw",
-                        principalTable: "Player",
-                        principalColumn: "Id",
+                        principalTable: "SourcePlayer",
+                        principalColumns: new[] { "EditionId", "Id" },
                         onDelete: ReferentialAction.Restrict);
                 });
 
@@ -791,6 +833,7 @@ namespace Viw.Infrastructure.Persistence.Migrations
                     Value = table.Column<decimal>(type: "decimal(18,4)", precision: 18, scale: 4, nullable: true),
                     RawJson = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Revision = table.Column<int>(type: "int", nullable: false),
+                    IsRemoved = table.Column<bool>(type: "bit", nullable: false),
                     CreatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
                     RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: false)
                 },
@@ -844,6 +887,7 @@ namespace Viw.Infrastructure.Persistence.Migrations
                     RedCards = table.Column<int>(type: "int", nullable: true),
                     Appearances = table.Column<int>(type: "int", nullable: true),
                     Revision = table.Column<int>(type: "int", nullable: false),
+                    IsComplete = table.Column<bool>(type: "bit", nullable: false),
                     CreatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
                     RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: false)
                 },
@@ -908,10 +952,10 @@ namespace Viw.Infrastructure.Persistence.Migrations
                 column: "CoachId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_AwardGrant_EditionId_AwardDefinitionId_MatchId_RoundId_PlayerId_CoachId_Position",
+                name: "IX_AwardGrant_EditionId_AwardDefinitionId_MatchId_RoundId_SourcePlayerId_CoachId_Position",
                 schema: "viw",
                 table: "AwardGrant",
-                columns: new[] { "EditionId", "AwardDefinitionId", "MatchId", "RoundId", "PlayerId", "CoachId", "Position" },
+                columns: new[] { "EditionId", "AwardDefinitionId", "MatchId", "RoundId", "SourcePlayerId", "CoachId", "Position" },
                 unique: true,
                 filter: "[Status] <> 2");
 
@@ -928,10 +972,10 @@ namespace Viw.Infrastructure.Persistence.Migrations
                 columns: new[] { "EditionId", "RoundId" });
 
             migrationBuilder.CreateIndex(
-                name: "IX_AwardGrant_PlayerId",
+                name: "IX_AwardGrant_EditionId_SourcePlayerId",
                 schema: "viw",
                 table: "AwardGrant",
-                column: "PlayerId");
+                columns: new[] { "EditionId", "SourcePlayerId" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_ChampionshipEdition_CompetitionId",
@@ -945,6 +989,18 @@ namespace Viw.Infrastructure.Persistence.Migrations
                 table: "ChampionshipEdition",
                 column: "Slug",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ChampionshipEdition_SourceCoverAssetId",
+                schema: "viw",
+                table: "ChampionshipEdition",
+                column: "SourceCoverAssetId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ChampionshipEdition_SourceImageAssetId",
+                schema: "viw",
+                table: "ChampionshipEdition",
+                column: "SourceImageAssetId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Coach_OfficialImageId",
@@ -997,6 +1053,14 @@ namespace Viw.Infrastructure.Persistence.Migrations
                 table: "CompetitionPhase",
                 columns: new[] { "EditionId", "ExternalId" },
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_CompetitionRound_EditionId_PhaseId_ExternalId",
+                schema: "viw",
+                table: "CompetitionRound",
+                columns: new[] { "EditionId", "PhaseId", "ExternalId" },
+                unique: true,
+                filter: "[ExternalId] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_CompetitionRound_EditionId_PhaseId_Number",
@@ -1128,10 +1192,18 @@ namespace Viw.Infrastructure.Persistence.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_PlayerIdentityLink_PlayerId",
+                name: "IX_PlayerIdentityLink_EditionId_SourcePlayerId",
                 schema: "viw",
                 table: "PlayerIdentityLink",
-                column: "PlayerId");
+                columns: new[] { "EditionId", "SourcePlayerId" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PlayerIdentityLink_PlayerId_EditionId",
+                schema: "viw",
+                table: "PlayerIdentityLink",
+                columns: new[] { "PlayerId", "EditionId" },
+                unique: true,
+                filter: "[UnlinkedAt] IS NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_PlayerIdentityLink_SourcePlayerId",
@@ -1200,6 +1272,12 @@ namespace Viw.Infrastructure.Persistence.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_SourcePlayer_SourceImageAssetId",
+                schema: "viw",
+                table: "SourcePlayer",
+                column: "SourceImageAssetId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_SourceSnapshot_EditionId_ImportRunId",
                 schema: "viw",
                 table: "SourceSnapshot",
@@ -1224,6 +1302,18 @@ namespace Viw.Infrastructure.Persistence.Migrations
                 schema: "viw",
                 table: "TeamEntry",
                 column: "OfficialImageId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_TeamEntry_SourceImageAssetId",
+                schema: "viw",
+                table: "TeamEntry",
+                column: "SourceImageAssetId");
+        migrationBuilder.Sql("IF NOT EXISTS (SELECT 1 FROM [viw].[AwardDefinition] WHERE [Code]=N'official-top-scorer') INSERT INTO [viw].[AwardDefinition] ([Id],[CreatedAt],[Code],[Name],[Scope],[RecipientKind]) VALUES ('79000000-0000-0000-0000-000000000001',SYSUTCDATETIME(),N'official-top-scorer',N'Artilheiro do campeonato',0,0);");
+        migrationBuilder.Sql("IF NOT EXISTS (SELECT 1 FROM [viw].[AwardDefinition] WHERE [Code]=N'official-ballon-dor') INSERT INTO [viw].[AwardDefinition] ([Id],[CreatedAt],[Code],[Name],[Scope],[RecipientKind]) VALUES ('79000000-0000-0000-0000-000000000002',SYSUTCDATETIME(),N'official-ballon-dor',N'Ballon d’Or do campeonato',0,0);");
+        migrationBuilder.Sql("IF NOT EXISTS (SELECT 1 FROM [viw].[AwardDefinition] WHERE [Code]=N'official-match-mvp') INSERT INTO [viw].[AwardDefinition] ([Id],[CreatedAt],[Code],[Name],[Scope],[RecipientKind]) VALUES ('79000000-0000-0000-0000-000000000003',SYSUTCDATETIME(),N'official-match-mvp',N'Craque da partida',2,0);");
+        migrationBuilder.Sql("IF NOT EXISTS (SELECT 1 FROM [viw].[AwardDefinition] WHERE [Code]=N'selection-championship') INSERT INTO [viw].[AwardDefinition] ([Id],[CreatedAt],[Code],[Name],[Scope],[RecipientKind]) VALUES ('79000000-0000-0000-0000-000000000004',SYSUTCDATETIME(),N'selection-championship',N'Seleção do campeonato',0,0);");
+        migrationBuilder.Sql("IF NOT EXISTS (SELECT 1 FROM [viw].[AwardDefinition] WHERE [Code]=N'selection-round') INSERT INTO [viw].[AwardDefinition] ([Id],[CreatedAt],[Code],[Name],[Scope],[RecipientKind]) VALUES ('79000000-0000-0000-0000-000000000005',SYSUTCDATETIME(),N'selection-round',N'Seleção da rodada',1,0);");
+        migrationBuilder.Sql("IF NOT EXISTS (SELECT 1 FROM [viw].[AwardDefinition] WHERE [Code]=N'official-best-coach') INSERT INTO [viw].[AwardDefinition] ([Id],[CreatedAt],[Code],[Name],[Scope],[RecipientKind]) VALUES ('79000000-0000-0000-0000-000000000006',SYSUTCDATETIME(),N'official-best-coach',N'Melhor técnico do campeonato',0,1);");
         }
 
         /// <inheritdoc />
@@ -1318,15 +1408,15 @@ namespace Viw.Infrastructure.Persistence.Migrations
                 schema: "viw");
 
             migrationBuilder.DropTable(
-                name: "MediaAsset",
-                schema: "viw");
-
-            migrationBuilder.DropTable(
                 name: "ChampionshipEdition",
                 schema: "viw");
 
             migrationBuilder.DropTable(
                 name: "Competition",
+                schema: "viw");
+
+            migrationBuilder.DropTable(
+                name: "MediaAsset",
                 schema: "viw");
         }
     }

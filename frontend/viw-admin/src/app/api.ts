@@ -3,10 +3,10 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 export interface Page<T> {items:T[];page:number;totalCount:number;}
 export interface Person {id:string;name:string;slug:string;imageId:string|null;version:string;championships?:string[];}
-export interface Source {id:string;editionId:string;name:string;playerId:string|null;playerName:string|null;linkId:string|null;}
+export interface Source {id:string;editionId:string;name:string;playerId:string|null;playerName:string|null;linkId:string|null;position:string|null;version:string;}
 export interface Definition {id:string;code:string;name:string;scope:string;recipientKind:string;}
 export interface Edition {id:string;slug:string;name:string;year:number;semester:number;}
-export interface Award {id:string;editionId:string;definitionId:string;matchId:string|null;roundId:string|null;playerId:string|null;coachId:string|null;position:string|null;status:string;version:string;recipientName:string|null;}
+export interface Award {id:string;editionId:string;definitionId:string;matchId:string|null;roundId:string|null;sourcePlayerId:string|null;coachId:string|null;position:string|null;status:string;version:string;recipientName:string|null;}
 export interface Assignment {id:string;editionId:string;teamId:string;coachId:string;roundId:string|null;startsAt:string;endsAt:string|null;version:string;coachName:string|null;}
 export interface Session {id:string;email:string;roles:string[];}
 export interface Audit {id:string;entityType:string;entityId:string;actor:string;reason:string;beforeJson:string|null;afterJson:string|null;occurredAt:string;}

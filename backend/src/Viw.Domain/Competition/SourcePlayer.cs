@@ -14,6 +14,8 @@ public sealed class SourcePlayer : Entity
     public string? Nickname { get; set; }
     public string? ShirtNumber { get; set; }
     public string? Position { get; set; }
+    /// <summary>Posição revisada no Admin nesta copa; nulo representa jogador de linha.</summary>
+    public string? AssignedPosition { get; set; }
     public string? SourceImageUrl { get; set; }
     public string? AggregateStatisticsJson { get; set; }
     public Guid? SourceImageAssetId { get; set; }

@@ -46,13 +46,13 @@ internal sealed class ChampionshipScenario
 
     public PlayerIdentityLink CreateIdentityLink(Guid? playerId = null) => new()
     {
-        SourcePlayerId = SourcePlayer.Id, PlayerId = playerId ?? Player.Id,
+        EditionId = Edition.Id, SourcePlayerId = SourcePlayer.Id, PlayerId = playerId ?? Player.Id,
         LinkedAt = DateTimeOffset.UtcNow, LinkedBy = "test", Reason = "Conferido"
     };
 
     public AwardGrant CreateTopScorerAward(Guid? playerId = null) => new()
     {
-        EditionId = Edition.Id, AwardDefinitionId = TopScorer.Id, PlayerId = playerId ?? Player.Id,
+        EditionId = Edition.Id, AwardDefinitionId = TopScorer.Id, SourcePlayerId = playerId ?? SourcePlayer.Id,
         Status = AwardStatus.Confirmed, ConfirmedAt = DateTimeOffset.UtcNow,
         DecidedBy = "test", Reason = "Premiação oficial"
     };

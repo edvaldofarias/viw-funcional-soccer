@@ -73,10 +73,11 @@ public sealed class ImportCoordinatorTests
         var edition = await database.Context.ChampionshipEditionRecords.SingleAsync(x => x.Slug == "fixture-import");
         var original = await database.Context.SourcePlayerRecords.SingleAsync(x =>
             x.EditionId == edition.Id && x.Provider == ChampionshipCatalog.Provider && x.ExternalId == "player-a");
-        var link = await database.Context.PlayerIdentityLinkRecords.SingleAsync(x => x.SourcePlayerId == original.Id);
-        var canonical = await database.Context.PlayerRecords.SingleAsync(x => x.Id == link.PlayerId);
-        canonical.DisplayName = "Nome oficial definido no Admin";
-        await database.Context.SaveChangesAsync();
+        (await database.Context.PlayerIdentityLinkRecords.AnyAsync(x=>x.SourcePlayerId==original.Id)).ShouldBeFalse();
+        var service=new Viw.Infrastructure.Admin.AdminService(database.Context);
+        var canonical=await service.SaveIdentityAsync(null,new Viw.Contracts.Admin.IdentityCommand {Name="Nome oficial definido no Admin",SourceIds=[original.Id]},"editor",default);
+        var row=await database.Context.SourcePlayerRecords.SingleAsync(x=>x.Id==original.Id);
+        await service.SetPositionAsync(row.Id,new Viw.Contracts.Admin.PositionCommand {Position="Goleiro",Version=Convert.ToBase64String(row.RowVersion)},"editor",default);
         source.Goals = 2;
 
         // Act
@@ -87,6 +88,7 @@ public sealed class ImportCoordinatorTests
         // Assert
         result.Failed.ShouldBe(0);
         preserved.DisplayName.ShouldBe("Nome oficial definido no Admin");
+        (await database.Context.SourcePlayerRecords.SingleAsync(x=>x.Id==original.Id)).AssignedPosition.ShouldBe("Goleiro");
         original.Id.ShouldNotBe(database.Data.SourcePlayer.Id);
         (await database.Context.SourcePlayerRecords.CountAsync(x => x.ExternalId == "player-a")).ShouldBe(2);
         var unrelated = await database.Context.SourcePlayerRecords.AsNoTracking()

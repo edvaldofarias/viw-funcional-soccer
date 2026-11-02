@@ -44,3 +44,7 @@ O mapper `copafacil-v4` reprocessa checkpoints anteriores. Por convenção defin
 `PhaseNames` permite associar IDs externos a nomes confirmados e à sua ordem. O catálogo contém o mapeamento conhecido da La Liga; fases históricas sem metadados mantêm seus nomes existentes.
 
 Os campos `dt.qt_p1` e `dt.qt_p2` são persistidos como placares de pênaltis opcionais, sem substituir `qt_g1`/`qt_g2`. O mapper v4 reimporta as partidas já processadas após aplicar a migração `AddMatchPenaltyScores`.
+
+## Atualização de identidade — 02/11/2026
+
+O Worker importa SourcePlayer sem criar Player. O Admin confirma identidades na Wiki e posições por copa; consulte [guia do Admin](../development/admin.md). As migrations de desenvolvimento foram consolidadas em InitialCompetition e InitialAdmin. Não aplicar essa baseline sobre banco antigo: esta alteração pressupõe recriação explícita do banco de desenvolvimento. Depois, aplicar ambas as migrations, criar o administrador e executar o Worker. A Wiki começa vazia até a confirmação das pessoas; os jogadores das copas aparecem normalmente.

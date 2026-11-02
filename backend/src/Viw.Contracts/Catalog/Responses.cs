@@ -85,7 +85,8 @@ public sealed record PlayerTotalsResponse(long Goals, long YellowCards, long Red
 /// <summary>Identidade canônica e totais registrados da carreira.</summary>
 /// <param name="Player">Identificação oficial do jogador.</param>
 /// <param name="Statistics">Totais das edições vinculadas; sujeitos à disponibilidade das súmulas.</param>
-public sealed record PlayerDetailResponse(PlayerResponse Player, PlayerTotalsResponse Statistics);
+/// <param name="Aliases">Nomes e apelidos originais dos cadastros associados.</param>
+public sealed record PlayerDetailResponse(PlayerResponse Player, PlayerTotalsResponse Statistics, IReadOnlyList<string>? Aliases = null);
 
 /// <summary>Totais de um jogador em uma edição específica.</summary>
 /// <param name="Player">Identidade canônica usada para consolidar os cadastros da fonte.</param>
@@ -166,12 +167,12 @@ public sealed record TeamStatisticsResponse(TeamResponse Team, int Played, int W
 /// <param name="Scope">Abrangência da categoria: Championship, Round ou Match.</param>
 /// <param name="MatchId">Partida relacionada, quando o prêmio tiver esse contexto.</param>
 /// <param name="RoundId">Rodada relacionada, quando o prêmio tiver esse contexto.</param>
-/// <param name="PlayerId">GUID do jogador premiado, ou null para premiação de técnico.</param>
+/// <param name="SourcePlayerId">GUID do cadastro da copa premiado, ou null para premiação de técnico.</param>
 /// <param name="PlayerName">Nome oficial do jogador premiado, quando aplicável.</param>
 /// <param name="CoachId">GUID do técnico premiado, ou null para premiação de jogador.</param>
 /// <param name="CoachName">Nome oficial do técnico premiado, quando aplicável.</param>
 /// <param name="Position">Posição relacionada à seleção/premiação, quando cadastrada.</param>
 /// <param name="ConfirmedAt">Instante de confirmação oficial da concessão.</param>
 public sealed record AwardResponse(Guid Id, string Code, string Name, string Scope, Guid? MatchId,
-    Guid? RoundId, Guid? PlayerId, string? PlayerName, Guid? CoachId, string? CoachName,
+    Guid? RoundId, Guid? SourcePlayerId, string? PlayerName, Guid? CoachId, string? CoachName,
     string? Position, DateTimeOffset? ConfirmedAt);

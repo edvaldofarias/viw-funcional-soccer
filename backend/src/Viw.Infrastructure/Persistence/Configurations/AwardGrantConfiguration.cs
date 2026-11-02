@@ -28,17 +28,18 @@ public sealed class AwardGrantConfiguration : IEntityTypeConfiguration<AwardGran
             .WithMany()
             .HasForeignKey(x => x.AwardDefinitionId)
             .OnDelete(DeleteBehavior.Restrict);
-        builder.HasOne<Player>()
+        builder.HasOne<SourcePlayer>()
             .WithMany()
-            .HasForeignKey(x => x.PlayerId)
+            .HasForeignKey(x => new { x.EditionId, x.SourcePlayerId })
+            .HasPrincipalKey(x => new { x.EditionId, x.Id })
             .OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<Coach>()
             .WithMany()
             .HasForeignKey(x => x.CoachId)
             .OnDelete(DeleteBehavior.Restrict);
-        builder.HasIndex(x => new { x.EditionId, x.AwardDefinitionId, x.MatchId, x.RoundId, x.PlayerId, x.CoachId, x.Position }).IsUnique().HasFilter("[Status] <> 2");
+        builder.HasIndex(x => new { x.EditionId, x.AwardDefinitionId, x.MatchId, x.RoundId, x.SourcePlayerId, x.CoachId, x.Position }).IsUnique().HasFilter("[Status] <> 2");
         builder.ToTable(table => table.HasCheckConstraint(
-            "CK_AwardGrant_Recipient", "([PlayerId] IS NOT NULL AND [CoachId] IS NULL) OR ([CoachId] IS NOT NULL AND [PlayerId] IS NULL)"));
+            "CK_AwardGrant_Recipient", "([SourcePlayerId] IS NOT NULL AND [CoachId] IS NULL) OR ([CoachId] IS NOT NULL AND [SourcePlayerId] IS NULL)"));
         builder.ToTable(table => table.HasCheckConstraint(
             "CK_AwardGrant_Context", "[MatchId] IS NULL OR [RoundId] IS NULL"));
         builder.ToTable(table => table.HasCheckConstraint(

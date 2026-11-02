@@ -10,7 +10,7 @@ public sealed partial class CompetitionImportWriter(ViwDbContext db)
 {
     private static int? PenaltyScore(long? value) => value is >= 0 and <= int.MaxValue ? (int)value.Value : null;
 
-    public const string MapperVersion = "copafacil-v5";
+    public const string MapperVersion = "copafacil-v6";
 
     public async Task WriteCoreAsync(Guid editionId, CopaFacilCoreDto core, CancellationToken ct, Viw.Application.Imports.EditionDefinition? definition = null)
     {
@@ -38,9 +38,7 @@ public sealed partial class CompetitionImportWriter(ViwDbContext db)
             {
                 player = new SourcePlayer { EditionId = editionId, Provider = ChampionshipCatalog.Provider, ExternalId = item.Key };
                 players.Add(item.Key, player); db.Add(player);
-                var identity = new Player { DisplayName = CopaFacilValidation.RequiredText(item.Value.Name), Slug = "jogador-" + player.Id.ToString("N") };
-                db.Add(identity);
-                db.Add(new PlayerIdentityLink { SourcePlayerId = player.Id, PlayerId = identity.Id, LinkedAt = DateTimeOffset.UtcNow, LinkedBy = "worker", Reason = "Cadastro inicial; sem união automática por nome." });
+
             }
             player.OriginalName = CopaFacilValidation.RequiredText(item.Value.Name);
             player.Nickname = CopaFacilValidation.BoundedText(item.Value.Nickname, 100);

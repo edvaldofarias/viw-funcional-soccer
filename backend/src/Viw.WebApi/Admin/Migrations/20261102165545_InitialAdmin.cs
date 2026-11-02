@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Viw.WebApi.Admin.Migrations
 {
     /// <inheritdoc />
-    public partial class AdminIdentityInitial : Migration
+    public partial class InitialAdmin : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

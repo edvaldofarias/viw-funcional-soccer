@@ -15,7 +15,7 @@ describe('Destinatários da premiação',()=>{
  it('busca apenas jogadores da edição da premiação',async()=>{
   const {workspace,api}=setup();workspace.section.set('awards');workspace.editionId='copa-mundo';workspace.targetSearch='Pimenta';api.get.mockResolvedValue({items:[]});
   await workspace.findTargets();
-  expect(api.get).toHaveBeenCalledWith('admin/players?search=Pimenta&editionId=copa-mundo');
+  expect(api.get).toHaveBeenCalledWith('admin/sources?editionId=copa-mundo&search=Pimenta');
  });
  it('mantém busca global para unir identidades de campeonatos diferentes',async()=>{
   const {workspace,api}=setup();workspace.section.set('identities');workspace.editionId='copa-mundo';workspace.targetSearch='Edvaldo';api.get.mockResolvedValue({items:[]});

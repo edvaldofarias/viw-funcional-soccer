@@ -44,15 +44,17 @@ O comando encerra após criar a conta e recusa executar se qualquer conta já ex
 
 **Jogadores:** pesquisa, nome e slug oficiais. Os nomes originais ficam na fonte. Slugs precisam ser únicos. O contrato também aceita foto oficial como referência a asset público já cadastrado; a tela preserva a imagem atual. Upload de novas fotos e entrega pública do storage continuam na etapa de mídia.
 
-**Unir jogadores:** comparar um cadastro original de uma copa com a identidade canônica de destino. Confirmar nome atual, destino e motivo. O vínculo anterior é encerrado; um novo é criado em transação serializável, sem apagar fatos, fotos ou registros da fonte. Reversão usa o mesmo fluxo para reatribuir à identidade anterior. Não há união automática por semelhança, exclusão de jogador ou fusão em lote. Prêmios e decisões manuais não são transferidos automaticamente: revisar seus destinatários após uma reatribuição.
+**Unir jogadores:** escolha um cadastro, filtrando por copa. O assistente percorre as demais copas: escolha um jogador ou nenhum em cada etapa. Nomes diferentes podem ser pesquisados. Revise os cadastros e escolha o nome final; não é necessário motivo. Um único cadastro também pode criar a pessoa. Para editar, abra qualquer cadastro já vinculado; adicione ou remova cadastros e salve. Excluir a pessoa libera os cadastros e remove sua Wiki, preservando fotos, estatísticas e prêmios das copas. A auditoria registra automaticamente autor, instante e estado anterior.
 
-**Prêmios:** artilheiro oficial, Ballon d’Or, craque da partida, melhor técnico e seleções por posição da rodada/campeonato. Cada concessão pode ser rascunho, confirmada ou revogada. Apenas confirmadas aparecem na API pública. A migração adiciona categorias sem conceder nenhum prêmio e preserva categorias já cadastradas. É permitido mais de um artilheiro quando a decisão oficial assim determinar. Partidas e rodadas precisam ser da edição; jogador precisa ter vínculo ativo nessa copa, técnico precisa ter designação. Seleções exigem posição.
+**Posições e goleiros:** filtre por copa e equipe, escolha Goleiro, Zagueiro, Meio-campo, Ala ou Atacante e salve. Sem posição definida, o cadastro é tratado como Jogador de linha. O filtro Só goleiros mostra os goleiros confirmados. A posição vale apenas para a copa selecionada e não é sobrescrita pelo Worker.
+
+**Prêmios:** artilheiro oficial, Ballon d’Or, craque da partida, melhor técnico e seleções por posição da rodada/campeonato. Cada concessão pode ser rascunho, confirmada ou revogada. Apenas confirmadas aparecem na API pública. A migração adiciona categorias sem conceder nenhum prêmio e preserva categorias já cadastradas. É permitido mais de um artilheiro quando a decisão oficial assim determinar. Partidas e rodadas precisam ser da edição; jogador precisa ser um SourcePlayer dessa copa, técnico precisa ter designação. Seleções exigem posição.
 
 **Técnicos:** cadastro oficial e designação à equipe por período, opcionalmente por rodada. Corrigir ou encerrar com justificativa. O formulário usa horário do dispositivo e envia offset UTC; isso não altera o fuso do campeonato.
 
 **Auditoria:** responsável autenticado, data, motivo e antes/depois. Alteração esportiva e auditoria são gravadas na mesma unidade transacional. Registros de gestão de contas ficam nos eventos de segurança, sem senhas, tokens ou hashes. O histórico é somente leitura no painel.
 
-Concorrência usa RowVersion em cadastros/prêmios/designações e o vínculo ativo observado na identidade. Alterações desatualizadas retornam 409 em vez de sobrescrever outra decisão. As alterações manuais não modificam snapshots ou o método estatístico.
+Concorrência usa RowVersion em cadastros/prêmios/designações e identidades. Alterações desatualizadas retornam 409 em vez de sobrescrever outra decisão. As alterações manuais não modificam snapshots ou o método estatístico.
 
 ## Publicação e Docker
 
@@ -80,10 +82,8 @@ Antes de produção: aplicar migrations, configurar HTTPS, chaves persistentes e
 
 ## Uma pessoa em vários campeonatos
 
-Em **Unir jogadores**, escolha um cadastro da origem, use **Revisar vínculo**, selecione uma identidade de destino e informe o motivo. Repita para os demais cadastros usando sempre o mesmo destino. O cadastro que já pertence ao destino não precisa ser reatribuído. As edições e seus números permanecem separados; a Wiki consulta a identidade comum e soma a carreira. Os vínculos anteriores e o motivo ficam auditados, permitindo desfazer a atribuição. Identidades sem vínculo ativo deixam de aparecer na busca pública, mas permanecem no Admin e no histórico.
+O Worker cria somente SourcePlayer. Copas, inscrições, estatísticas e prêmios consultam esse cadastro mesmo sem Wiki. Player nasce apenas na confirmação do assistente. A Wiki reúne os cadastros vinculados, mostra seus nomes originais e permite busca por qualquer nome ou apelido importado.
 
-Na criação de prêmios para jogadores, a busca envia `editionId` para `GET /api/admin/players`: somente identidades com vínculo ativo a um cadastro da edição selecionada são elegíveis. Trocar a edição limpa a escolha e descarta respostas antigas. A busca em Unir jogadores permanece global. O salvamento também valida o vínculo no servidor.
+Cada SourcePlayer pertence a no máximo um Player ativo. Cada Player aceita no máximo um SourcePlayer por edição. Dois homônimos na mesma copa são pessoas diferentes. O banco reforça essas regras com índices únicos filtrados e chave estrangeira composta por edição e cadastro.
 
-## Jogador principal e cadastros por copa
-
-`Player` é a pessoa principal. `SourcePlayer` preserva cada cadastro recebido de uma copa. `PlayerIdentityLink` associa esses cadastros à pessoa; vínculos encerrados permanecem auditados. A tela mostra os campeonatos já vinculados a cada destino para distinguir homônimos. Escolha um principal, depois reatribua cada cadastro das outras copas sempre ao mesmo destino. Não reatribua o cadastro que já pertence ao principal. `PlayerMatchStatistics` e as fotos originais continuam ligados ao cadastro/edição; a Wiki consolida pela identidade ativa.
+A busca de destinatários de prêmios usa GET /api/admin/sources?editionId=...; não exige Player. Identidades usam POST/PUT/DELETE /api/admin/identities, com versão para alterações e exclusões. Posições usam PUT /api/admin/sources/{id}/position. Os contratos estão documentados no OpenAPI.

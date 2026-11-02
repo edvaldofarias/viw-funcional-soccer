@@ -73,12 +73,14 @@ public sealed partial class ViwQueries(ViwDbContext db) : IViwQueries
         if (edition is null || !await db.TeamEntryRecords.AnyAsync(x => x.Id == teamId && x.EditionId == edition.Id, ct)) return null;
         var query = from registration in db.PlayerRegistrationRecords.AsNoTracking()
             join source in db.SourcePlayerRecords.AsNoTracking() on registration.SourcePlayerId equals source.Id
-            join link in db.PlayerIdentityLinkRecords.AsNoTracking().Where(x => x.UnlinkedAt == null) on source.Id equals link.SourcePlayerId
-            join player in db.PlayerRecords.AsNoTracking() on link.PlayerId equals player.Id
+            join link in db.PlayerIdentityLinkRecords.AsNoTracking().Where(x => x.UnlinkedAt == null) on source.Id equals link.SourcePlayerId into links
+            from link in links.DefaultIfEmpty()
+            join player in db.PlayerRecords.AsNoTracking() on link.PlayerId equals player.Id into people
+            from player in people.DefaultIfEmpty()
             where registration.EditionId == edition.Id && source.EditionId == edition.Id && registration.TeamEntryId == teamId
-            orderby player.DisplayName, registration.ValidFrom descending, registration.Id
-            select new RosterPlayerResponse(new PlayerResponse(player.Id, player.Slug, player.DisplayName, player.OfficialImageId ?? source.SourceImageAssetId),
-                source.OriginalName, source.ShirtNumber, source.Position, registration.ValidFrom, registration.ValidTo);
+            orderby source.OriginalName, registration.ValidFrom descending, registration.Id
+            select new RosterPlayerResponse(new PlayerResponse(source.Id, player==null?"":player.Slug, source.OriginalName, source.SourceImageAssetId),
+                source.OriginalName, source.ShirtNumber, source.AssignedPosition ?? "Jogador de linha", registration.ValidFrom, registration.ValidTo);
         return await PageAsync(query, request, ct);
     }
 
@@ -126,7 +128,7 @@ public sealed partial class ViwQueries(ViwDbContext db) : IViwQueries
             from player in players.DefaultIfEmpty()
             where fact.MatchId == matchId && fact.EditionId == edition.Id
             orderby source.OriginalName, fact.Id
-            select new MatchPlayerResponse(player == null ? null : player.Id, player == null ? source.OriginalName : player.DisplayName,
+            select new MatchPlayerResponse(player == null ? null : player.Id, source.OriginalName,
                 fact.TeamEntryId, fact.Goals, fact.YellowCards, fact.RedCards, fact.Appearances, fact.IsComplete && fact.Revision == db.MatchRecords.Where(m => m.Id == fact.MatchId).Select(m => m.Revision).First());
         return await PageAsync(query, request, ct);
     }

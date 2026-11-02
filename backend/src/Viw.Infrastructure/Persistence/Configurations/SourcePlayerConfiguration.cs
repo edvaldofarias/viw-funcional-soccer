@@ -17,6 +17,8 @@ public sealed class SourcePlayerConfiguration : IEntityTypeConfiguration<SourceP
         builder.HasAlternateKey(x => new { x.EditionId, x.Id });
         builder.HasIndex(x => new { x.EditionId, x.Provider, x.ExternalId }).IsUnique();
 
+        builder.Property(x => x.AssignedPosition).HasMaxLength(30);
+        builder.ToTable(t => t.HasCheckConstraint("CK_SourcePlayer_Position", "[AssignedPosition] IS NULL OR [AssignedPosition] IN (N'Goleiro',N'Zagueiro',N'Meio-campo',N'Ala',N'Atacante')"));
         builder.Property(entity => entity.Provider).HasMaxLength(32)
             .UseCollation("Latin1_General_100_BIN2");
         builder.Property(entity => entity.ExternalId).HasMaxLength(128)

@@ -73,28 +73,22 @@ public sealed partial class AdminService(ViwDbContext db) : IAdminService
         if(await db.CoachRecords.AnyAsync(x=>x.Slug==c.Slug,ct)) throw new AdminRuleException("Slug já utilizado.",409);
         var row=new Coach { DisplayName=c.Name.Trim(),Slug=c.Slug };db.CoachRecords.Add(row);Audit(row,null,actor,c.Reason,Person(row));await db.SaveChangesAsync(ct);return Person(row);
     }
-    public async Task<AdminPage<SourceRow>> SourcesAsync(Guid? editionId,string? search,int page,CancellationToken ct)
+    public async Task<AdminPage<SourceRow>> SourcesAsync(Guid? editionId,string? search,int page,CancellationToken ct,Guid? teamId=null,bool goalkeepers=false)
     {
-        var query=from source in db.SourcePlayerRecords.AsNoTracking()
-            where (editionId==null || source.EditionId==editionId) && (search==null || source.OriginalName.Contains(search) || (source.Nickname!=null && source.Nickname.Contains(search)))
-            join link in db.PlayerIdentityLinkRecords.Where(x=>x.UnlinkedAt==null) on source.Id equals link.SourcePlayerId into links
-            from link in links.DefaultIfEmpty()
-            join player in db.PlayerRecords on link.PlayerId equals player.Id into people
-            from player in people.DefaultIfEmpty()
-            select new {source.Id,source.EditionId,Name=source.OriginalName,PlayerId=player==null?(Guid?)null:player.Id,PlayerName=player==null?null:player.DisplayName,LinkId=link==null?(Guid?)null:link.Id};
-        return new(await query.OrderBy(x=>x.Name).ThenBy(x=>x.Id).Skip((page-1)*Size).Take(Size).Select(x=>new SourceRow(x.Id,x.EditionId,x.Name,x.PlayerId,x.PlayerName,x.LinkId)).ToArrayAsync(ct),page,await query.CountAsync(ct));
+        var q=db.SourcePlayerRecords.AsNoTracking().Where(x=>(editionId==null || x.EditionId==editionId) &&
+            (search==null || x.OriginalName.Contains(search) || (x.Nickname!=null && x.Nickname.Contains(search))) &&
+            (!goalkeepers || x.AssignedPosition=="Goleiro"));
+        if(teamId!=null) q=q.Where(x=>db.PlayerRegistrationRecords.Any(y=>y.SourcePlayerId==x.Id && y.TeamEntryId==teamId));
+        var total=await q.CountAsync(ct);
+        var rows=await q.OrderBy(x=>x.OriginalName).ThenBy(x=>x.Id).Skip((page-1)*Size).Take(Size).ToArrayAsync(ct);
+        return new(await SourceRows(rows,ct),page,total);
     }
-    public async Task LinkAsync(Guid sourceId, LinkCommand c,string actor,CancellationToken ct)
+    private async Task<SourceRow[]> SourceRows(SourcePlayer[] rows,CancellationToken ct)
     {
-        await using var tx=await db.Database.BeginTransactionAsync(IsolationLevel.Serializable,ct);
-        if(!await db.SourcePlayerRecords.AnyAsync(x=>x.Id==sourceId,ct) || !await db.PlayerRecords.AnyAsync(x=>x.Id==c.PlayerId,ct)) throw new AdminRuleException("Cadastro ou identidade não encontrado.",404);
-        var old=await db.PlayerIdentityLinkRecords.SingleOrDefaultAsync(x=>x.SourcePlayerId==sourceId && x.UnlinkedAt==null,ct);
-        if(old?.Id!=c.ExpectedLinkId) throw new AdminRuleException("O vínculo mudou. Recarregue antes de confirmar.",409);
-        if(old?.PlayerId==c.PlayerId) throw new AdminRuleException("O cadastro já pertence a este jogador.");
-        var now=DateTimeOffset.UtcNow;
-        if(old!=null) { var before=new { old.PlayerId,old.SourcePlayerId,old.LinkedAt };old.UnlinkedAt=now;old.UnlinkedBy=actor;Audit(old,before,actor,c.Reason);await db.SaveChangesAsync(ct); }
-        var link=new PlayerIdentityLink {SourcePlayerId=sourceId,PlayerId=c.PlayerId,LinkedAt=now,LinkedBy=actor,Reason=c.Reason};
-        db.PlayerIdentityLinkRecords.Add(link);Audit(link,null,actor,c.Reason);await db.SaveChangesAsync(ct);await tx.CommitAsync(ct);
+        var ids=rows.Select(x=>x.Id).ToArray();
+        var links=await (from l in db.PlayerIdentityLinkRecords join p in db.PlayerRecords on l.PlayerId equals p.Id
+            where ids.Contains(l.SourcePlayerId) && l.UnlinkedAt==null select new {l.SourcePlayerId,l.Id,l.PlayerId,p.DisplayName}).ToArrayAsync(ct);
+        return rows.Select(x=>{var l=links.SingleOrDefault(y=>y.SourcePlayerId==x.Id);return new SourceRow(x.Id,x.EditionId,x.OriginalName,l?.PlayerId,l?.DisplayName,l?.Id,x.AssignedPosition,Version(x));}).ToArray();
     }
     public async Task<AdminPage<AuditRow>> AuditAsync(int page,CancellationToken ct)
     {

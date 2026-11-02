@@ -47,3 +47,7 @@ dotnet test Viw.FuncionalSoccer.slnx --configuration Release
 ```
 
 Sem a variável, o teste SQL é explicitamente ignorado. A CI executa esse teste com SQL Server isolado em runner x64. Os demais testes não exigem servidor. Nunca fornecer credenciais de produção.
+
+## Atualização de identidade — 02/11/2026
+
+O Worker importa SourcePlayer sem criar Player. O Admin confirma identidades na Wiki e posições por copa; consulte [guia do Admin](../development/admin.md). As migrations de desenvolvimento foram consolidadas em InitialCompetition e InitialAdmin. Não aplicar essa baseline sobre banco antigo: esta alteração pressupõe recriação explícita do banco de desenvolvimento. Depois, aplicar ambas as migrations, criar o administrador e executar o Worker. A Wiki começa vazia até a confirmação das pessoas; os jogadores das copas aparecem normalmente.

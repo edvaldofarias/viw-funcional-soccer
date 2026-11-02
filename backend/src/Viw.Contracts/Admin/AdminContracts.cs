@@ -6,9 +6,9 @@ public sealed record AdminPage<T>(IReadOnlyList<T> Items, int Page, int TotalCou
 /// <summary>Identificador, nome e versão de um cadastro oficial.</summary>
 public sealed record PersonRow(Guid Id, string Name, string Slug, Guid? ImageId, string Version, IReadOnlyList<string>? Championships = null);
 /// <summary>Cadastro da fonte e identidade atual, sem tokens ou URLs privadas.</summary>
-public sealed record SourceRow(Guid Id, Guid EditionId, string Name, Guid? PlayerId, string? PlayerName, Guid? LinkId);
+public sealed record SourceRow(Guid Id, Guid EditionId, string Name, Guid? PlayerId, string? PlayerName, Guid? LinkId, string? Position = null, string Version = "");
 /// <summary>Prêmio com situação e versão para edição concorrente.</summary>
-public sealed record AwardRow(Guid Id, Guid EditionId, Guid DefinitionId, Guid? MatchId, Guid? RoundId, Guid? PlayerId, Guid? CoachId, string? Position, string Status, string Version, string? RecipientName = null);
+public sealed record AwardRow(Guid Id, Guid EditionId, Guid DefinitionId, Guid? MatchId, Guid? RoundId, Guid? SourcePlayerId, Guid? CoachId, string? Position, string Status, string Version, string? RecipientName = null);
 /// <summary>Categoria oficial de premiação.</summary>
 public sealed record DefinitionRow(Guid Id, string Code, string Name, string Scope, string RecipientKind);
 /// <summary>Designação de técnico e versão de edição.</summary>
@@ -49,7 +49,7 @@ public sealed class AwardCommand
     /// <summary>Rodada da mesma edição; opcional para designação, obrigatória para prêmio de rodada.</summary>
     public Guid? RoundId { get; set; }
     /// <summary>Identidade canônica destinatária do vínculo ou prêmio.</summary>
-    public Guid? PlayerId { get; set; }
+    public Guid? SourcePlayerId { get; set; }
     /// <summary>Técnico destinatário ou designado.</summary>
     public Guid? CoachId { get; set; }
     /// <summary>Posição na seleção; obrigatória nas categorias de seleção.</summary>
@@ -93,3 +93,24 @@ public sealed class CoachCommand
 }
 /// <summary>Registro de alteração com antes/depois e responsável autenticado.</summary>
 public sealed record AuditRow(Guid Id, string EntityType, Guid EntityId, string Actor, string Reason, string? BeforeJson, string? AfterJson, DateTimeOffset OccurredAt);
+
+/// <summary>Cria ou substitui os vínculos de uma identidade. Um cadastro por copa, sem reutilizar cadastro de outra identidade.</summary>
+public sealed class IdentityCommand
+{
+    /// <summary>Nome final da pessoa, exibido na Wiki; os nomes originais continuam pesquisáveis.</summary>
+    [Required, StringLength(100, MinimumLength=2)] public string Name { get; set; } = "";
+    /// <summary>Cadastros originais selecionados, incluindo pelo menos um; máximo 1000.</summary>
+    [Required, MinLength(1), MaxLength(1000)] public Guid[] SourceIds { get; set; } = [];
+    /// <summary>Versão atual obrigatória ao editar, para evitar sobrescrever outra decisão.</summary>
+    public string? Version { get; set; }
+}
+/// <summary>Identidade confirmada e seus cadastros atuais.</summary>
+public sealed record IdentityRow(PersonRow Player, IReadOnlyList<SourceRow> Sources);
+/// <summary>Define posição manual nesta copa. Nulo significa jogador de linha, nunca goleiro presumido.</summary>
+public sealed class PositionCommand
+{
+    /// <summary>Goleiro, Zagueiro, Meio-campo, Ala, Atacante ou nulo para linha.</summary>
+    [RegularExpression("^(Goleiro|Zagueiro|Meio-campo|Ala|Atacante)$")] public string? Position { get; set; }
+    /// <summary>Versão recebida na lista; uma alteração concorrente retorna 409.</summary>
+    [Required] public string Version { get; set; } = "";
+}

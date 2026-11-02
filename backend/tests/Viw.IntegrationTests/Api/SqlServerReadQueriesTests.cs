@@ -87,6 +87,9 @@ public sealed class SqlServerReadQueriesTests
         home.Wins.ShouldBe(1);
         home.GoalsFor.ShouldBe(2);
         history!.Items.Single().OriginalName.ShouldBe("Nome original");
+        history.Items.Single().Statistics!.Goals.ShouldBe(2);
+        history.Items.Single().Statistics!.UnknownAppearances.ShouldBe(1);
+        history.Items.Single().Results!.Played.ShouldBe(0);
         roster!.Items.Single().Player.Id.ShouldBe(data.Player.Id);
         sheet!.Items.Single().Name.ShouldBe("Nome oficial");
         matches!.Items.Single().Id.ShouldBe(finished.Id);
@@ -175,7 +178,8 @@ public sealed class SqlServerReadQueriesTests
         var missingCheckpoint = await queries.ImportCheckpointsAsync(Guid.NewGuid(), new PageRequest(), default);
 
         // Assert
-        players.TotalCount.ShouldBe(2);
+        // Identidades sem vínculo ativo ficam disponíveis por URL, mas não duplicam a busca pública.
+        players.TotalCount.ShouldBe(0);
         filtered.Items.ShouldBeEmpty();
         team!.Coaches.ShouldBeEmpty();
         matches!.Items.Single().HomeScore.ShouldBeNull();

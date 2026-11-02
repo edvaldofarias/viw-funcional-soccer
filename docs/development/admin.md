@@ -77,3 +77,13 @@ Antes de produção: aplicar migrations, configurar HTTPS, chaves persistentes e
 - Backend: testes HTTP de autorização/CSRF; fluxo real de login, troca de senha e logout com Identity sobre SQLite isolado; testes SQL das migrations, vínculos reversíveis, RowVersion, auditoria e concessões.
 - MVC: `dotnet test frontend/mvc/Viw.Frontend.slnx`.
 - CI executa SQL Server isolado. Localmente testes SQL ficam ignorados se `ConnectionStrings__ViwTestServer` não estiver configurada. Nenhum teste deve usar o banco de produção.
+
+## Uma pessoa em vários campeonatos
+
+Em **Unir jogadores**, escolha um cadastro da origem, use **Revisar vínculo**, selecione uma identidade de destino e informe o motivo. Repita para os demais cadastros usando sempre o mesmo destino. O cadastro que já pertence ao destino não precisa ser reatribuído. As edições e seus números permanecem separados; a Wiki consulta a identidade comum e soma a carreira. Os vínculos anteriores e o motivo ficam auditados, permitindo desfazer a atribuição. Identidades sem vínculo ativo deixam de aparecer na busca pública, mas permanecem no Admin e no histórico.
+
+Na criação de prêmios para jogadores, a busca envia `editionId` para `GET /api/admin/players`: somente identidades com vínculo ativo a um cadastro da edição selecionada são elegíveis. Trocar a edição limpa a escolha e descarta respostas antigas. A busca em Unir jogadores permanece global. O salvamento também valida o vínculo no servidor.
+
+## Jogador principal e cadastros por copa
+
+`Player` é a pessoa principal. `SourcePlayer` preserva cada cadastro recebido de uma copa. `PlayerIdentityLink` associa esses cadastros à pessoa; vínculos encerrados permanecem auditados. A tela mostra os campeonatos já vinculados a cada destino para distinguir homônimos. Escolha um principal, depois reatribua cada cadastro das outras copas sempre ao mesmo destino. Não reatribua o cadastro que já pertence ao principal. `PlayerMatchStatistics` e as fotos originais continuam ligados ao cadastro/edição; a Wiki consolida pela identidade ativa.

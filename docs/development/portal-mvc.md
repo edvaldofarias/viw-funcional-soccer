@@ -74,3 +74,13 @@ O portal usa Bootstrap 5.3.8 com arquivos locais e licença MIT em `wwwroot/lib/
 Edições arquivadas oferecem `?visao=geral`: a classificação considera a fase mais avançada disputada, mantendo empates entre eliminados na mesma fase. Uma final empatada usa o placar de pênaltis quando informado; sem desempate conhecido, mantém a posição compartilhada. Melhor ataque e defesa usam totais de gols nos jogos encerrados, exibindo empates e quantidade de partidas. Artilharia vem das estatísticas individuais. Melhor jogador depende de Ballon d’Or confirmado no Admin; sem atribuição, uma mensagem explícita é exibida.
 
 O Angular Admin usa o mesmo Bootstrap e é servido pela Web API em `http://localhost:5080/admin/`, sem contêiner Angular separado. Após atualizar o código, reconstrua os serviços de aplicação pelo Compose mantendo as variáveis de conexão e os volumes existentes.
+
+## Wiki do jogador
+
+O perfil canônico tem carreira por equipe e edição, tabela de estatísticas individuais e resultados nos jogos com presença conhecida, totais, disciplina, marcas e galeria com fotos originais de cada campeonato. As imagens e nomes históricos são preservados. Pontos 3/1/0 são uma métrica comparativa explicitada na página; não alteram a classificação oficial. A reatribuição no Admin reorganiza a Wiki sem mover fatos entre campeonatos.
+
+## Imagens próprias e alternativa da origem
+
+O portal usa `/imagens/{kind}/{id}`, encaminhando para `/api/media/{kind}/{id}` na API. `kind`: players, teams ou editions; `editionId` escolhe foto histórica e `cover=true` a capa da edição. A API lê primeiro o arquivo identificado por hash no storage Local ou R2. Se faltar ou falhar (tempo limite de 2 segundos), redireciona para a URL original HTTPS cadastrada de um host permitido. Sem ambas, os avatares mantêm as iniciais. A API não recebe URL nem caminho arbitrário do cliente.
+
+No Docker, API e Worker compartilham `worker-media`: o Worker grava em `/data/media` e a API monta o mesmo volume em `/media` somente para leitura e lê `/media/media`, separado das chaves do Admin. A origem Firebase permanece no banco. No R2, configure a mesma seção Media e credenciais nos dois serviços. A galeria usa a foto da edição, não substitui todas as fotos pela foto atual.

@@ -26,25 +26,7 @@ public sealed partial class ViwQueries
             }
             sections.Add(new(new PhaseResponse(phase.Id,phase.Name,phase.SortOrder),matches,rows.OrderBy(x=>x.Position??int.MaxValue).ThenBy(x=>x.Team.Name).ToArray()));
         }
-        var overall=teams.Select(x=>CompetitionCampaign.Calculate(TeamDto(x),all)).ToArray();
-        // Classificação geral por avanço, sem inventar desempates entre eliminados na mesma fase.
-        var progression=overall.Select(x=>new {Row=x,Stage=Array.FindLastIndex(phases,p=>all.Any(m=>m.PhaseId==p.Id&&m.Status=="Finished"&&(m.Home?.Id==x.Team.Id||m.Away?.Id==x.Team.Id))),FinalResult=FinalResult(x.Team.Id)}).OrderByDescending(x=>x.Stage).ThenByDescending(x=>x.FinalResult).ThenBy(x=>x.Row.Team.Name).ToArray();
-        int FinalResult(Guid id) {
-            if(phases.Length<2)return 0;
-            var final=phases.Last();if(!(final.Name.Equals("Final",StringComparison.OrdinalIgnoreCase)||final.Name.Equals("Grande final",StringComparison.OrdinalIgnoreCase)))return 0;
-            var played=all.Where(x=>x.PhaseId==final.Id&&x.Status=="Finished"&&x.HomeScore!=null&&x.AwayScore!=null&&x.Home!=null&&x.Away!=null).ToArray();
-            if(played.Length!=1)return 0;var m=played[0];if(m.Home!.Id!=id&&m.Away!.Id!=id)return 0;
-            var own=m.Home.Id==id?m.HomeScore:m.AwayScore;var other=m.Home.Id==id?m.AwayScore:m.HomeScore;if(own==other && m.HomePenalties is not null && m.AwayPenalties is not null) {
-                own=m.Home.Id==id?m.HomePenalties:m.AwayPenalties;
-                other=m.Home.Id==id?m.AwayPenalties:m.HomePenalties;
-            }
-            return own>other?2:own<other?1:0;
-        }
-        var ranked=new List<StandingRow>();int rank=0;
-        for(var i=0;i<progression.Length;i++) {var entry=progression[i];if(i==0||entry.Stage!=progression[i-1].Stage||entry.FinalResult!=progression[i-1].FinalResult)rank=i+1;
-            ranked.Add(entry.Row with {Position=entry.Stage<0?null:rank});}
-        // Em copa de uma única fase, usar somente a posição oficial, nunca o nome como desempate.
-        if(phases.Length==1)ranked=sections[0].Standings.ToList();
+        var ranked=CompetitionCampaign.Rank(sections,teams.Select(TeamDto).ToArray());
         return new(sections,ranked);
     }
     private sealed record PhaseStatistics(int? Col,Dictionary<string,decimal> Values);
@@ -63,6 +45,44 @@ public sealed partial class ViwQueries
 /// <summary>Campanha de resultados válidos; não atribui regras de pontos.</summary>
 public static class CompetitionCampaign
 {
+    /// <summary>Ordena por avanço na copa, decisão da final e campanha acumulada (3 pontos por vitória e 1 por empate).</summary>
+    public static IReadOnlyList<StandingRow> Rank(IReadOnlyList<PhaseTableResponse> phases,IReadOnlyList<TeamResponse> teams)
+    {
+        if(phases.Count==1)return phases[0].Standings;
+        var ordered=phases.OrderBy(x=>x.Phase.SortOrder).ToArray();
+        var matches=ordered.SelectMany(x=>x.Matches).ToArray();
+        var last=ordered.LastOrDefault();
+        // A fonte histórica pode fornecer apenas nomes genéricos. Uma fase terminal
+        // com uma partida após uma semifinal de duas partidas identifica a final.
+        var final=last!=null && (last.Phase.Name.Trim().Equals("Final",StringComparison.OrdinalIgnoreCase)
+            || last.Phase.Name.Trim().Equals("Grande final",StringComparison.OrdinalIgnoreCase)
+            || (last.Phase.Name.StartsWith("Fase ",StringComparison.OrdinalIgnoreCase)
+                && ordered.Length>=3 && last.Matches.Count==1 && ordered[^2].Matches.Count==2))
+            ? last.Matches.Where(x=>x.Status=="Finished"&&x.Home!=null&&x.Away!=null&&x.HomeScore!=null&&x.AwayScore!=null).Take(2).ToArray() : [];
+        var decidingMatch=final.Length==1?final[0]:null;
+        int Decision(Guid id) {
+            if(decidingMatch==null || (decidingMatch.Home!.Id!=id&&decidingMatch.Away!.Id!=id))return 0;
+            var home=decidingMatch.HomeScore;var away=decidingMatch.AwayScore;
+            if(home==away && decidingMatch.HomePenalties!=null&&decidingMatch.AwayPenalties!=null){home=decidingMatch.HomePenalties;away=decidingMatch.AwayPenalties;}
+            if(home==away)return 0;
+            return (decidingMatch.Home!.Id==id ? home>away : away>home)?2:1;
+        }
+        var rows=teams.Select(team=> {
+            var row=Calculate(team,matches);
+            return new {Row=row,Stage=Array.FindLastIndex(ordered,p=>p.Matches.Any(m=>m.Status=="Finished"&&(m.Home?.Id==team.Id||m.Away?.Id==team.Id))),Decision=Decision(team.Id)};
+        }).OrderByDescending(x=>x.Stage).ThenByDescending(x=>x.Decision)
+          .ThenByDescending(x=>3L*x.Row.Wins+x.Row.Draws).ThenByDescending(x=>x.Row.Wins)
+          .ThenByDescending(x=>x.Row.GoalsFor-x.Row.GoalsAgainst).ThenByDescending(x=>x.Row.GoalsFor)
+          .ThenBy(x=>x.Row.Team.Name).ToArray();
+        var result=new List<StandingRow>();var rank=0;
+        for(var i=0;i<rows.Length;i++) {
+            var x=rows[i];
+            if(i==0 || (x.Stage,x.Decision,x.Row.Wins,x.Row.Draws,x.Row.GoalsFor,x.Row.GoalsAgainst)
+                != (rows[i-1].Stage,rows[i-1].Decision,rows[i-1].Row.Wins,rows[i-1].Row.Draws,rows[i-1].Row.GoalsFor,rows[i-1].Row.GoalsAgainst))rank=i+1;
+            result.Add(x.Row with {Position=x.Stage<0?null:rank});
+        }
+        return result;
+    }
     public static StandingRow Calculate(TeamResponse team,IEnumerable<MatchResponse> matches)
     {
         var played=matches.Where(x=>x.Status=="Finished"&&x.HomeScore!=null&&x.AwayScore!=null&&x.Home!=null&&x.Away!=null&&(x.Home.Id==team.Id||x.Away.Id==team.Id)).Select(x=>new {For=x.Home!.Id==team.Id?x.HomeScore!.Value:x.AwayScore!.Value,Against=x.Home!.Id==team.Id?x.AwayScore!.Value:x.HomeScore!.Value}).ToArray();

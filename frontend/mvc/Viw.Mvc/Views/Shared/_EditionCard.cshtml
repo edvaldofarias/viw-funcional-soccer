@@ -1,6 +1,6 @@
 @model EditionResponse
 <a class="edition-card" href="@PortalRoutes.Cup(Model.Slug)">
-    <div class="edition-card-top"><span class="edition-symbol" aria-hidden="true">✦</span><span
+    <div class="edition-card-top"><viw-avatar kind="editions" entity-id="@Model.Id" name="@Model.Name" class="team-avatar edition-logo"></viw-avatar><span
         class="status status-@Model.Status.ToLowerInvariant()">@PortalFormat.Status(Model.Status)</span></div>
         <div class="edition-watermark" aria-hidden="true">@Model.Year</div>
         <div class="edition-card-body">

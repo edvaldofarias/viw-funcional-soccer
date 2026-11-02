@@ -4,7 +4,7 @@ namespace Viw.Contracts.Admin;
 /// <summary>Resultado paginado de uma consulta administrativa.</summary>
 public sealed record AdminPage<T>(IReadOnlyList<T> Items, int Page, int TotalCount);
 /// <summary>Identificador, nome e versão de um cadastro oficial.</summary>
-public sealed record PersonRow(Guid Id, string Name, string Slug, Guid? ImageId, string Version);
+public sealed record PersonRow(Guid Id, string Name, string Slug, Guid? ImageId, string Version, IReadOnlyList<string>? Championships = null);
 /// <summary>Cadastro da fonte e identidade atual, sem tokens ou URLs privadas.</summary>
 public sealed record SourceRow(Guid Id, Guid EditionId, string Name, Guid? PlayerId, string? PlayerName, Guid? LinkId);
 /// <summary>Prêmio com situação e versão para edição concorrente.</summary>

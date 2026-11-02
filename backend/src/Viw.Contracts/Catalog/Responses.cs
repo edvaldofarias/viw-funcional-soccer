@@ -92,14 +92,19 @@ public sealed record PlayerDetailResponse(PlayerResponse Player, PlayerTotalsRes
 /// <param name="Statistics">Totais registrados nas partidas encerradas desta edição.</param>
 public sealed record PlayerStatisticsResponse(PlayerResponse Player, PlayerTotalsResponse Statistics);
 
+/// <remarks>Statistics e Results são restritos à edição/equipe desta inscrição. Results considera somente partidas com presença conhecida; pênaltis não são somados aos gols. ImageUrl preserva a foto original da edição.</remarks>
 /// <summary>Inscrição observada da identidade canônica em uma edição e equipe.</summary>
 /// <param name="Edition">Edição em que o cadastro participou.</param>
 /// <param name="Team">Equipe vinculada à inscrição.</param>
 /// <param name="OriginalName">Nome recebido da fonte nessa edição, preservado para conferência.</param>
 /// <param name="ObservedFrom">Início observado pelo importador; não afirma a data histórica exata da transferência.</param>
 /// <param name="ObservedUntil">Fim observado da inscrição; null enquanto a inscrição estiver aberta.</param>
+/// <param name="ImageUrl">Foto original desta edição, quando disponível.</param>
+/// <param name="Statistics">Estatísticas individuais restritas à edição e equipe desta inscrição.</param>
+/// <param name="Results">Resultados nos jogos com presença conhecida do jogador.</param>
 public sealed record PlayerHistoryResponse(EditionResponse Edition, TeamResponse Team, string OriginalName,
-    DateTimeOffset ObservedFrom, DateTimeOffset? ObservedUntil);
+    DateTimeOffset ObservedFrom, DateTimeOffset? ObservedUntil,
+    string? ImageUrl = null, PlayerTotalsResponse? Statistics = null, TeamStatisticsResponse? Results = null);
 
 /// <summary>Jogador e dados da inscrição observada na equipe.</summary>
 /// <param name="Player">Identidade canônica vinculada ao cadastro original.</param>

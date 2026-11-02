@@ -27,7 +27,7 @@ public sealed partial class AdminService(ViwDbContext db) : IAdminService
     }
     private static PersonRow Person(Player p) => new(p.Id,p.DisplayName,p.Slug,p.OfficialImageId,Version(p));
     private static PersonRow Person(Coach p) => new(p.Id,p.DisplayName,p.Slug,p.OfficialImageId,Version(p));
-    public async Task<AdminPage<PersonRow>> PeopleAsync(bool coaches, string? search, int page, CancellationToken ct)
+    public async Task<AdminPage<PersonRow>> PeopleAsync(bool coaches, string? search, int page, CancellationToken ct, Guid? editionId = null)
     {
         if (coaches) {
             var q=db.CoachRecords.AsNoTracking().Where(x=> search==null || x.DisplayName.Contains(search));
@@ -35,8 +35,21 @@ public sealed partial class AdminService(ViwDbContext db) : IAdminService
             return new(rows.Select(Person).ToArray(),page,total);
         }
         var query=db.PlayerRecords.AsNoTracking().Where(x=> search==null || x.DisplayName.Contains(search));
+        if (editionId is {} edition)
+            query = query.Where(player => (from link in db.PlayerIdentityLinkRecords
+                join source in db.SourcePlayerRecords on link.SourcePlayerId equals source.Id
+                where link.PlayerId == player.Id && link.UnlinkedAt == null && source.EditionId == edition
+                select link.Id).Any());
         var count=await query.CountAsync(ct); var list=await query.OrderBy(x=>x.DisplayName).ThenBy(x=>x.Id).Skip((page-1)*Size).Take(Size).ToListAsync(ct);
-        return new(list.Select(Person).ToArray(),page,count);
+        var ids = list.Select(x => x.Id).ToArray();
+        var memberships = await (from link in db.PlayerIdentityLinkRecords.AsNoTracking()
+            join source in db.SourcePlayerRecords.AsNoTracking() on link.SourcePlayerId equals source.Id
+            join cup in db.ChampionshipEditionRecords.AsNoTracking() on source.EditionId equals cup.Id
+            where ids.Contains(link.PlayerId) && link.UnlinkedAt == null
+            orderby cup.Year descending, cup.Semester descending
+            select new { link.PlayerId, cup.Name, cup.Year, cup.Semester }).ToArrayAsync(ct);
+        return new(list.Select(p => Person(p) with { Championships = memberships.Where(x => x.PlayerId == p.Id)
+            .Select(x => $"{x.Name} · {x.Year}/{x.Semester}").Distinct().ToArray() }).ToArray(),page,count);
     }
     public async Task<PersonRow> UpdatePersonAsync(bool coach, Guid id, PersonCommand c, string actor, CancellationToken ct)
     {

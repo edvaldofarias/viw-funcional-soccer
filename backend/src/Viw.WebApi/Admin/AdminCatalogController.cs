@@ -12,8 +12,8 @@ namespace Viw.WebApi.Admin;
 public sealed class AdminCatalogController(IAdminService service) : ControllerBase
 {
     private string Actor=>User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-    /// <summary>Busca jogadores canônicos paginados com versão de edição.</summary>
-    [HttpGet("players")] public async Task<IActionResult> Players([StringLength(100)] string? search,[Range(1,100000)] int page=1,CancellationToken ct=default)=>Ok(await service.PeopleAsync(false,search,page,ct));
+    /// <summary>Busca jogadores canônicos paginados. editionId opcional restringe aos cadastros com vínculo ativo no campeonato; omitido permite busca global.</summary>
+    [HttpGet("players")] public async Task<IActionResult> Players([StringLength(100)] string? search,[Range(1,100000)] int page=1,CancellationToken ct=default,Guid? editionId=null)=>Ok(await service.PeopleAsync(false,search,page,ct,editionId));
     /// <summary>Busca técnicos canônicos paginados.</summary>
     [HttpGet("coaches")] public async Task<IActionResult> Coaches([StringLength(100)] string? search,[Range(1,100000)] int page=1,CancellationToken ct=default)=>Ok(await service.PeopleAsync(true,search,page,ct));
     /// <summary>Edita nome, slug e foto oficial do jogador com motivo e controle de concorrência.</summary>

@@ -29,7 +29,7 @@ public sealed class CompetitionViewSqlTests
         result.ShouldNotBeNull();var row=result.Phases.First().Standings.Single(x=>x.Team.Id==d.Home.Id);
         row.Position.ShouldBe(1);row.Points.ShouldBe(3);row.GoalsFor.ShouldBe(2);
         if(penalties) { result.Overall.Single(x=>x.Team.Id==d.Away.Id).Position.ShouldBe(1); result.Overall.Single(x=>x.Team.Id==d.Home.Id).Position.ShouldBe(2); }
-        else result.Overall.Where(x=>x.Played>0).ShouldAllBe(x=>x.Position==1);
+        else { result.Overall[0].Team.Id.ShouldBe(d.Home.Id); result.Overall[0].Position.ShouldBe(1); result.Overall[1].Position.ShouldBe(2); }
         result.Overall.Single(x=>x.Team.Id==d.Home.Id).GoalsFor.ShouldBe(3);
       }
     }

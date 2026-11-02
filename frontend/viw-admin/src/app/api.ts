@@ -2,7 +2,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 export interface Page<T> {items:T[];page:number;totalCount:number;}
-export interface Person {id:string;name:string;slug:string;imageId:string|null;version:string;}
+export interface Person {id:string;name:string;slug:string;imageId:string|null;version:string;championships?:string[];}
 export interface Source {id:string;editionId:string;name:string;playerId:string|null;playerName:string|null;linkId:string|null;}
 export interface Definition {id:string;code:string;name:string;scope:string;recipientKind:string;}
 export interface Edition {id:string;slug:string;name:string;year:number;semester:number;}

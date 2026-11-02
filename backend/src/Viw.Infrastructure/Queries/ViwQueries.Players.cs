@@ -16,7 +16,7 @@ public sealed partial class ViwQueries
 
     public async Task<PageResponse<PlayerResponse>> PlayersAsync(PlayerRequest request, CancellationToken ct)
     {
-        var query = db.PlayerRecords.AsNoTracking().AsQueryable();
+        var query = db.PlayerRecords.AsNoTracking().Where(player => db.PlayerIdentityLinkRecords.Any(link => link.PlayerId == player.Id && link.UnlinkedAt == null));
         if (!string.IsNullOrWhiteSpace(request.Search))
             query = query.Where(player => player.DisplayName.Contains(request.Search) ||
                 (from link in db.PlayerIdentityLinkRecords
@@ -65,8 +65,25 @@ public sealed partial class ViwQueries
             select new PlayerHistoryResponse(new EditionResponse(edition.Id, edition.CompetitionId, edition.Slug, edition.Name,
                 edition.Year, edition.Semester, edition.Status.ToString(), edition.TimeZoneId, edition.SourceImageAssetId, edition.SourceCoverAssetId),
                 new TeamResponse(team.Id, team.Name, team.OfficialImageId ?? team.SourceImageAssetId), source.OriginalName,
-                registration.ValidFrom, registration.ValidTo);
-        return await PageAsync(query, request, ct);
+                registration.ValidFrom, registration.ValidTo, source.SourceImageUrl, null, null);
+        var page = await PageAsync(query, request, ct);
+        var editionIds = page.Items.Select(x => x.Edition.Id).Distinct().ToArray();
+        var facts = await (from fact in db.PlayerMatchStatisticsRecords.AsNoTracking()
+            join link in db.PlayerIdentityLinkRecords.AsNoTracking() on fact.SourcePlayerId equals link.SourcePlayerId
+            join match in db.MatchRecords.AsNoTracking() on fact.MatchId equals match.Id
+            where link.PlayerId == playerId && link.UnlinkedAt == null && editionIds.Contains(fact.EditionId) && match.Status == MatchStatus.Finished
+            select new { Fact = fact, Match = match }).ToArrayAsync(ct);
+        return new(page.Items.Select(entry => {
+            var rows = facts.Where(x => x.Fact.EditionId == entry.Edition.Id && x.Fact.TeamEntryId == entry.Team.Id).ToArray();
+            var totals = new PlayerTotalsResponse(rows.Sum(x => (long)(x.Fact.Goals ?? 0)), rows.Sum(x => (long)(x.Fact.YellowCards ?? 0)),
+                rows.Sum(x => (long)(x.Fact.RedCards ?? 0)), rows.Sum(x => (long)(x.Fact.Appearances ?? 0)),
+                rows.Count(x => x.Fact.Appearances == null), rows.Count(x => !x.Fact.IsComplete || x.Fact.Revision != x.Match.Revision));
+            var games = rows.Where(x => x.Fact.Appearances == 1 && x.Match.HomeScore != null && x.Match.AwayScore != null)
+                .DistinctBy(x => x.Match.Id).Select(x => new { For = x.Match.HomeTeamId == entry.Team.Id ? x.Match.HomeScore!.Value : x.Match.AwayScore!.Value,
+                    Against = x.Match.HomeTeamId == entry.Team.Id ? x.Match.AwayScore!.Value : x.Match.HomeScore!.Value }).ToArray();
+            return entry with { Statistics = totals, Results = new TeamStatisticsResponse(entry.Team, games.Length, games.Count(x => x.For > x.Against),
+                games.Count(x => x.For == x.Against), games.Count(x => x.For < x.Against), games.Sum(x => (long)x.For), games.Sum(x => (long)x.Against)) };
+        }).ToArray(), page.Page, page.PageSize, page.TotalCount);
     }
 
     public async Task<PageResponse<PlayerStatisticsResponse>?> PlayerStatisticsAsync(string slug, PageRequest request, CancellationToken ct)

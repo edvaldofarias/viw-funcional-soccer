@@ -10,6 +10,33 @@ namespace Viw.IntegrationTests.Admin;
 public sealed class AdminSqlTests
 {
     [SqlServerFact]
+    public async Task Award_player_search_is_scoped_to_active_links_of_selected_edition()
+    {
+        // Arrange
+        await using var database = await SqlServerTestDatabase.CreateAsync();
+        var db = database.Context; var d = database.Data;
+        db.Add(d.CreateIdentityLink());
+        await db.SaveChangesAsync();
+        var service = new AdminService(db);
+        // Act
+        var selected = await service.PeopleAsync(false, null, 1, default, d.Edition.Id);
+        var other = await service.PeopleAsync(false, null, 1, default, d.OtherEdition.Id);
+        var global = await service.PeopleAsync(false, null, 1, default);
+        // Assert
+        selected.Items.Single().Id.ShouldBe(d.Player.Id);
+        selected.TotalCount.ShouldBe(1);
+        other.Items.ShouldBeEmpty();
+        global.Items.ShouldContain(x => x.Id == d.OtherPlayer.Id);
+        // Act: a closed link must no longer qualify for the edition.
+        var link = await db.PlayerIdentityLinkRecords.SingleAsync();
+        link.UnlinkedAt = link.LinkedAt.AddMinutes(1);
+        link.UnlinkedBy = "editor-test";
+        await db.SaveChangesAsync();
+        var closed = await service.PeopleAsync(false, null, 1, default, d.Edition.Id);
+        // Assert
+        closed.Items.ShouldBeEmpty();
+    }
+    [SqlServerFact]
     public async Task Reassignment_preserves_previous_link_and_can_be_reversed_with_audit()
     {
         // Arrange

@@ -3,7 +3,7 @@ namespace Viw.Application.Admin;
 
 public interface IAdminService
 {
-    Task<AdminPage<PersonRow>> PeopleAsync(bool coaches, string? search, int page, CancellationToken ct);
+    Task<AdminPage<PersonRow>> PeopleAsync(bool coaches, string? search, int page, CancellationToken ct, Guid? editionId = null);
     Task<AdminPage<SourceRow>> SourcesAsync(Guid? editionId, string? search, int page, CancellationToken ct);
     Task<PersonRow> UpdatePersonAsync(bool coach, Guid id, PersonCommand command, string actor, CancellationToken ct);
     Task<PersonRow> CreateCoachAsync(CoachCommand command, string actor, CancellationToken ct);

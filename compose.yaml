@@ -11,8 +11,10 @@ services:
       ConnectionStrings__ViwDatabase: ${ConnectionStrings__ViwDatabase:-}
       Monitoring__ApiKey: ${VIW_MONITORING_API_KEY:-}
       Admin__DataProtectionKeysPath: /data/keys
+      Media__LocalPath: /media/media
     volumes:
       - admin-keys:/data/keys
+      - worker-media:/media:ro
   mvc:
     build:
       context: .

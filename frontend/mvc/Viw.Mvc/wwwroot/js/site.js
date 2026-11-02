@@ -17,3 +17,11 @@ document.querySelectorAll("[data-share-url]").forEach(button => {
         }
     });
 });
+
+document.addEventListener('error', event => {
+  const image = event.target;
+  if (image instanceof HTMLImageElement && image.hasAttribute('data-media-avatar')) image.remove();
+}, true);
+document.querySelectorAll('img[data-media-avatar]').forEach(image => {
+  if (image.complete && image.naturalWidth === 0) image.remove();
+});

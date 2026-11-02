@@ -30,7 +30,7 @@
             </tr>
         </thead>
         <tbody>@for(p of people();track p.id){<tr>
-                <td>{{p.name}}</td>
+                <td><div class="person-with-photo">@if(section()==='players'){<viw-player-photo [playerId]="p.id" [name]="p.name" />}<span>{{p.name}}</span></div></td>
                 <td>{{p.slug}}</td>
                 <td><button class="btn btn-link quiet" [disabled]="busy()" (click)="editPerson(p)">Editar</button></td>
             </tr>}@empty{<tr>
@@ -40,7 +40,7 @@
 </div>
 @if(person||editingId==='new'){
 <section class="panel editor">
-    <h2>{{person?'Editar cadastro':'Novo técnico'}}</h2>
+    <div class="person-with-photo identity-photo">@if(person&&section()==='players'){<viw-player-photo [playerId]="person.id" [name]="person.name" />}<h2>{{person?'Editar cadastro':'Novo técnico'}}</h2></div>
     <form #personEdit="ngForm" (ngSubmit)="person?savePerson():createCoach()">
         <div class="form-grid"><label>Nome oficial<input class="form-control" name="personName"
                     [(ngModel)]="personForm.name" required minlength="2" maxlength="100"></label><label>Slug da
@@ -69,7 +69,7 @@
             </tr>
         </thead>
         <tbody>@for(s of sources();track s.id){<tr>
-                <td>{{s.name}}</td>
+                <td><div class="person-with-photo"><viw-player-photo [playerId]="s.playerId" [editionId]="s.editionId" [name]="s.name" /><span>{{s.name}}</span></div></td>
                 <td>{{editionName(s.editionId)}}</td>
                 <td>{{s.playerName||'Sem vínculo'}}</td>
                 <td><button class="btn btn-link quiet" (click)="chooseSource(s)" [disabled]="busy()">Revisar
@@ -80,22 +80,25 @@
     </table>
 </div>
 @if(source){<section class="panel editor">
-    <p class="eyebrow">REVISÃO DE IDENTIDADE</p>
-    <h2>{{source.name}}</h2>
+    <p class="eyebrow">VINCULAR CADASTRO AO JOGADOR PRINCIPAL</p>
+    <ol class="hint"><li>Escolha um jogador principal para representar a pessoa.</li><li>Selecione abaixo esse mesmo principal para cada cadastro das outras copas.</li><li>Informe o motivo e confirme. O cadastro que já pertence ao principal não precisa mudar.</li></ol>
+    <div class="person-with-photo identity-photo"><viw-player-photo [playerId]="source.playerId" [editionId]="source.editionId" [name]="source.name" /><h2>{{source.name}}</h2></div>
     <p>{{editionName(source.editionId)}} · Hoje: <strong>{{source.playerName||'Sem vínculo'}}</strong></p>
     <p class="hint">Compare os cadastros antes de confirmar. Nomes parecidos não provam que se trata da mesma pessoa.
     </p>
-    <form class="toolbar" (ngSubmit)="findTargets()"><label>Buscar identidade de destino<input class="form-control"
+    <form class="toolbar" (ngSubmit)="findTargets()"><label>Buscar jogador principal (destino)<input class="form-control"
                 name="targetSearch" [(ngModel)]="targetSearch" maxlength="100" required></label><button
             [disabled]="busy()">Buscar jogador</button></form>
     <div class="choices">@for(p of targets();track p.id){<button class="btn btn-outline-primary secondary"
-            [class.selected]="target?.id===p.id" (click)="target=p">{{p.name}} <small>{{p.slug}}</small></button>}</div>
+            [class.selected]="target?.id===p.id" (click)="target=p"><viw-player-photo [playerId]="p.id" [name]="p.name" />{{p.name}}
+            <small>@for(cup of p.championships||[];track cup){<span class="identity-edition">{{cup}}</span>}@empty{<span>Sem cadastros vinculados</span>}</small>
+            <small>Identidade: {{p.id.slice(0,8)}} @if(p.id===source.playerId){ · Atual deste cadastro}</small></button>}</div>
     @if(target){<form #linkForm="ngForm" (ngSubmit)="link()">
         <div class="review">{{source.playerName||'Sem vínculo'}} → <strong>{{target.name}}</strong>
-            <p>As estatísticas deste cadastro passarão a ser atribuídas a esta identidade.</p>
+            <p>Este cadastro ficará vinculado ao jogador principal. Os números, a equipe e a foto de cada campeonato serão preservados.</p>
         </div><label>Motivo da união ou separação<textarea class="form-control" name="reason" [(ngModel)]="reason"
                 minlength="5" maxlength="200" required></textarea></label><button
-            [disabled]="busy()||linkForm.invalid||target.id===source.playerId">Confirmar reatribuição</button>
+            [disabled]="busy()||linkForm.invalid||target.id===source.playerId">Vincular ao jogador principal</button>
     </form>}
 </section>}
 }
@@ -158,7 +161,7 @@
                 destinatário</button></div>
         <div class="choices">@for(p of targets();track p.id){<button type="button"
                 class="btn btn-outline-primary secondary" [class.selected]="target?.id===p.id"
-                (click)="target=p">{{p.name}} <small>{{p.slug}}</small></button>}</div>@if(target){<p class="review">
+                (click)="target=p"><viw-player-photo [playerId]="p.id" [name]="p.name" />{{p.name}} <small>{{p.slug}}</small></button>}</div>@if(target){<p class="review">
             Destinatário: <strong>{{target.name}}</strong></p>}
         <label>Motivo da decisão<textarea class="form-control" name="awardReason" [(ngModel)]="awardForm.reason"
                 minlength="5" maxlength="200" required></textarea></label>
@@ -211,7 +214,7 @@
                 type="button" (click)="findTargets(true)" [disabled]="busy()">Buscar</button></div>
         <div class="choices">@for(p of targets();track p.id){<button type="button"
                 class="btn btn-outline-primary secondary" [class.selected]="target?.id===p.id"
-                (click)="target=p">{{p.name}}</button>}</div>@if(target){<p class="review">Técnico:
+                (click)="target=p"><viw-player-photo [playerId]="p.id" [name]="p.name" />{{p.name}}</button>}</div>@if(target){<p class="review">Técnico:
             <strong>{{target.name}}</strong></p>}
         <label>Motivo<textarea class="form-control" name="assignmentReason" [(ngModel)]="assignmentForm.reason"
                 minlength="5" maxlength="200" required></textarea></label>

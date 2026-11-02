@@ -192,4 +192,19 @@ public sealed class PortalTests
         // Assert
         html.ShouldContain("Léo Reis");html.ShouldNotContain("O prêmio de melhor jogador da competição ainda não foi atribuído.");
     }
+    [Fact]
+    public async Task Wiki_profile_has_career_statistics_gallery_and_methodology()
+    {
+        // Arrange
+        await using var fixture = new PortalFixture();
+        using var client = fixture.CreateClient();
+        // Act
+        var html = await client.GetStringAsync("/wiki/jogadores/leo-reis");
+        // Assert
+        html.ShouldContain("id=\"carreira\"");
+        html.ShouldContain("id=\"estatisticas\"");
+        html.ShouldContain("id=\"galeria\"");
+        html.ShouldContain("id=\"metodologia\"");
+        html.ShouldContain("Totais da carreira");
+    }
 }

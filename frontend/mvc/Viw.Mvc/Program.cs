@@ -23,6 +23,8 @@ builder.Services.AddHttpClient<ViwApiClient>((services, client) =>
     client.DefaultRequestHeaders.Accept.ParseAdd("application/json");
     client.Timeout = TimeSpan.FromSeconds(5);
 });
+builder.Services.AddHttpClient("media", client => client.Timeout = TimeSpan.FromSeconds(5))
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
 builder.Services.AddScoped<SeoService>();
 builder.Services.AddScoped<SitemapService>();
 builder.Services.Configure<ForwardedHeadersOptions>(options => options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto);

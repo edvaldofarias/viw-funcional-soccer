@@ -59,6 +59,8 @@ builder.Services.AddAuthorization(options => options.AddPolicy(MonitoringAuthent
     policy => policy.AddAuthenticationSchemes(MonitoringAuthenticationHandler.SchemeName).RequireAuthenticatedUser().RequireClaim("permission", "imports.read")));
 builder.Services.Configure<ForwardedHeadersOptions>(options => options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto);
 builder.AddViwAdmin(connectionString);
+builder.Services.Configure<Viw.Infrastructure.Imports.MediaOptions>(builder.Configuration.GetSection("Media"));
+builder.Services.AddSingleton<Viw.Infrastructure.Imports.MediaReader>();
 var app = builder.Build();
 if (args.Contains("--bootstrap-admin")) { await app.BootstrapAdminAsync(); return; }
 app.UseForwardedHeaders();

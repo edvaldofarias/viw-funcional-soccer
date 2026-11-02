@@ -9,6 +9,11 @@ public sealed class CopaFacilInfoDto
     [JsonPropertyName("url_c")] public string? CoverUrl { get; init; }
 }
 
+public sealed class CopaFacilPhaseDto
+{
+    [JsonPropertyName("title")] public string? Title { get; init; }
+}
+
 public sealed class CopaFacilTeamDto
 {
     [JsonPropertyName("name")] public string? Name { get; init; }
@@ -67,4 +72,4 @@ public sealed class CopaFacilEventDto
 
 public sealed record CopaFacilCoreDto(CopaFacilInfoDto Info,
     Dictionary<string, CopaFacilTeamDto> Teams, Dictionary<string, CopaFacilPlayerDto> Players,
-    Dictionary<string, CopaFacilMatchDto> Matches);
+    Dictionary<string, CopaFacilMatchDto> Matches, Dictionary<string, CopaFacilPhaseDto>? Phases = null);

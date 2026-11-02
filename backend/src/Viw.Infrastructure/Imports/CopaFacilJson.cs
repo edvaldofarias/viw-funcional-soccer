@@ -22,7 +22,8 @@ public static class CopaFacilJson
     {
         var core = new CopaFacilCoreDto(Deserialize<CopaFacilInfoDto>(documents["info"].Json),
             Records<CopaFacilTeamDto>(documents["teams"].Json), Records<CopaFacilPlayerDto>(documents["player"].Json),
-            Records<CopaFacilMatchDto>(documents["matchs"].Json));
+            Records<CopaFacilMatchDto>(documents["matchs"].Json),
+            documents.TryGetValue("fs",out var phases) ? Records<CopaFacilPhaseDto>(phases.Json) : null);
         CopaFacilValidation.Core(core);
         return core;
     }

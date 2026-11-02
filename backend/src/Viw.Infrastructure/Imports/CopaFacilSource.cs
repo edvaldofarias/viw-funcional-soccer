@@ -10,7 +10,7 @@ public sealed class CopaFacilSource(HttpClient http, IOptions<CopaFacilOptions> 
 {
     public async Task<SourceDocument> GetAsync(string externalId, string resource, CancellationToken cancellationToken)
     {
-        if (resource is not ("info" or "teams" or "player" or "matchs") &&
+        if (resource is not ("info" or "teams" or "player" or "matchs" or "fs") &&
             !(resource.StartsWith("details/", StringComparison.Ordinal) && resource.Length is > 8 and <= 128 && resource[8..].All(c => char.IsAsciiLetterOrDigit(c) || c is '-' or '_')))
             throw new ArgumentException("Recurso inválido.", nameof(resource));
         for (var attempt = 0; ; attempt++)

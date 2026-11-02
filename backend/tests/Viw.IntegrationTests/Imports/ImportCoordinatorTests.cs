@@ -20,6 +20,7 @@ public sealed class ImportCoordinatorTests
 
         // Act
         var first = await coordinator.RunAsync(default);
+        (await database.Context.CompetitionPhaseRecords.SingleAsync()).Name.ShouldBe("Grande Final");
         var count = await database.Context.SourceSnapshotRecords.CountAsync();
         var second = await coordinator.RunAsync(default);
         var repeatedCount = await database.Context.SourceSnapshotRecords.CountAsync();
@@ -140,6 +141,7 @@ public sealed class ImportCoordinatorTests
             if (Goals == 2) events["goal-2"] = new { ac = 1, pl_id1 = "player-a", team1 = "home" };
             object data = resource switch
             {
+                "fs" => new Dictionary<string,object> { ["unassigned"] = new { title = "Grande Final" } },
                 "info" => new { name = "Copa de teste" },
                 "teams" => new { home = new { name = "Casa" }, away = new { name = "Fora" } },
                 "player" => new Dictionary<string, object> { ["player-a"] = new { name = "Jogador teste", team = "home" } },

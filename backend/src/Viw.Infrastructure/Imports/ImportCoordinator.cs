@@ -30,7 +30,7 @@ public sealed class ImportCoordinator(ViwDbContext db, IChampionshipSource sourc
                 if (lease is null) { skipped++; continue; }
                 runId = await StartRunAsync(lease, ct);
                 // Fetch and validate the complete core before replacing any core facts.
-                var resources = await Task.WhenAll(new[] { "info", "teams", "player", "matchs" }
+                var resources = await Task.WhenAll(new[] { "info", "teams", "player", "matchs", "fs" }
                     .Select(resource => source.GetAsync(origin.ExternalId, resource, ct)));
                 var documents = resources.ToDictionary(x => x.Resource);
                 var core = CopaFacilJson.Core(documents);

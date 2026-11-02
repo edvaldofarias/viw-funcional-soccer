@@ -56,6 +56,14 @@ public sealed class CopaFacilJsonTests
         info.CoverUrl.ShouldBe("cover.png");
     }
 
+    [Fact]
+    public void Phase_titles_are_read_from_fs_resource()
+    {
+        var phases=CopaFacilJson.Deserialize<Dictionary<string,Viw.Infrastructure.Imports.Dtos.CopaFacilPhaseDto>>(
+            "{\"1771727432500\":{\"title\":\"Grande Final\",\"show_table\":false}}");
+        phases["1771727432500"].Title.ShouldBe("Grande Final");
+    }
+
     [Theory]
     [InlineData("{\"st\":\"3\"}")]
     [InlineData("{\"st\":true}")]

@@ -9,7 +9,7 @@ public sealed record SeoMetadata(string Title, string Description, string Canoni
 public sealed record PortalError(int Status, string Title, string Message);
 public sealed record HomePage(PageResponse<EditionResponse> Editions);
 public sealed record CatalogPage(PageResponse<EditionResponse> Editions, int? Year, Pager Pager);
-public sealed record CupPage(EditionDetailResponse Edition, PageResponse<TeamResponse> Teams, PageResponse<MatchResponse> Matches);
+public sealed record CupPage(EditionDetailResponse Edition, PageResponse<TeamResponse> Teams, PageResponse<MatchResponse> Matches, CompetitionViewResponse? Overview = null, IReadOnlyList<PlayerStatisticsResponse>? Scorers = null, IReadOnlyList<AwardResponse>? Awards = null, bool General = false);
 public sealed record TeamsPage(EditionDetailResponse Edition, PageResponse<TeamResponse> Teams, Pager Pager);
 public sealed record TeamPage(EditionDetailResponse Edition, TeamDetailResponse Team, PageResponse<RosterPlayerResponse> Players, PageResponse<MatchResponse> Matches, Pager Pager);
 public sealed record MatchesPage(EditionDetailResponse Edition, PageResponse<MatchResponse> Matches, IReadOnlyList<TeamResponse> Teams, MatchFilters Filters, Pager Pager);

@@ -48,6 +48,8 @@ public sealed class CopaFacilScoreDto
 {
     [JsonPropertyName("qt_g1")] public long? Home { get; init; }
     [JsonPropertyName("qt_g2")] public long? Away { get; init; }
+    [JsonPropertyName("qt_p1")] public long? HomePenalties { get; init; }
+    [JsonPropertyName("qt_p2")] public long? AwayPenalties { get; init; }
 }
 
 public sealed class CopaFacilDetailsDto

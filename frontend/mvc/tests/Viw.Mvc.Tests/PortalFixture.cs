@@ -32,12 +32,14 @@ internal sealed class FixtureApi : HttpMessageHandler
     public static readonly Guid PhaseId = Guid.Parse("50000000-0000-0000-0000-000000000001");
     public static readonly Guid RoundId = Guid.Parse("60000000-0000-0000-0000-000000000001");
     public const string Slug = "copa-de-teste-2026";
+    public bool Archived { get; set; }
+    public bool MissingAward { get; set; }
     public bool Fail { get; set; }
     public bool Malformed { get; set; }
     public bool Empty { get; set; }
     public string PlayerName { get; set; } = "Léo Reis";
     public ConcurrentBag<string> Requests { get; } = [];
-    private static EditionResponse Edition => new(EditionId, Guid.Empty, Slug, "Copa de Teste", 2026, 2, "Active", "America/Sao_Paulo", null, null);
+    private EditionResponse Edition => new(EditionId, Guid.Empty, Slug, "Copa de Teste", 2026, 2, Archived?"Archived":"Active", "America/Sao_Paulo", null, null);
     private static TeamResponse Home => new(HomeId, "Aurora", null);
     private static TeamResponse Away => new(AwayId, "Estrela", null);
     private PlayerResponse Player => new(PlayerId, "leo-reis", PlayerName, null);
@@ -45,7 +47,7 @@ internal sealed class FixtureApi : HttpMessageHandler
     private static MatchResponse Game => new(MatchId, EditionId, PhaseId, RoundId, Home, Away,
         new DateTimeOffset(2026, 11, 1, 17, 0, 0, TimeSpan.Zero), "Arena de Testes", "Grupo A", "Finished", 0, 0, 1);
     private static MatchResponse Future => new(FutureId, EditionId, PhaseId, RoundId, Home, null, null, null, "Final", "Scheduled", null, null, 1);
-    private static EditionDetailResponse Detail => new(Edition, 2, 2, [new PhaseResponse(PhaseId, "Fase de grupos", 1)], [new RoundResponse(RoundId, PhaseId, "Rodada 1", 1)]);
+    private EditionDetailResponse Detail => new(Edition, 2, 2, [new PhaseResponse(PhaseId, "Fase de grupos", 1)], [new RoundResponse(RoundId, PhaseId, "Rodada 1", 1)]);
 
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
@@ -66,6 +68,7 @@ internal sealed class FixtureApi : HttpMessageHandler
         HttpResponseMessage response;
         if (path == "/api/v1/championships") response = Paged(query.TryGetValue("year", out var year) && year != "2026" ? [] : new[] { Edition });
         else if (path == root) response = Json(Detail);
+        else if(path == root + "/overview") response=Json(new CompetitionViewResponse([new PhaseTableResponse(new PhaseResponse(PhaseId,"Primeira fase",1),[Game,Future],[new StandingRow(Home,1,1,1,0,1,0,0,0),new StandingRow(Away,1,1,1,0,1,0,0,0)])],[new StandingRow(Home,1,null,1,0,1,0,0,0),new StandingRow(Away,1,null,1,0,1,0,0,0)]));
         else if (path == root + "/teams") response = Paged(new[] { Home, Away });
         else if (path == root + "/teams/" + HomeId.ToString("D")) response = Json(new TeamDetailResponse(Home, [new CoachResponse(Guid.NewGuid(), "tecnico", "Técnico da Equipe", null, DateTimeOffset.UtcNow, null)]));
         else if (path == root + "/teams/" + HomeId.ToString("D") + "/players") response = Paged(new[] { new RosterPlayerResponse(Player, "Reis", "9", "Atacante", DateTimeOffset.UtcNow, null) });
@@ -76,6 +79,7 @@ internal sealed class FixtureApi : HttpMessageHandler
         else if (path == root + "/matches/" + FutureId.ToString("D") + "/players") response = Paged(Array.Empty<MatchPlayerResponse>());
         else if (path == root + "/statistics/players") response = Paged(new[] { new PlayerStatisticsResponse(Player, Stats) });
         else if (path == root + "/statistics/teams") response = Paged(new[] { new TeamStatisticsResponse(Home, 1, 0, 1, 0, 0, 0), new TeamStatisticsResponse(Away, 1, 0, 1, 0, 0, 0) });
+        else if(path==root+"/awards" && MissingAward) response=Paged(Array.Empty<AwardResponse>());
         else if (path == root + "/awards") response = Paged(new[] { new AwardResponse(Guid.NewGuid(), "ballon-dor", "Ballon d’Or", "Championship", null, null, PlayerId, PlayerName, null, null, null, DateTimeOffset.UtcNow) });
         else if (path == "/api/v1/players") response = Paged(new[] { Player });
         else if (path == "/api/v1/players/leo-reis") response = Json(new PlayerDetailResponse(Player, Stats));

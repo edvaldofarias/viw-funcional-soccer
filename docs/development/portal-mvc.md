@@ -66,3 +66,11 @@ A rota `/` apresenta a VIW e encaminha para campeonatos, jogadores, Wiki e o per
 A leitura automática do Instagram foi bloqueada durante a implementação. O texto é uma proposta editorial; fotos, identidade oficial e informações institucionais específicas aguardam material do perfil para validação. Não há feed automático nem imagens obtidas do Instagram.
 
 A captura legível do Instagram enviada posteriormente orientou a revisão da Home: azul/preto, chamada “Sai do sofá, vem pra VIW”, fundamentos, circuitos, turmas/Kids e resenha. Horários e contatos não legíveis não foram inventados. A captura não é utilizada como foto nem como feed do site; fotos e logotipo oficiais em boa resolução podem substituir os elementos gráficos atuais.
+
+## Visão do campeonato
+
+O portal usa Bootstrap 5.3.8 com arquivos locais e licença MIT em `wwwroot/lib/bootstrap`. A primeira fase mostra posição e pontos informados pela fonte; valores ausentes aparecem como traço. Jogos são agrupados por fase, com links para as equipes e seus elencos. Os nomes confirmados das fases podem ser configurados em `PhaseNames` no catálogo do Worker, sem inferir regras de edições antigas.
+
+Edições arquivadas oferecem `?visao=geral`: a classificação considera a fase mais avançada disputada, mantendo empates entre eliminados na mesma fase. Uma final empatada usa o placar de pênaltis quando informado; sem desempate conhecido, mantém a posição compartilhada. Melhor ataque e defesa usam totais de gols nos jogos encerrados, exibindo empates e quantidade de partidas. Artilharia vem das estatísticas individuais. Melhor jogador depende de Ballon d’Or confirmado no Admin; sem atribuição, uma mensagem explícita é exibida.
+
+O Angular Admin usa o mesmo Bootstrap e é servido pela Web API em `http://localhost:5080/admin/`, sem contêiner Angular separado. Após atualizar o código, reconstrua os serviços de aplicação pelo Compose mantendo as variáveis de conexão e os volumes existentes.

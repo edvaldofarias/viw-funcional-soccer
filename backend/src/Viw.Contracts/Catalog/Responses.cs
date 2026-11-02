@@ -122,12 +122,14 @@ public sealed record RosterPlayerResponse(PlayerResponse Player, string Original
 /// <param name="Venue">Valor de local importado; pode ser um identificador da fonte, ainda sem resolução para nome.</param>
 /// <param name="Title">Título original informado pela fonte.</param>
 /// <param name="Status">Estado: Scheduled, Live, Finished, Cancelled ou Unknown.</param>
+/// <param name="HomePenalties">Pênaltis convertidos pelo mandante; null quando não informado.</param>
+/// <param name="AwayPenalties">Pênaltis convertidos pelo visitante; separados dos gols da partida.</param>
 /// <param name="HomeScore">Gols do mandante; null indica placar desconhecido e não zero.</param>
 /// <param name="AwayScore">Gols do visitante; null indica placar desconhecido e não zero.</param>
 /// <param name="Revision">Revisão dos dados da partida, utilizada para detectar súmulas desatualizadas.</param>
 public sealed record MatchResponse(Guid Id, Guid EditionId, Guid? PhaseId, Guid? RoundId,
     TeamResponse? Home, TeamResponse? Away, DateTimeOffset? ScheduledAt, string? Venue,
-    string? Title, string Status, int? HomeScore, int? AwayScore, int Revision);
+    string? Title, string Status, int? HomeScore, int? AwayScore, int Revision, int? HomePenalties = null, int? AwayPenalties = null);
 
 /// <summary>Estatísticas registradas de um jogador em uma partida.</summary>
 /// <param name="PlayerId">GUID da identidade canônica; null quando não houver vínculo ativo.</param>

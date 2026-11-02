@@ -85,3 +85,9 @@ A implantação real, a carga dos campeonatos e as verificações SQL permanecem
 ### Resolução de identidade para o portal
 
 `GET /api/v1/players/by-id/{id}` retorna o jogador canônico e seu slug atual; 404 se ausente. Usado pelo link permanente da Wiki sem deduzir slugs a partir dos nomes.
+
+## Visão consolidada da edição
+
+`GET /api/v1/championships/{slug}/overview` retorna fases com jogos e classificações, além da classificação geral por avanço na competição. Posição e pontos da fase são preservados da fonte; são nulos quando indisponíveis. Estatísticas coletivas consideram apenas partidas encerradas com equipes e placar completos. A operação e seus contratos têm comentários XML para a documentação OpenAPI/Swagger.
+
+Os contratos de partidas incluem `homePenalties` e `awayPenalties` opcionais. Null significa valor não informado; zero é um placar válido. Pênaltis não compõem gols pró/contra.

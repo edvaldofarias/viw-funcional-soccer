@@ -36,22 +36,34 @@ public sealed partial class CompetitionImportWriter
         var scored = current.Count(x => x.ActionCode is 1 or 8);
         var complete = match.Status == MatchStatus.Finished && match.HomeScore + match.AwayScore == scored &&
             current.Where(x => x.ActionCode is 1 or 3 or 4).All(x => x.SourcePlayerId is not null && x.TeamEntryId is not null);
-        foreach (var group in current.Where(x => x.SourcePlayerId is not null && x.TeamEntryId is not null && x.ActionCode is 1 or 3 or 4 or 7)
-            .GroupBy(x => x.SourcePlayerId!.Value))
+        var historical=match.Status==MatchStatus.Finished && HistoricalAttendance.Applies(definition.Year,definition.Semester);
+        var roster=historical?await db.PlayerRegistrationRecords.Where(x=>x.EditionId==match.EditionId && x.ValidTo==null && (x.TeamEntryId==match.HomeTeamId||x.TeamEntryId==match.AwayTeamId)).ToArrayAsync(ct):[];
+        var groups=current.Where(x=>x.SourcePlayerId is not null && x.TeamEntryId is not null && x.ActionCode is 1 or 3 or 4 or 7).GroupBy(x=>x.SourcePlayerId!.Value).ToDictionary(x=>x.Key,x=>x.ToArray());
+        foreach(var playerId in groups.Keys.Concat(roster.Select(x=>x.SourcePlayerId)).Distinct())
         {
-            var teamIds = group.Select(x => x.TeamEntryId).Distinct().ToArray();
-            if (teamIds.Length != 1) throw new InvalidDataException("Jogador associado aos dois times na mesma súmula.");
-            var presence = group.Where(x => x.ActionCode == 7).ToArray();
-            int? appearances = null;
-            if (presence.Any(x => x.Value is null or 0)) appearances = 1;
-            else if (definition.ReserveMeansAbsent && presence.Any(x => x.Value == 1)) appearances = 0;
+            var group=groups.GetValueOrDefault(playerId) ?? [];
+            var teamIds=group.Select(x=>x.TeamEntryId!.Value).Distinct().ToArray();
+            if(teamIds.Length==0)teamIds=roster.Where(x=>x.SourcePlayerId==playerId).Select(x=>x.TeamEntryId).Distinct().ToArray();
+            if(teamIds.Length!=1)throw new InvalidDataException("Jogador associado aos dois times na mesma súmula.");
+            var presence=group.Where(x=>x.ActionCode==7).ToArray();
+            int? appearances=historical?1:null;
+            if(!historical) {
+                if(presence.Any(x=>x.Value is null or 0))appearances=1;
+                else if(definition.ReserveMeansAbsent && presence.Any(x=>x.Value==1))appearances=0;
+            }
             db.Add(new PlayerMatchStatistics
             {
-                EditionId = match.EditionId, MatchId = match.Id, SourcePlayerId = group.Key,
-                TeamEntryId = teamIds[0]!.Value, Goals = group.Count(x => x.ActionCode == 1),
+                EditionId = match.EditionId, MatchId = match.Id, SourcePlayerId = playerId,
+                TeamEntryId = teamIds[0], Goals = group.Count(x => x.ActionCode == 1),
                 YellowCards = group.Count(x => x.ActionCode == 3), RedCards = group.Count(x => x.ActionCode == 4),
                 Appearances = appearances, IsComplete = complete, Revision = match.Revision
             });
         }
     }
+}
+
+/// <summary>Convenção histórica confirmada pela VIW, sem alterar o snapshot da origem.</summary>
+public static class HistoricalAttendance
+{
+    public static bool Applies(int year,int semester) => year>0 && (year<2026 || year==2026 && semester==1);
 }

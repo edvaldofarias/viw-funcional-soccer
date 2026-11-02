@@ -170,4 +170,26 @@ public sealed class PortalTests
         html.ShouldContain("href=\"/campeonatos\"");
         fixture.Api.Requests.ShouldBeEmpty();
     }
+    [Fact]
+    public async Task Finished_cup_displays_general_option_and_pending_best_player_without_guessing_winner()
+    {
+        // Arrange
+        await using var fixture=new PortalFixture();fixture.Api.Archived=true;fixture.Api.MissingAward=true;
+        using var client=fixture.CreateClient();
+        // Act
+        var html=WebUtility.HtmlDecode(await client.GetStringAsync("/campeonatos/"+FixtureApi.Slug+"?visao=geral"));
+        // Assert
+        html.ShouldContain("Classificação geral");html.ShouldContain("Jogos por fase");html.ShouldContain("Melhor jogador");html.ShouldContain("ainda não foi atribuído");html.ShouldContain("Mais gols marcados");html.ShouldContain("Menos gols sofridos");html.ShouldContain("/lib/bootstrap/bootstrap.min.");
+    }
+    [Fact]
+    public async Task Confirmed_ballon_dor_displays_official_recipient()
+    {
+        // Arrange
+        await using var fixture=new PortalFixture();fixture.Api.Archived=true;
+        using var client=fixture.CreateClient();
+        // Act
+        var html=WebUtility.HtmlDecode(await client.GetStringAsync("/campeonatos/"+FixtureApi.Slug));
+        // Assert
+        html.ShouldContain("Léo Reis");html.ShouldNotContain("O prêmio de melhor jogador da competição ainda não foi atribuído.");
+    }
 }

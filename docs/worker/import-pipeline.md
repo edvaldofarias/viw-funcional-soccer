@@ -36,3 +36,11 @@ Queued, Running, Succeeded, Failed e Cancelled. Importação sem alteração pod
 O host Worker executa a lógica compartilhada. A API poderá receber solicitações autorizadas e persistir tarefas para o Worker. Uma alternativa para hospedagem compartilhada é executar lotes curtos pela API sob agendamento; ambos usam os mesmos locks e checkpoints. Não ativar duas estratégias sem coordenação.
 
 Intervalos, políticas por edição e tamanho de lote serão configuráveis e validados com os limites da fonte e hospedagem. O Worker executa imediatamente e repete após 3600 segundos, configuráveis. Veja [execução e recuperação](running.md).
+
+## Presença histórica e fases
+
+O mapper `copafacil-v4` reprocessa checkpoints anteriores. Por convenção definida para o histórico até a Copa do Mundo 2026 (anos anteriores a 2026 e primeiro semestre de 2026), cada jogador do elenco ativo dos times de uma partida encerrada recebe uma presença, mesmo sem evento individual. Gols e cartões continuam derivados dos eventos efetivos. Snapshots e eventos originais não são alterados. Edições posteriores mantêm o tratamento de presença explícita.
+
+`PhaseNames` permite associar IDs externos a nomes confirmados e à sua ordem. O catálogo contém o mapeamento conhecido da La Liga; fases históricas sem metadados mantêm seus nomes existentes.
+
+Os campos `dt.qt_p1` e `dt.qt_p2` são persistidos como placares de pênaltis opcionais, sem substituir `qt_g1`/`qt_g2`. O mapper v4 reimporta as partidas já processadas após aplicar a migração `AddMatchPenaltyScores`.

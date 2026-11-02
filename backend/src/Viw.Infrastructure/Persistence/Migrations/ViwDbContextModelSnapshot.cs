@@ -701,6 +701,9 @@ namespace Viw.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<int?>("AwayPenalties")
+                        .HasColumnType("int");
+
                     b.Property<int?>("AwayScore")
                         .HasColumnType("int");
 
@@ -719,6 +722,9 @@ namespace Viw.Infrastructure.Persistence.Migrations
                         .IsUnicode(true)
                         .HasColumnType("nvarchar(128)")
                         .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<int?>("HomePenalties")
+                        .HasColumnType("int");
 
                     b.Property<int?>("HomeScore")
                         .HasColumnType("int");

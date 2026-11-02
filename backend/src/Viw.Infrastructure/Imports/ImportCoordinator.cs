@@ -35,7 +35,7 @@ public sealed class ImportCoordinator(ViwDbContext db, IChampionshipSource sourc
                 var documents = resources.ToDictionary(x => x.Resource);
                 var core = CopaFacilJson.Core(documents);
                 await ProcessAsync(lease, runId.Value, resources, null,
-                    token => writer.WriteCoreAsync(origin.EditionId, core, token), ct);
+                    token => writer.WriteCoreAsync(origin.EditionId, core, token, definition), ct);
                 var errors = 0;
                 var matches = await db.MatchRecords.AsNoTracking().Where(x => x.EditionId == origin.EditionId &&
                     x.Provider == ChampionshipCatalog.Provider && (x.Status == MatchStatus.Finished || x.Status == MatchStatus.Live))

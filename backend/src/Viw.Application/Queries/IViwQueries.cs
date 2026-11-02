@@ -6,6 +6,7 @@ namespace Viw.Application.Queries;
 public interface IViwQueries
 {
     Task<PageResponse<EditionResponse>> EditionsAsync(EditionRequest request, CancellationToken ct);
+    Task<CompetitionViewResponse?> CompetitionViewAsync(string slug, CancellationToken ct);
     Task<EditionDetailResponse?> EditionAsync(string slug, CancellationToken ct);
     Task<PageResponse<TeamResponse>?> TeamsAsync(string slug, PageRequest request, CancellationToken ct);
     Task<TeamDetailResponse?> TeamAsync(string slug, Guid teamId, CancellationToken ct);

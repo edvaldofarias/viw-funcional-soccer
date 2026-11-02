@@ -111,7 +111,7 @@ public sealed partial class ViwQueries(ViwDbContext db) : IViwQueries
         var teams = await db.TeamEntryRecords.AsNoTracking().Where(x => ids.Contains(x.Id)).ToDictionaryAsync(x => x.Id, ct);
         TeamResponse? Team(Guid? id) => id is not null && teams.TryGetValue(id.Value, out var team) ? TeamDto(team) : null;
         return matches.Select(x => new MatchResponse(x.Id, x.EditionId, x.PhaseId, x.RoundId, Team(x.HomeTeamId), Team(x.AwayTeamId),
-            x.ScheduledAt, x.Venue, x.OriginalTitle, x.Status.ToString(), x.HomeScore, x.AwayScore, x.Revision)).ToArray();
+            x.ScheduledAt, x.Venue, x.OriginalTitle, x.Status.ToString(), x.HomeScore, x.AwayScore, x.Revision, x.HomePenalties, x.AwayPenalties)).ToArray();
     }
 
     public async Task<PageResponse<MatchPlayerResponse>?> MatchPlayersAsync(string slug, Guid matchId, PageRequest request, CancellationToken ct)

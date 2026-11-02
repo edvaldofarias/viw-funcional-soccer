@@ -16,6 +16,7 @@ public sealed class EditionDefinition
     public int Semester { get; set; }
     public bool Archived { get; set; }
     public bool Enabled { get; set; } = true;
+    public Dictionary<string,string> PhaseNames { get; set; } = [];
     public bool ReserveMeansAbsent { get; set; }
 }
 

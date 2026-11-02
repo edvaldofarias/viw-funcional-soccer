@@ -79,7 +79,14 @@
         "Semester": 2,
         "Archived": false,
         "Enabled": true,
-        "ReserveMeansAbsent": true
+        "ReserveMeansAbsent": true,
+        "PhaseNames": {
+          "1780479913323": "Primeira fase",
+          "1780479913324": "Repescagem",
+          "1780480689653": "Quartas de final",
+          "1780480702080": "Semifinal",
+          "1780480718514": "Final"
+        }
       }
     ]
   }

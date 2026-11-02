@@ -41,6 +41,8 @@ public sealed class ViwApiClient(HttpClient http)
     public Task<PlayerDetailResponse?> PlayerAsync(string slug, CancellationToken ct) => ReadAsync<PlayerDetailResponse>("api/v1/players/" + Uri.EscapeDataString(slug), ct);
     public Task<PageResponse<PlayerHistoryResponse>?> HistoryAsync(string slug, int page, CancellationToken ct) => PageAsync<PlayerHistoryResponse>("api/v1/players/" + Uri.EscapeDataString(slug) + "/history", page, ct);
 
+    public Task<CompetitionViewResponse?> CompetitionViewAsync(string slug,CancellationToken ct) => ReadAsync<CompetitionViewResponse>(PathFor(slug)+"/overview",ct);
+
     public static T Required<T>(T? result) where T : class => result ?? throw new InvalidDataException("Recurso da API indisponível.");
 
     public static async Task<IReadOnlyList<T>> CollectAsync<T>(Func<int, Task<PageResponse<T>?>> load)

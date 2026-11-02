@@ -9,6 +9,15 @@ namespace Viw.WebApi.Controllers;
 [Route("api/v1/championships")]
 public sealed class ChampionshipsController(IViwQueries queries) : ReadControllerBase
 {
+    /// <summary>Exibe classificação oficial por fase, jogos e campanha acumulada.</summary>
+    /// <remarks>A posição da fase e os pontos vêm da fonte; posição geral em copas com mata-mata representa a fase atingida, com empates de colocação preservados. Não inventa decisões por pênaltis.</remarks>
+    /// <param name="slug">Slug da edição.</param>
+    /// <param name="ct">Cancelamento da consulta.</param>
+    /// <returns>Fases, jogos e campanhas das equipes.</returns>
+    [HttpGet("{slug}/overview")]
+    [ProducesResponseType<CompetitionViewResponse>(StatusCodes.Status200OK)]
+    public async Task<ActionResult<CompetitionViewResponse>> Overview(string slug,CancellationToken ct) => Found(await queries.CompetitionViewAsync(slug,ct));
+
     /// <summary>Lista as edições dos campeonatos.</summary>
     /// <remarks>Permite filtrar por ano. Ordena por ano e semestre decrescentes, com desempate pelo identificador. Não consulta a fonte externa.</remarks>
     /// <param name="request">Ano opcional e paginação; page inicia em 1 e pageSize aceita até 100 registros.</param>

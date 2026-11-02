@@ -8,9 +8,11 @@ namespace Viw.Infrastructure.Imports;
 
 public sealed partial class CompetitionImportWriter(ViwDbContext db)
 {
-    public const string MapperVersion = "copafacil-v2";
+    private static int? PenaltyScore(long? value) => value is >= 0 and <= int.MaxValue ? (int)value.Value : null;
 
-    public async Task WriteCoreAsync(Guid editionId, CopaFacilCoreDto core, CancellationToken ct)
+    public const string MapperVersion = "copafacil-v4";
+
+    public async Task WriteCoreAsync(Guid editionId, CopaFacilCoreDto core, CancellationToken ct, Viw.Application.Imports.EditionDefinition? definition = null)
     {
         CopaFacilValidation.Core(core);
         var edition = await db.ChampionshipEditionRecords.SingleAsync(x => x.Id == editionId, ct);
@@ -73,6 +75,10 @@ public sealed partial class CompetitionImportWriter(ViwDbContext db)
                 phase = new CompetitionPhase { EditionId = editionId, ExternalId = phaseKey, Name = "Fase " + (phases.Count + 1), SortOrder = phases.Count + 1 };
                 phases.Add(phaseKey, phase); db.Add(phase);
             }
+            if(definition?.PhaseNames.TryGetValue(phaseKey,out var officialName)==true) {
+                if(phase.Name.StartsWith("Fase ",StringComparison.Ordinal))phase.Name=officialName;
+                phase.SortOrder=definition.PhaseNames.Keys.ToList().IndexOf(phaseKey)+1;
+            }
             CompetitionRound? round = null;
             var roundKey = CopaFacilValidation.BoundedText(item.Value.RoundId, 128);
             if (roundKey is not null)
@@ -103,6 +109,8 @@ public sealed partial class CompetitionImportWriter(ViwDbContext db)
             match.Status = CopaFacilValidation.Status(item.Value);
             var score = CopaFacilValidation.Score(item.Value, match.Status);
             match.HomeScore = score?.Home; match.AwayScore = score?.Away;
+            match.HomePenalties = PenaltyScore(item.Value.Score?.HomePenalties);
+            match.AwayPenalties = PenaltyScore(item.Value.Score?.AwayPenalties);
             if (isNew) { matches.Add(item.Key, match); db.Add(match); }
             else if (before != JsonSerializer.Serialize(match)) match.Revision++;
         }

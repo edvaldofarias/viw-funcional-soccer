@@ -3,5 +3,8 @@
 <a class="match-card" href="@PortalRoutes.Match(Model.Edition.Slug, game.Id)">
     <div class="match-card-top"><span class="status status-@game.Status.ToLowerInvariant()">@PortalFormat.Status(game.Status)</span>@if (!string.IsNullOrWhiteSpace(game.Title)) { <span>@game.Title</span> }</div>
     <div class="match-score"><div class="match-side"><span class="team-avatar" aria-hidden="true">@PortalFormat.Initials(game.Home?.Name)</span><strong>@(game.Home?.Name ?? "A definir")</strong></div><span class="score" aria-label="Placar @PortalFormat.Score(game.HomeScore) a @PortalFormat.Score(game.AwayScore)">@PortalFormat.Score(game.HomeScore)<span>:</span>@PortalFormat.Score(game.AwayScore)</span><div class="match-side"><span class="team-avatar away" aria-hidden="true">@PortalFormat.Initials(game.Away?.Name)</span><strong>@(game.Away?.Name ?? "A definir")</strong></div></div>
+
+@if (game.HomePenalties is not null && game.AwayPenalties is not null) { <p class="text-center muted">Pênaltis: @game.HomePenalties × @game.AwayPenalties</p> }
+
     <div class="match-card-footer"><span>@PortalFormat.Date(game.ScheduledAt, Model.Edition.TimeZoneId)</span><span aria-hidden="true">↗</span></div>
 </a>

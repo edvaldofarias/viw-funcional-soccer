@@ -68,8 +68,8 @@ public sealed partial class AdminService(ViwDbContext db) : IAdminService
             from link in links.DefaultIfEmpty()
             join player in db.PlayerRecords on link.PlayerId equals player.Id into people
             from player in people.DefaultIfEmpty()
-            select new SourceRow(source.Id,source.EditionId,source.OriginalName,player==null?null:player.Id,player==null?null:player.DisplayName,link==null?null:link.Id);
-        return new(await query.OrderBy(x=>x.Name).ThenBy(x=>x.Id).Skip((page-1)*Size).Take(Size).ToArrayAsync(ct),page,await query.CountAsync(ct));
+            select new {source.Id,source.EditionId,Name=source.OriginalName,PlayerId=player==null?(Guid?)null:player.Id,PlayerName=player==null?null:player.DisplayName,LinkId=link==null?(Guid?)null:link.Id};
+        return new(await query.OrderBy(x=>x.Name).ThenBy(x=>x.Id).Skip((page-1)*Size).Take(Size).Select(x=>new SourceRow(x.Id,x.EditionId,x.Name,x.PlayerId,x.PlayerName,x.LinkId)).ToArrayAsync(ct),page,await query.CountAsync(ct));
     }
     public async Task LinkAsync(Guid sourceId, LinkCommand c,string actor,CancellationToken ct)
     {

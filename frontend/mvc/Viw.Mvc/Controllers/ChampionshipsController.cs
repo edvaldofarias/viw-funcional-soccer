@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 using Viw.Mvc.Models;
+using Viw.Contracts.Catalog;
 using Viw.Mvc.Services;
 
 namespace Viw.Mvc.Controllers;
@@ -16,16 +17,19 @@ public sealed class ChampionshipsController(ViwApiClient api, SeoService seo) : 
         return Page("Index", new CatalogPage(editions, ano, pager), "Campeonatos da VIW", "Todas as edições das copas da VIW: equipes, partidas, protagonistas e premiações em um só lugar.", pager.Url(page), ano != null || editions.TotalCount == 0, "CollectionPage");
     }
     [HttpGet("/campeonatos/{slug}")]
-    public async Task<IActionResult> Detail(string slug, CancellationToken ct)
+    public async Task<IActionResult> Detail(string slug, [RegularExpression("^(fase|geral)$")] string visao = "fase", CancellationToken ct = default)
     {
         var edition = await api.EditionAsync(slug, ct);
         if (edition is null) return Missing();
         if (slug != edition.Edition.Slug) return RedirectPermanent(PortalRoutes.Cup(edition.Edition.Slug));
-        var teams = api.TeamsAsync(slug, 1, ct, 6);
-        var matches = api.MatchesAsync(slug, 1, ct, size: 6);
-        await Task.WhenAll(teams, matches);
-        return Page("Detail", new CupPage(edition, ViwApiClient.Required(await teams), ViwApiClient.Required(await matches)), edition.Edition.Name,
-            $"Explore {edition.Edition.Name}: jogos, equipes, estatísticas e premiações da edição {edition.Edition.Year} da VIW.", PortalRoutes.Cup(slug));
+        var teams = ViwApiClient.CollectAsync<TeamResponse>(page => api.TeamsAsync(slug, page, ct, 100));
+        var overview = api.CompetitionViewAsync(slug, ct);
+        var scorers = ViwApiClient.CollectAsync<PlayerStatisticsResponse>(page => api.PlayerStatsAsync(slug, page, ct));
+        var awards = ViwApiClient.CollectAsync<AwardResponse>(page => api.AwardsAsync(slug, page, ct));
+        await Task.WhenAll(teams, overview, scorers, awards);
+        var view = ViwApiClient.Required(await overview); var allGames = view.Phases.SelectMany(x => x.Matches).ToArray(); var allTeams = await teams;
+        return Page("Detail", new CupPage(edition, new(allTeams, 1, 100, allTeams.Count), new(allGames, 1, Math.Max(1, allGames.Length), allGames.Length), view, await scorers, await awards, visao == "geral" && edition.Edition.Status == "Archived"), edition.Edition.Name,
+            $"Classificação, fases, jogos, equipes, artilharia e destaques de {edition.Edition.Name}.", PortalRoutes.Cup(slug));
     }
     [HttpGet("/campeonatos/{slug}/equipes")]
     public async Task<IActionResult> Teams(string slug, [Range(1, 100000)] int page = 1, CancellationToken ct = default)

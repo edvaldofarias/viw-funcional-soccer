@@ -25,5 +25,7 @@ public sealed class Match : Entity
     public MatchStatus Status { get; set; }
     public int? HomeScore { get; set; }
     public int? AwayScore { get; set; }
+    public int? HomePenalties { get; set; }
+    public int? AwayPenalties { get; set; }
     public int Revision { get; set; }
 }

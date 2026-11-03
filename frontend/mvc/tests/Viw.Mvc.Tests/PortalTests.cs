@@ -1,9 +1,39 @@
 using System.Net;
+using System.Text.RegularExpressions;
+using Viw.Contracts.Catalog;
 
 namespace Viw.Mvc.Tests;
 
 public sealed class PortalTests
 {
+    [Fact]
+    public async Task Wiki_displays_championship_cards_and_career_totals_in_the_table()
+    {
+        // Arrange
+        await using var fixture = new PortalFixture();
+        fixture.Api.PlayerStats = new(5, 7, 3, 10, 0, 0);
+        var edition = new EditionResponse(FixtureApi.EditionId, Guid.Empty, FixtureApi.Slug,
+            "Copa de Teste", 2026, 1, "Archived", "America/Sao_Paulo", null, null);
+        var otherEdition = edition with { Id = Guid.NewGuid(), Name = "Outra Copa", Year = 2025 };
+        fixture.Api.PlayerHistory = [
+            new(edition, new(FixtureApi.HomeId, "Aurora", null), "Reis", DateTimeOffset.UtcNow, null,
+                Statistics: new(3, 0, 0, 6, 0, 0), Discipline: new(5, 2)),
+            new(otherEdition, new(FixtureApi.AwayId, "Estrela", null), "Reis", DateTimeOffset.UtcNow, null,
+                Statistics: new(2, 0, 0, 4, 0, 0), Discipline: new(2, 1))
+        ];
+        using var client = fixture.CreateClient();
+        // Act
+        var html = WebUtility.HtmlDecode(await client.GetStringAsync("/wiki/jogadores/leo-reis"));
+        html = Regex.Replace(html, @">\s+<", "><");
+        // Assert
+        html.ShouldContain("title=\"Cartões amarelos no campeonato\">CA</abbr>");
+        html.ShouldContain("title=\"Cartões vermelhos no campeonato\">CV</abbr>");
+        html.ShouldContain("<td>5</td><td>2</td></tr>");
+        html.ShouldContain("<td>2</td><td>1</td></tr>");
+        html.ShouldContain("<td>7</td><td>3</td></tr></tfoot>");
+        html.ShouldContain("7 cartões amarelos e 3 cartões vermelhos registrados.");
+    }
+
     [Theory]
     [InlineData("/")]
     [InlineData("/campeonatos")]

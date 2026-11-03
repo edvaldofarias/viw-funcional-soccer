@@ -36,6 +36,7 @@ Contagens representam o instante da consulta, não limites, asserções permanen
 | `player.*.team` | Equipe atual declarada; não reescrever participações antigas após transferência |
 | `player.*.n`, `p` | Número/posição quando disponíveis, preservados como texto |
 | `player.*.dt` | Estatísticas acumuladas em texto `chave=valor#...`; não são um documento JSON nem fatos individuais por partida |
+| `player.*.dt` chaves `14`, `16` | Totais de cartões amarelos e vermelhos, respectivamente. Usados em edições arquivadas; não somar aos eventos das súmulas |
 | `player.*.fs` | Agregados por fase, observados na La Liga; contrato a validar por edição |
 | `ART`, `CAR` | Campos auxiliares numéricos; aparecem como inteiros em 2023 e decimais em 2026. Sem significado universal confirmado, não usar como gols/cartões |
 | `SUSP`, `SUSP2`, `id_susp` | Metadados de suspensão observados na La Liga; validar regras específicas antes de derivar elegibilidade |
@@ -69,6 +70,7 @@ O adaptador do Worker usa o estado da partida: se encerrada (`st=3` ou `finished
 - La Liga contém sete partidas com referências que não resolvem equipes cadastradas; preservar como confrontos futuros/pendentes, sem fabricar times. O modelo permite participantes nulos antes da conclusão.
 - Todas as referências de equipe nos cadastros de jogadores resolviam na amostra, mas isso não garante integridade futura.
 - Nas súmulas históricas amostradas foram vistos códigos `ac=1` e `9`; na La Liga, `1`, `3`, `4`, `7` e `9`.
+- Conferência em 02/11/2026: a Premier League possui totais `14=78` e `16=8` nos cadastros, mas nenhuma ocorrência `ac=3/4` nas súmulas. Na La Liga, os 53 amarelos (`ac=3`) e seis vermelhos (`ac=4`) correspondem aos agregados `14/16`. Por isso, edições arquivadas usam os totais por cadastro quando a chave está presente, inclusive zero explícito; sem a chave, usam eventos de partidas encerradas. Edições em andamento continuam usando somente eventos de partidas encerradas. Agregados não são distribuídos entre jogos ou equipes nem somados aos eventos.
 - O portal antigo interpreta `ac=7` como relação/presença, com `val1=0` presente e `val1=1` reserva ausente na regra da La Liga. Não extrapolar essa regra para 2023, cuja amostra não tem `ac=7`.
 - Sem súmula de presença válida, jogos disputados pelo jogador ficam desconhecidos. Não inferir presença apenas por estar no elenco ou ter agregado acumulado.
 - Não inferir um gol individual para cada valor agregado. `MatchSourceEvent` preserva cada evento e `PlayerMatchStatistics` só recebe informação validada.

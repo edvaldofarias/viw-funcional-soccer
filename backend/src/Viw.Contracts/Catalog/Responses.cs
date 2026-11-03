@@ -72,7 +72,7 @@ public sealed record TeamDetailResponse(TeamResponse Team, IReadOnlyList<CoachRe
 /// <param name="ImageAssetId">Referência da foto oficial, ou da foto importada quando disponível.</param>
 public sealed record PlayerResponse(Guid Id, string Slug, string Name, Guid? ImageAssetId);
 
-/// <summary>Totais registrados nas súmulas de partidas encerradas.</summary>
+/// <summary>Totais registrados; cartões de edições arquivadas usam os agregados quando disponíveis, sem somá-los às súmulas.</summary>
 /// <param name="Goals">Soma dos gols conhecidos; não concede automaticamente premiação oficial.</param>
 /// <param name="YellowCards">Soma dos cartões amarelos conhecidos.</param>
 /// <param name="RedCards">Soma dos cartões vermelhos conhecidos.</param>
@@ -81,6 +81,9 @@ public sealed record PlayerResponse(Guid Id, string Slug, string Name, Guid? Ima
 /// <param name="IncompleteSheets">Quantidade de registros com súmula incompleta ou com revisão anterior à da partida.</param>
 public sealed record PlayerTotalsResponse(long Goals, long YellowCards, long RedCards,
     long KnownAppearances, int UnknownAppearances, int IncompleteSheets);
+
+/// <summary>Cartões do jogador na edição inteira, sem atribuir agregados a partidas ou equipes.</summary>
+public sealed record PlayerDisciplineResponse(long YellowCards, long RedCards);
 
 /// <summary>Identidade canônica e totais registrados da carreira.</summary>
 /// <param name="Player">Identificação oficial do jogador.</param>
@@ -103,9 +106,11 @@ public sealed record PlayerStatisticsResponse(PlayerResponse Player, PlayerTotal
 /// <param name="ImageUrl">Foto original desta edição, quando disponível.</param>
 /// <param name="Statistics">Estatísticas individuais restritas à edição e equipe desta inscrição.</param>
 /// <param name="Results">Resultados nos jogos com presença conhecida do jogador.</param>
+/// <param name="Discipline">Cartões da edição inteira; repetidos nas inscrições quando há mais de uma equipe na mesma edição.</param>
 public sealed record PlayerHistoryResponse(EditionResponse Edition, TeamResponse Team, string OriginalName,
     DateTimeOffset ObservedFrom, DateTimeOffset? ObservedUntil,
-    string? ImageUrl = null, PlayerTotalsResponse? Statistics = null, TeamStatisticsResponse? Results = null);
+    string? ImageUrl = null, PlayerTotalsResponse? Statistics = null, TeamStatisticsResponse? Results = null,
+    PlayerDisciplineResponse? Discipline = null);
 
 /// <summary>Jogador e dados da inscrição observada na equipe.</summary>
 /// <param name="Player">Identidade canônica vinculada ao cadastro original.</param>

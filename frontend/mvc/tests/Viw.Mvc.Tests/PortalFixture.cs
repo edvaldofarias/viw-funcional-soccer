@@ -38,6 +38,8 @@ internal sealed class FixtureApi : HttpMessageHandler
     public bool Malformed { get; set; }
     public bool Empty { get; set; }
     public string PlayerName { get; set; } = "Léo Reis";
+    public PlayerTotalsResponse PlayerStats { get; set; } = new(0, 1, 0, 0, 1, 1);
+    public PlayerHistoryResponse[]? PlayerHistory { get; set; }
     public ConcurrentBag<string> Requests { get; } = [];
     private EditionResponse Edition => new(EditionId, Guid.Empty, Slug, "Copa de Teste", 2026, 2, Archived?"Archived":"Active", "America/Sao_Paulo", null, null);
     private static TeamResponse Home => new(HomeId, "Aurora", null);
@@ -82,9 +84,9 @@ internal sealed class FixtureApi : HttpMessageHandler
         else if(path==root+"/awards" && MissingAward) response=Paged(Array.Empty<AwardResponse>());
         else if (path == root + "/awards") response = Paged(new[] { new AwardResponse(Guid.NewGuid(), "ballon-dor", "Ballon d’Or", "Championship", null, null, PlayerId, PlayerName, null, null, null, DateTimeOffset.UtcNow) });
         else if (path == "/api/v1/players") response = Paged(new[] { Player });
-        else if (path == "/api/v1/players/leo-reis") response = Json(new PlayerDetailResponse(Player, Stats));
+        else if (path == "/api/v1/players/leo-reis") response = Json(new PlayerDetailResponse(Player, PlayerStats));
         else if (path == "/api/v1/players/by-id/" + PlayerId.ToString("D")) response = Json(Player);
-        else if (path == "/api/v1/players/leo-reis/history") response = Paged(new[] { new PlayerHistoryResponse(Edition, Home, "Reis", DateTimeOffset.UtcNow, null) });
+        else if (path == "/api/v1/players/leo-reis/history") response = Paged(PlayerHistory ?? new[] { new PlayerHistoryResponse(Edition, Home, "Reis", DateTimeOffset.UtcNow, null) });
         else response = new HttpResponseMessage(HttpStatusCode.NotFound);
         return Task.FromResult(response);
     }

@@ -1,11 +1,16 @@
 using Microsoft.EntityFrameworkCore;
 using Viw.Contracts.Catalog;
 using Viw.Domain.Competition;
+using Viw.Infrastructure.Statistics;
 
 namespace Viw.Infrastructure.Queries;
 
 public sealed partial class ViwQueries
 {
+    private IQueryable<SourcePlayer> LinkedSources(Guid playerId) =>
+        db.SourcePlayerRecords.Where(source => db.PlayerIdentityLinkRecords.Any(link =>
+            link.SourcePlayerId == source.Id && link.PlayerId == playerId && link.UnlinkedAt == null));
+
     private IQueryable<PlayerResponse> ProjectPlayers(IQueryable<Player> players) => players.Select(player =>
         new PlayerResponse(player.Id, player.Slug, player.DisplayName, player.OfficialImageId ??
             (from link in db.PlayerIdentityLinkRecords
@@ -50,7 +55,11 @@ public sealed partial class ViwQueries
             .SingleOrDefaultAsync(ct);
         var names=await (from l in db.PlayerIdentityLinkRecords join s in db.SourcePlayerRecords on l.SourcePlayerId equals s.Id
             where l.PlayerId==player.Id && l.UnlinkedAt==null select new {s.OriginalName,s.Nickname}).ToArrayAsync(ct);
-        return new(player, totals ?? new PlayerTotalsResponse(0, 0, 0, 0, 0, 0),names.SelectMany(x=>new[]{x.OriginalName,x.Nickname}).Where(x=>!string.IsNullOrWhiteSpace(x)).Select(x=>x!).Distinct(StringComparer.OrdinalIgnoreCase).Order().ToArray());
+        var cards = await new PlayerDisciplineReader(db).ReadAsync(LinkedSources(player.Id), ct);
+        totals = (totals ?? new PlayerTotalsResponse(0, 0, 0, 0, 0, 0)) with {
+            YellowCards = cards.Sum(x => x.YellowCards), RedCards = cards.Sum(x => x.RedCards)
+        };
+        return new(player, totals,names.SelectMany(x=>new[]{x.OriginalName,x.Nickname}).Where(x=>!string.IsNullOrWhiteSpace(x)).Select(x=>x!).Distinct(StringComparer.OrdinalIgnoreCase).Order().ToArray());
     }
 
     public async Task<PageResponse<PlayerHistoryResponse>?> PlayerHistoryAsync(string slug, PageRequest request, CancellationToken ct)
@@ -70,6 +79,10 @@ public sealed partial class ViwQueries
                 registration.ValidFrom, registration.ValidTo, source.SourceImageUrl, null, null);
         var page = await PageAsync(query, request, ct);
         var editionIds = page.Items.Select(x => x.Edition.Id).Distinct().ToArray();
+        var cards = await new PlayerDisciplineReader(db).ReadAsync(
+            LinkedSources(playerId.Value).Where(x => editionIds.Contains(x.EditionId)), ct);
+        var discipline = cards.GroupBy(x => x.EditionId).ToDictionary(x => x.Key,
+            x => new PlayerDisciplineResponse(x.Sum(s => s.YellowCards), x.Sum(s => s.RedCards)));
         var facts = await (from fact in db.PlayerMatchStatisticsRecords.AsNoTracking()
             join link in db.PlayerIdentityLinkRecords.AsNoTracking() on fact.SourcePlayerId equals link.SourcePlayerId
             join match in db.MatchRecords.AsNoTracking() on fact.MatchId equals match.Id
@@ -83,7 +96,8 @@ public sealed partial class ViwQueries
             var games = rows.Where(x => x.Fact.Appearances == 1 && x.Match.HomeScore != null && x.Match.AwayScore != null)
                 .DistinctBy(x => x.Match.Id).Select(x => new { For = x.Match.HomeTeamId == entry.Team.Id ? x.Match.HomeScore!.Value : x.Match.AwayScore!.Value,
                     Against = x.Match.HomeTeamId == entry.Team.Id ? x.Match.AwayScore!.Value : x.Match.HomeScore!.Value }).ToArray();
-            return entry with { Statistics = totals, Results = new TeamStatisticsResponse(entry.Team, games.Length, games.Count(x => x.For > x.Against),
+            return entry with { Statistics = totals, Discipline = discipline.GetValueOrDefault(entry.Edition.Id),
+                Results = new TeamStatisticsResponse(entry.Team, games.Length, games.Count(x => x.For > x.Against),
                 games.Count(x => x.For == x.Against), games.Count(x => x.For < x.Against), games.Sum(x => (long)x.For), games.Sum(x => (long)x.Against)) };
         }).ToArray(), page.Page, page.PageSize, page.TotalCount);
     }
@@ -106,7 +120,13 @@ public sealed partial class ViwQueries
                 new PlayerTotalsResponse(facts.Sum(x => (long)(x.fact.Goals ?? 0)), facts.Sum(x => (long)(x.fact.YellowCards ?? 0)),
                     facts.Sum(x => (long)(x.fact.RedCards ?? 0)), facts.Sum(x => (long)(x.fact.Appearances ?? 0)),
                     facts.Count(x => x.fact.Appearances == null), facts.Count(x => !x.fact.IsComplete || x.fact.Revision != x.match.Revision)));
-        return await PageAsync(query, request, ct);
+        var page = await PageAsync(query, request, ct);
+        var ids = page.Items.Select(x => x.Player.Id).ToArray();
+        var cards = (await new PlayerDisciplineReader(db).ReadAsync(
+            db.SourcePlayerRecords.Where(x => ids.Contains(x.Id)), ct)).ToDictionary(x => x.SourcePlayerId);
+        return new(page.Items.Select(entry => entry with { Statistics = entry.Statistics with {
+            YellowCards = cards[entry.Player.Id].YellowCards, RedCards = cards[entry.Player.Id].RedCards
+        } }).ToArray(), page.Page, page.PageSize, page.TotalCount);
     }
 
     public async Task<PageResponse<TeamStatisticsResponse>?> TeamStatisticsAsync(string slug, PageRequest request, CancellationToken ct)

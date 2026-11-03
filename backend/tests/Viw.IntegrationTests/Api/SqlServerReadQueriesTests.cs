@@ -3,12 +3,81 @@ using Viw.Contracts.Catalog;
 using Viw.Contracts.Imports;
 using Viw.Domain.Competition;
 using Viw.Infrastructure.Queries;
+using Viw.Infrastructure.Imports;
+using Viw.Infrastructure.Statistics;
 using Viw.IntegrationTests.Support;
 
 namespace Viw.IntegrationTests.Api;
 
 public sealed class SqlServerReadQueriesTests
 {
+    [SqlServerFact]
+    public async Task Archived_cards_use_source_totals_once_and_current_cards_use_finished_sheets()
+    {
+        // Arrange
+        await using var database = await SqlServerTestDatabase.CreateAsync();
+        var db = database.Context;
+        var data = database.Data;
+        var historical = new SourcePlayer {
+            EditionId = data.OtherEdition.Id, Provider = ChampionshipCatalog.Provider, ExternalId = "historical-player",
+            OriginalName = "Nome antigo", AggregateStatisticsJson = """{"totals":{"14":5,"16":2}}"""
+        };
+        var archived = await db.ChampionshipEditionRecords.SingleAsync(x => x.Id == data.OtherEdition.Id);
+        archived.Status = EditionStatus.Archived;
+        var current = await db.SourcePlayerRecords.SingleAsync(x => x.Id == data.SourcePlayer.Id);
+        current.Provider = ChampionshipCatalog.Provider;
+        current.AggregateStatisticsJson = """{"totals":{"14":99,"16":99}}""";
+        var game = data.CreateMatch();
+        game.Status = MatchStatus.Finished; game.HomeScore = 2; game.AwayScore = 0;
+        var live = data.CreateMatch();
+        live.ExternalId = "live-card-game"; live.Status = MatchStatus.Live;
+        var pastAway = new TeamEntry {
+            EditionId = data.OtherEdition.Id, Provider = ChampionshipCatalog.Provider,
+            ExternalId = "past-away", Name = "Equipe antiga"
+        };
+        var past = new Match {
+            EditionId = data.OtherEdition.Id, Provider = ChampionshipCatalog.Provider, ExternalId = "past-game",
+            HomeTeamId = data.ForeignTeam.Id, AwayTeamId = pastAway.Id,
+            Status = MatchStatus.Finished, HomeScore = 0, AwayScore = 0, Revision = 1
+        };
+        db.AddRange(historical, game, live, pastAway, past, data.CreateIdentityLink(),
+            new PlayerIdentityLink { EditionId = historical.EditionId, SourcePlayerId = historical.Id,
+                PlayerId = data.Player.Id, LinkedAt = DateTimeOffset.UtcNow, LinkedBy = "test", Reason = "Conferido" },
+            new PlayerRegistration { EditionId = historical.EditionId, SourcePlayerId = historical.Id,
+                TeamEntryId = data.ForeignTeam.Id, ValidFrom = DateTimeOffset.UtcNow },
+            new PlayerRegistration { EditionId = current.EditionId, SourcePlayerId = current.Id,
+                TeamEntryId = data.Home.Id, ValidFrom = DateTimeOffset.UtcNow },
+            new PlayerMatchStatistics { EditionId = historical.EditionId, SourcePlayerId = historical.Id,
+                MatchId = past.Id, TeamEntryId = data.ForeignTeam.Id, YellowCards = 1, RedCards = 0,
+                Appearances = 1, Goals = 0, Revision = 1, IsComplete = true },
+            new PlayerMatchStatistics { EditionId = current.EditionId, SourcePlayerId = current.Id,
+                MatchId = game.Id, TeamEntryId = data.Home.Id, YellowCards = 2, RedCards = 1,
+                Appearances = 1, Goals = 2, Revision = 1, IsComplete = true },
+            new PlayerMatchStatistics { EditionId = current.EditionId, SourcePlayerId = current.Id,
+                MatchId = live.Id, TeamEntryId = data.Home.Id, YellowCards = 8, RedCards = 4,
+                Appearances = 1, Goals = 0, Revision = 1, IsComplete = true });
+        await db.SaveChangesAsync();
+        db.ChangeTracker.Clear();
+        var queries = new ViwQueries(db);
+        // Act
+        var player = await queries.PlayerAsync(data.Player.Slug, default);
+        var history = await queries.PlayerHistoryAsync(data.Player.Slug, new PageRequest(), default);
+        var leaderboard = await queries.PlayerStatisticsAsync(data.OtherEdition.Slug, new PageRequest(), default);
+        var sheet = await queries.MatchPlayersAsync(data.OtherEdition.Slug, past.Id, new PageRequest(), default);
+        var reader = await new PlayerStatisticsReader(db).ReadAsync(data.Player.Id, null);
+        // Assert
+        player!.Statistics.YellowCards.ShouldBe(7);
+        player.Statistics.RedCards.ShouldBe(3);
+        player.Statistics.Goals.ShouldBe(2);
+        history!.Items.Single(x => x.Edition.Id == data.OtherEdition.Id).Discipline.ShouldBe(new PlayerDisciplineResponse(5, 2));
+        history.Items.Single(x => x.Edition.Id == data.Edition.Id).Discipline.ShouldBe(new PlayerDisciplineResponse(2, 1));
+        leaderboard!.Items.Single().Statistics.YellowCards.ShouldBe(5);
+        leaderboard.Items.Single().Statistics.RedCards.ShouldBe(2);
+        sheet!.Items.Single().YellowCards.ShouldBe(1);
+        reader.YellowCards.ShouldBe(7);
+        reader.RedCards.ShouldBe(3);
+    }
+
     [SqlServerFact]
     public async Task Catalog_is_paginated_and_child_resources_are_scoped_to_the_requested_edition()
     {

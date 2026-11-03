@@ -16,7 +16,10 @@ public sealed class PlayerStatisticsReader(ViwDbContext db)
             where link.PlayerId == playerId && link.UnlinkedAt == null &&
                 (editionId == null || statistic.EditionId == editionId)
             select statistic).ToListAsync(ct);
-        return new(playerId, facts.Sum(x => x.Goals ?? 0), facts.Sum(x => x.YellowCards ?? 0), facts.Sum(x => x.RedCards ?? 0),
+        var sources = db.SourcePlayerRecords.Where(source => (editionId == null || source.EditionId == editionId) &&
+            db.PlayerIdentityLinkRecords.Any(link => link.SourcePlayerId == source.Id && link.PlayerId == playerId && link.UnlinkedAt == null));
+        var cards = await new PlayerDisciplineReader(db).ReadAsync(sources, ct);
+        return new(playerId, facts.Sum(x => x.Goals ?? 0), checked((int)cards.Sum(x => x.YellowCards)), checked((int)cards.Sum(x => x.RedCards)),
             facts.Sum(x => x.Appearances ?? 0), facts.Count(x => x.Appearances == null), facts.Count(x => !x.IsComplete));
     }
 }

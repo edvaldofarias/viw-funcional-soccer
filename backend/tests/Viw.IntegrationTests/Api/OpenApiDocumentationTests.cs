@@ -70,5 +70,11 @@ public sealed class OpenApiDocumentationTests(WebApplicationFactory<Program> fac
             .GetProperty("description").GetString()!.ShouldContain("não equivale a ausência");
         schemas.GetProperty("PlayerHistoryResponse").GetProperty("properties").GetProperty("observedFrom")
             .GetProperty("description").GetString()!.ShouldContain("data histórica");
+        schemas.GetProperty("PlayerHistoryResponse").GetProperty("properties").GetProperty("finalPosition")
+            .GetProperty("description").GetString()!.ShouldContain("edição encerrada");
+        schemas.GetProperty("PlayerDetailResponse").GetProperty("properties").GetProperty("cupsPlayed")
+            .GetProperty("description").GetString()!.ShouldContain("edições distintas");
+        schemas.GetProperty("PlayerResultsResponse").GetProperty("properties").GetProperty("played")
+            .GetProperty("description").GetString()!.ShouldContain("placar é desconhecido");
     }
 }

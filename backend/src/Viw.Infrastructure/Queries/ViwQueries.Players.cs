@@ -96,7 +96,7 @@ public sealed partial class ViwQueries
         return new(page.Items.Select(entry => {
             var rows = facts.Where(x => x.Fact.EditionId == entry.Edition.Id && x.Fact.TeamEntryId == entry.Team.Id).ToArray();
             var totals = new PlayerTotalsResponse(rows.Sum(x => (long)(x.Fact.Goals ?? 0)), rows.Sum(x => (long)(x.Fact.YellowCards ?? 0)),
-                rows.Sum(x => (long)(x.Fact.RedCards ?? 0)), rows.Sum(x => (long)(x.Fact.Appearances ?? 0)),
+                rows.Sum(x => (long)(x.Fact.RedCards ?? 0)), rows.Where(x => x.Fact.Appearances == 1).Select(x => x.Match.Id).Distinct().LongCount(),
                 rows.Count(x => x.Fact.Appearances == null), rows.Count(x => !x.Fact.IsComplete || x.Fact.Revision != x.Match.Revision));
             var games = rows.Where(x => x.Fact.Appearances == 1 && x.Match.HomeScore != null && x.Match.AwayScore != null)
                 .DistinctBy(x => x.Match.Id).Select(x => new { For = x.Match.HomeTeamId == entry.Team.Id ? x.Match.HomeScore!.Value : x.Match.AwayScore!.Value,

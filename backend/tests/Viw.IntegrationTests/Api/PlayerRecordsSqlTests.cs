@@ -72,10 +72,52 @@ public sealed class PlayerRecordsSqlTests
         records.LongestWinningStreaks.Single().Matches.Select(x => x.Match.Id).ShouldBe(new[] { oldGame.Id, win.Id });
         records.BestPlacements.Single().Position.ShouldBe(2);
         records.WorstPlacements.Single().Position.ShouldBe(6);
+        profile.Results.ShouldBe(new PlayerResultsResponse(3, 2, 0, 1));
+        profile.CupsPlayed.ShouldBe(2);
+        history.Items.Single().FinalPosition.ShouldBe(2);
+        var olderHistory = await queries.PlayerHistoryAsync(data.Player.Slug, new PageRequest { Page = 2, PageSize = 1 }, default);
+        olderHistory!.Items.Single().FinalPosition.ShouldBe(6);
         profile.Awards!.Count.ShouldBe(3);
         profile.Awards.ShouldNotContain(x => x.Award.Id == draft.Id || x.Award.Id == revoked.Id);
         profile.Awards.Single(x => x.Award.Id == selection.Id).RoundName.ShouldBe("Rodada 3");
         profile.Awards.Single(x => x.Award.Id == oldAward.Id).Edition.Id.ShouldBe(previous.Id);
+        db.ChangeTracker.Entries().ShouldBeEmpty();
+    }
+
+    [SqlServerFact]
+    public async Task Career_cups_do_not_duplicate_transfers_and_active_editions_have_no_final_position()
+    {
+        // Arrange
+        await using var database = await SqlServerTestDatabase.CreateAsync();
+        var db = database.Context; var data = database.Data;
+        var edition = await db.ChampionshipEditionRecords.SingleAsync(x => x.Id == data.Edition.Id);
+        edition.Status = EditionStatus.Active;
+        var win = data.CreateMatch();
+        win.Status = MatchStatus.Finished; win.HomeScore = 2; win.AwayScore = 0;
+        var scheduled = data.CreateMatch();
+        scheduled.ExternalId = "scheduled-match"; scheduled.Status = MatchStatus.Scheduled;
+        scheduled.HomeScore = scheduled.AwayScore = null;
+        var observed = DateTimeOffset.UtcNow;
+        db.AddRange(win, scheduled, data.CreateIdentityLink(),
+            new PlayerRegistration { EditionId = edition.Id, SourcePlayerId = data.SourcePlayer.Id,
+                TeamEntryId = data.Home.Id, ValidFrom = observed },
+            new PlayerRegistration { EditionId = edition.Id, SourcePlayerId = data.SourcePlayer.Id,
+                TeamEntryId = data.Away.Id, ValidFrom = observed.AddDays(-1) },
+            Statistic(win, data.SourcePlayer.Id, data.Home.Id, 1),
+            Statistic(scheduled, data.SourcePlayer.Id, data.Home.Id, 0));
+        await db.SaveChangesAsync();
+        db.ChangeTracker.Clear();
+        var queries = new ViwQueries(db);
+        // Act
+        var profile = await queries.PlayerAsync(data.Player.Slug, default);
+        var history = await queries.PlayerHistoryAsync(data.Player.Slug, new PageRequest { PageSize = 1 }, default);
+        // Assert
+        profile!.CupsPlayed.ShouldBe(1);
+        profile.Statistics.KnownAppearances.ShouldBe(1);
+        profile.Results.ShouldBe(new PlayerResultsResponse(1, 1, 0, 0));
+        history!.TotalCount.ShouldBe(2);
+        history.Items.Single().Statistics!.KnownAppearances.ShouldBe(1);
+        history.Items.Single().FinalPosition.ShouldBeNull();
         db.ChangeTracker.Entries().ShouldBeEmpty();
     }
 

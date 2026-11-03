@@ -143,7 +143,10 @@
                                                 <tr>
                                                     <th>Totais da carreira</th>
                                                     <td>@stats.KnownAppearances</td>
-                                                    <td colspan="4">Todas as edições vinculadas</td>
+                                                    <td>@(results?.Wins.ToString() ?? "—")</td>
+                                                    <td>@(results?.Draws.ToString() ?? "—")</td>
+                                                    <td>@(results?.Losses.ToString() ?? "—")</td>
+                                                    <td>@(results is null ? "—" : ((long)results.Wins * 3 + results.Draws).ToString())</td>
                                                     <td>@stats.Goals</td>
                                                     <td>@(stats.KnownAppearances > 0 ? ((decimal)stats.Goals /
                                                                                         stats.KnownAppearances).ToString("0.00") : "—")</td>

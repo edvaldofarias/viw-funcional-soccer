@@ -140,4 +140,36 @@ public sealed class PlayerRecordsTests
         result.LongestWinningStreaks.ShouldBeEmpty();
         result.LongestLosingStreaks.ShouldBeEmpty();
     }
+
+    [Fact]
+    public void Career_results_count_distinct_confirmed_games_and_use_known_regulation_scores_from_the_players_side()
+    {
+        // Arrange
+        var edition = Edition(2026);
+        var win = Game(edition, 1, 3, 0);
+        var awayWin = Game(edition, 2, 0, 2) with { TeamId = Away.Id };
+        var loss = Game(edition, 3, 0, 4);
+        var draw = Game(edition, 4, 1, 1);
+        draw = draw with { Match = draw.Match with { HomePenalties = 5, AwayPenalties = 3 } };
+        var unknownScore = Game(edition, 5, 0, 0);
+        unknownScore = unknownScore with { Match = unknownScore.Match with { HomeScore = null } };
+        var live = Game(edition, 6, 8, 0);
+        live = live with { Match = live.Match with { Status = "Live" } };
+        // Act
+        var result = PlayerRecordsCalculator.CalculateResults([win, win, awayWin, loss, draw, unknownScore, live,
+            Game(edition, 7, 8, 0, present: false), Game(edition, 8, 8, 0, present: null)]);
+        // Assert
+        result.ShouldBe(new PlayerResultsResponse(5, 2, 1, 1));
+    }
+
+    [Fact]
+    public void Empty_career_has_zero_confirmed_games_and_results()
+    {
+        // Arrange
+        PlayerMatchRecordResponse[] games = [];
+        // Act
+        var result = PlayerRecordsCalculator.CalculateResults(games);
+        // Assert
+        result.ShouldBe(new PlayerResultsResponse(0, 0, 0, 0));
+    }
 }

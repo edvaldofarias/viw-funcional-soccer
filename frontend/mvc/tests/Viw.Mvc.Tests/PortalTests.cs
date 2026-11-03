@@ -8,7 +8,7 @@ namespace Viw.Mvc.Tests;
 public sealed class PortalTests
 {
     [Fact]
-    public async Task Every_wiki_profile_shows_all_record_labels_and_award_categories_even_without_records()
+    public async Task Every_wiki_profile_shows_all_record_labels_but_hides_individual_awards_without_grants()
     {
         // Arrange
         await using var fixture = new PortalFixture();
@@ -17,12 +17,11 @@ public sealed class PortalTests
         var html = WebUtility.HtmlDecode(await client.GetStringAsync("/wiki/jogadores/leo-reis"));
         // Assert
         foreach (var label in new[] { "Partidas em que mais fez gols", "Maior vitória", "Maior derrota",
-            "Melhor classificação", "Pior classificação", "Maior sequência de vitórias", "Maior sequência de derrotas",
-            "Prêmios individuais", "Artilheiro do campeonato", "Craque do campeonato (Ballon d’Or)",
-            "Seleção do campeonato", "Seleção da rodada" })
+            "Melhor classificação", "Pior classificação", "Maior sequência de vitórias", "Maior sequência de derrotas" })
             html.ShouldContain(label);
         html.ShouldContain("Sem registro disponível.");
-        html.ShouldContain("Nenhum prêmio confirmado nesta categoria.");
+        html.ShouldNotContain("Prêmios individuais");
+        html.ShouldNotContain("premios-individuais");
     }
 
     [Fact]
@@ -84,7 +83,71 @@ public sealed class PortalTests
         html.ShouldContain("Rodada 3");
         html.ShouldContain("Atacante");
         html.ShouldContain("rodada=" + FixtureApi.RoundId);
+        html.ShouldContain("href=\"#premios-individuais\"");
+        html.ShouldContain("<h3>Seleção da rodada</h3>");
+        html.ShouldNotContain("<h3>Artilheiro do campeonato</h3>");
+        html.ShouldNotContain("Nenhum prêmio confirmado nesta categoria.");
         html.ShouldNotContain("Mais gols entre as participações desta");
+    }
+
+    [Fact]
+    public async Task Wiki_infobox_uses_global_cups_games_cards_and_results_independently_of_history_page()
+    {
+        // Arrange
+        await using var fixture = new PortalFixture();
+        fixture.Api.CupsPlayed = 6;
+        fixture.Api.PlayerStats = new(7, 12, 2, 51, 1, 0);
+        fixture.Api.PlayerResults = new(51, 30, 10, 11);
+        using var client = fixture.CreateClient();
+        // Act
+        var html = WebUtility.HtmlDecode(await client.GetStringAsync("/wiki/jogadores/leo-reis"));
+        var infobox = Regex.Match(html, """<aside class="wiki-infobox">[\s\S]*?</aside>""").Value;
+        // Assert
+        foreach (var (label, value) in new[] { ("Copas disputadas", 6), ("Jogos", 51), ("Gols", 7),
+            ("Cartões amarelos", 12), ("Cartões vermelhos", 2), ("Vitórias", 30), ("Empates", 10), ("Derrotas", 11) })
+            Regex.IsMatch(infobox, $@"<dt>{label}</dt>\s*<dd>{value}</dd>").ShouldBeTrue(label);
+        html.ShouldNotContain("Presenças");
+        html.ShouldNotContain("presenças");
+        html.ShouldNotContain("Participações registradas");
+    }
+
+    [Theory]
+    [InlineData("Archived", 3, "3º lugar")]
+    [InlineData("Archived", null, "não disponível")]
+    [InlineData("Active", null, "campeonato não encerrado")]
+    [InlineData("Draft", null, "campeonato não encerrado")]
+    [InlineData("Active", 3, "campeonato não encerrado")]
+    public async Task Gallery_shows_only_known_final_positions_from_completed_editions(string status, int? position, string expected)
+    {
+        // Arrange
+        await using var fixture = new PortalFixture();
+        var edition = new EditionResponse(FixtureApi.EditionId, Guid.Empty, FixtureApi.Slug,
+            "Copa de Teste", 2026, 1, status, "America/Sao_Paulo", null, null);
+        fixture.Api.PlayerHistory = [new(edition, new(FixtureApi.HomeId, "Aurora", null),
+            "Reis", DateTimeOffset.UtcNow, null, FinalPosition: position)];
+        using var client = fixture.CreateClient();
+        // Act
+        var html = WebUtility.HtmlDecode(await client.GetStringAsync("/wiki/jogadores/leo-reis"));
+        var gallery = Regex.Match(html, """<section id="galeria">[\s\S]*?</section>""").Value;
+        // Assert
+        gallery.ShouldContain("Classificação final: " + expected);
+        Regex.Matches(gallery, "<figure>").Count.ShouldBe(1);
+    }
+
+    [Theory]
+    [InlineData("/campeonatos/copa-de-teste-2026/estatisticas/jogadores")]
+    [InlineData("/campeonatos/copa-de-teste-2026/jogos/40000000-0000-0000-0000-000000000001")]
+    public async Task Player_statistics_and_match_sheets_use_games_labels(string path)
+    {
+        // Arrange
+        await using var fixture = new PortalFixture();
+        using var client = fixture.CreateClient();
+        // Act
+        var html = await client.GetStringAsync(path);
+        // Assert
+        html.ShouldContain("<th>Jogos</th>");
+        html.ShouldNotContain("Presença");
+        html.ShouldNotContain("presença");
     }
 
     [Theory]

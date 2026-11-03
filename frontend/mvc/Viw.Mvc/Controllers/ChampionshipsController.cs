@@ -49,7 +49,7 @@ public sealed class ChampionshipsController(ViwApiClient api, SeoService seo) : 
         var team = await api.TeamAsync(slug, id, ct);
         if (team is null) return Missing();
         var players = api.RosterAsync(slug, id, page, ct);
-        var matches = api.MatchesAsync(slug, 1, ct, team: id, size: 5);
+        var matches = api.MatchesAsync(slug, 1, ct, team: id, size: 6);
         await Task.WhenAll(players, matches);
         var roster = ViwApiClient.Required(await players);
         if (BeyondPage(roster)) return Missing();

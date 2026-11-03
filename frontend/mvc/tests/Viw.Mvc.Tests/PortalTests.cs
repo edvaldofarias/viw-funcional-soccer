@@ -1,11 +1,59 @@
 using System.Net;
 using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.WebUtilities;
 using Viw.Contracts.Catalog;
 
 namespace Viw.Mvc.Tests;
 
 public sealed class PortalTests
 {
+    [Theory]
+    [InlineData("/wiki/jogadores", "/api/v1/players")]
+    [InlineData("/campeonatos", "/api/v1/championships")]
+    [InlineData("/campeonatos/copa-de-teste-2026/equipes", "/api/v1/championships/copa-de-teste-2026/teams")]
+    [InlineData("/campeonatos/copa-de-teste-2026/jogos", "/api/v1/championships/copa-de-teste-2026/matches")]
+    public async Task Card_listings_request_complete_rows_for_two_and_three_columns(string path, string apiPath)
+    {
+        // Arrange
+        await using var fixture = new PortalFixture();
+        using var client = fixture.CreateClient();
+        // Act
+        using var response = await client.GetAsync(path);
+        // Assert
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var request = fixture.Api.Requests.Select(x => new Uri("http://api.test" + x))
+            .Single(x => x.AbsolutePath == apiPath);
+        QueryHelpers.ParseQuery(request.Query)["pageSize"].ToString().ShouldBe("24");
+    }
+
+    [Fact]
+    public async Task Player_pages_render_twenty_four_distinct_cards_without_losing_records()
+    {
+        // Arrange
+        await using var fixture = new PortalFixture();
+        fixture.Api.PlayerList = Enumerable.Range(1, 48)
+            .Select(i => new PlayerResponse(Guid.NewGuid(), $"jogador-{i}", $"Jogador {i}", null)).ToArray();
+        using var client = fixture.CreateClient();
+        // Act
+        var first = await client.GetStringAsync("/wiki/jogadores");
+        var second = await client.GetStringAsync("/wiki/jogadores?page=2");
+        using var beyondLast = await client.GetAsync("/wiki/jogadores?page=3");
+        // Assert
+        Regex.Matches(first, "class=\"player-tile\"").Count.ShouldBe(24);
+        Regex.Matches(second, "class=\"player-tile\"").Count.ShouldBe(24);
+        foreach (var player in fixture.Api.PlayerList.Take(24))
+        {
+            first.ShouldContain($"href=\"/wiki/jogadores/{player.Slug}\"");
+            second.ShouldNotContain($"href=\"/wiki/jogadores/{player.Slug}\"");
+        }
+        foreach (var player in fixture.Api.PlayerList.Skip(24))
+        {
+            second.ShouldContain($"href=\"/wiki/jogadores/{player.Slug}\"");
+            first.ShouldNotContain($"href=\"/wiki/jogadores/{player.Slug}\"");
+        }
+        beyondLast.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+    }
+
     [Fact]
     public async Task Wiki_displays_championship_cards_and_career_totals_in_the_table()
     {

@@ -7,6 +7,7 @@ namespace Viw.Mvc.Services;
 
 public sealed class ViwApiClient(HttpClient http)
 {
+    private const int CardPageSize = 24;
     private static string PathFor(string slug) => "api/v1/championships/" + Uri.EscapeDataString(slug);
     private async Task<T?> ReadAsync<T>(string path, CancellationToken ct) where T : class
     {
@@ -22,20 +23,20 @@ public sealed class ViwApiClient(HttpClient http)
         query["pageSize"] = size.ToString(System.Globalization.CultureInfo.InvariantCulture);
         return ReadAsync<PageResponse<T>>(QueryHelpers.AddQueryString(path, query), ct);
     }
-    public Task<PageResponse<EditionResponse>?> EditionsAsync(int page, int? year, CancellationToken ct, int size = 20) =>
+    public Task<PageResponse<EditionResponse>?> EditionsAsync(int page, int? year, CancellationToken ct, int size = CardPageSize) =>
         PageAsync<EditionResponse>("api/v1/championships", page, ct, new() { ["year"] = year?.ToString() }, size);
     public Task<EditionDetailResponse?> EditionAsync(string slug, CancellationToken ct) => ReadAsync<EditionDetailResponse>(PathFor(slug), ct);
-    public Task<PageResponse<TeamResponse>?> TeamsAsync(string slug, int page, CancellationToken ct, int size = 20) => PageAsync<TeamResponse>(PathFor(slug) + "/teams", page, ct, size: size);
+    public Task<PageResponse<TeamResponse>?> TeamsAsync(string slug, int page, CancellationToken ct, int size = CardPageSize) => PageAsync<TeamResponse>(PathFor(slug) + "/teams", page, ct, size: size);
     public Task<TeamDetailResponse?> TeamAsync(string slug, Guid id, CancellationToken ct) => ReadAsync<TeamDetailResponse>($"{PathFor(slug)}/teams/{id:D}", ct);
     public Task<PageResponse<RosterPlayerResponse>?> RosterAsync(string slug, Guid id, int page, CancellationToken ct) => PageAsync<RosterPlayerResponse>($"{PathFor(slug)}/teams/{id:D}/players", page, ct);
-    public Task<PageResponse<MatchResponse>?> MatchesAsync(string slug, int page, CancellationToken ct, Guid? team = null, Guid? phase = null, Guid? round = null, MatchState? status = null, int size = 20) =>
+    public Task<PageResponse<MatchResponse>?> MatchesAsync(string slug, int page, CancellationToken ct, Guid? team = null, Guid? phase = null, Guid? round = null, MatchState? status = null, int size = CardPageSize) =>
         PageAsync<MatchResponse>(PathFor(slug) + "/matches", page, ct, new() { ["teamId"] = team?.ToString("D"), ["phaseId"] = phase?.ToString("D"), ["roundId"] = round?.ToString("D"), ["status"] = status?.ToString() }, size);
     public Task<MatchResponse?> MatchAsync(string slug, Guid id, CancellationToken ct) => ReadAsync<MatchResponse>($"{PathFor(slug)}/matches/{id:D}", ct);
     public Task<PageResponse<MatchPlayerResponse>?> MatchPlayersAsync(string slug, Guid id, int page, CancellationToken ct) => PageAsync<MatchPlayerResponse>($"{PathFor(slug)}/matches/{id:D}/players", page, ct);
     public Task<PageResponse<PlayerStatisticsResponse>?> PlayerStatsAsync(string slug, int page, CancellationToken ct) => PageAsync<PlayerStatisticsResponse>(PathFor(slug) + "/statistics/players", page, ct);
     public Task<PageResponse<TeamStatisticsResponse>?> TeamStatsAsync(string slug, int page, CancellationToken ct) => PageAsync<TeamStatisticsResponse>(PathFor(slug) + "/statistics/teams", page, ct);
     public Task<PageResponse<AwardResponse>?> AwardsAsync(string slug, int page, CancellationToken ct) => PageAsync<AwardResponse>(PathFor(slug) + "/awards", page, ct);
-    public Task<PageResponse<PlayerResponse>?> PlayersAsync(int page, string? search, Guid? edition, CancellationToken ct, int size = 20) =>
+    public Task<PageResponse<PlayerResponse>?> PlayersAsync(int page, string? search, Guid? edition, CancellationToken ct, int size = CardPageSize) =>
         PageAsync<PlayerResponse>("api/v1/players", page, ct, new() { ["search"] = search, ["editionId"] = edition?.ToString("D") }, size);
     public Task<PlayerResponse?> PlayerByIdAsync(Guid id, CancellationToken ct) => ReadAsync<PlayerResponse>($"api/v1/players/by-id/{id:D}", ct);
     public Task<PlayerDetailResponse?> PlayerAsync(string slug, CancellationToken ct) => ReadAsync<PlayerDetailResponse>("api/v1/players/" + Uri.EscapeDataString(slug), ct);

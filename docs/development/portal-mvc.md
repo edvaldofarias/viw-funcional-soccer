@@ -57,6 +57,8 @@ Também podem rodar com `docker compose --profile tests run --build --rm mvc-tes
 
 Os testes HTTP usam a aplicação MVC real com API simulada, AAA e Shouldly: HTML renderizado, metadados, navegação, erros, filtros, sitemaps e segurança dos nomes. Não exigem SQL Server. Os testes de integração do backend continuam necessários para validar as consultas reais.
 
+Listagens em grades de cartões (jogadores, campeonatos, equipes e jogos) usam 24 registros por página, completando linhas de duas ou três colunas. A prévia de jogos da equipe usa seis cartões. A última página pode ter uma linha incompleta quando restarem menos registros; nenhum item é duplicado ou omitido para preencher espaços. Listagens tabulares mantêm 20 registros, e limites explícitos de prévias e consultas completas são preservados.
+
 Não publica, não aplica migrations e não altera prêmios ou identidades ao abrir uma página. Autenticação administrativa, acompanhamento restrito do Worker, entrega de mídia e publicação no SmarterASP.NET são trabalhos separados.
 
 ## Home institucional

@@ -451,10 +451,50 @@ namespace Viw.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasAlternateKey("EditionId", "Id");
+
                     b.HasIndex("EditionId", "PhaseId", "SortOrder")
                         .IsUnique();
 
                     b.ToTable("CompetitionGroup", "viw");
+                });
+
+            modelBuilder.Entity("Viw.Domain.Competition.CompetitionGroupTeam", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("EditionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("GroupId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("PhaseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<Guid>("TeamEntryId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EditionId", "TeamEntryId");
+
+                    b.HasIndex("EditionId", "PhaseId", "GroupId");
+
+                    b.HasIndex("EditionId", "PhaseId", "TeamEntryId")
+                        .IsUnique();
+
+                    b.ToTable("CompetitionGroupTeam", "viw");
                 });
 
             modelBuilder.Entity("Viw.Domain.Competition.CompetitionPhase", b =>
@@ -1454,9 +1494,6 @@ namespace Viw.Infrastructure.Persistence.Migrations
                         .HasColumnType("nvarchar(128)")
                         .UseCollation("Latin1_General_100_BIN2");
 
-                    b.Property<Guid?>("GroupId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -1492,8 +1529,6 @@ namespace Viw.Infrastructure.Persistence.Migrations
                     b.HasIndex("OfficialImageId");
 
                     b.HasIndex("SourceImageAssetId");
-
-                    b.HasIndex("EditionId", "GroupId");
 
                     b.HasIndex("EditionId", "Provider", "ExternalId")
                         .IsUnique();
@@ -1606,6 +1641,23 @@ namespace Viw.Infrastructure.Persistence.Migrations
                         .WithMany()
                         .HasForeignKey("EditionId", "PhaseId")
                         .HasPrincipalKey("EditionId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Viw.Domain.Competition.CompetitionGroupTeam", b =>
+                {
+                    b.HasOne("Viw.Domain.Competition.TeamEntry", null)
+                        .WithMany()
+                        .HasForeignKey("EditionId", "TeamEntryId")
+                        .HasPrincipalKey("EditionId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Viw.Domain.Competition.CompetitionGroup", null)
+                        .WithMany()
+                        .HasForeignKey("EditionId", "PhaseId", "GroupId")
+                        .HasPrincipalKey("EditionId", "PhaseId", "Id")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
@@ -1870,12 +1922,6 @@ namespace Viw.Infrastructure.Persistence.Migrations
                     b.HasOne("Viw.Domain.Competition.MediaAsset", null)
                         .WithMany()
                         .HasForeignKey("SourceImageAssetId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("Viw.Domain.Competition.CompetitionGroup", null)
-                        .WithMany()
-                        .HasForeignKey("EditionId", "GroupId")
-                        .HasPrincipalKey("EditionId", "Id")
                         .OnDelete(DeleteBehavior.Restrict);
                 });
 #pragma warning restore 612, 618

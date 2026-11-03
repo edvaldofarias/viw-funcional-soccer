@@ -1,6 +1,8 @@
 @baseUrl = http://localhost:5080
 @edition = la-liga-2026-2
 @player = substituir-pelo-slug-retornado-na-busca
+@teamId = 00000000-0000-0000-0000-000000000001
+@sourcePlayerId = 00000000-0000-0000-0000-000000000002
 
 GET {{baseUrl}}/api/v1/system
 Accept: application/json
@@ -23,6 +25,14 @@ Accept: application/json
 
 ### Buscar pelo nome oficial ou por apelidos históricos
 GET {{baseUrl}}/api/v1/players?search=Leo
+Accept: application/json
+
+### Detalhes na edição: substituir IDs pelos retornados na equipe/elenco, não pela identidade da Wiki
+GET {{baseUrl}}/api/v1/championships/{{edition}}/teams/{{teamId}}/players/{{sourcePlayerId}}
+Accept: application/json
+
+### Cadastro inexistente ou não inscrito na equipe: 404
+GET {{baseUrl}}/api/v1/championships/{{edition}}/teams/{{teamId}}/players/00000000-0000-0000-0000-000000000000
 Accept: application/json
 
 ### Preparação do banco

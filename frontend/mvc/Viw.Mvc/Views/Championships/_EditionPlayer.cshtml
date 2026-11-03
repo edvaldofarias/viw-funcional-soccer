@@ -1,0 +1,56 @@
+@model EditionPlayerResponse
+<div class="player-edition-profile">
+    <viw-avatar kind="sourceplayers" entity-id="@(Model.Player.Id)" name="@(Model.Player.Name)" class="avatar jumbo" edition-id="@(Model.Edition.Id)"></viw-avatar>
+    <div>
+        <p class="eyebrow">JOGADOR</p>
+        <h2>@Model.Player.Name</h2>
+        <div class="person-link"><viw-avatar kind="teams" entity-id="@(Model.Team.Id)" name="@(Model.Team.Name)" class="team-avatar small"></viw-avatar><strong>@Model.Team.Name</strong></div>
+        <p class="muted">Camisa @(Model.ShirtNumber ?? "—") · @(Model.Position ?? "Posição não informada")</p>
+    </div>
+</div>
+<div class="player-edition-grid">
+    <section class="panel">
+        <h3>Números na competição</h3>
+        <dl class="player-edition-stats">
+            <div><dt>Gols</dt><dd>@Model.Statistics.Goals</dd></div>
+            <div><dt>Jogos confirmados</dt><dd>@Model.Statistics.KnownAppearances</dd></div>
+            <div><dt>Amarelos</dt><dd>@Model.Statistics.YellowCards</dd></div>
+            <div><dt>Vermelhos</dt><dd>@Model.Statistics.RedCards</dd></div>
+            <div><dt>Vitórias</dt><dd>@Model.Results.Wins</dd></div>
+            <div><dt>Empates</dt><dd>@Model.Results.Draws</dd></div>
+            <div><dt>Derrotas</dt><dd>@Model.Results.Losses</dd></div>
+        </dl>
+        <p class="muted">Dados somente de @Model.Edition.Name (@Model.Edition.Year). Totais da edição inteira, incluindo outras equipes em caso de transferência. Resultados contam apenas jogos com presença confirmada.</p>
+        @if (Model.Statistics.UnknownAppearances > 0 || Model.Statistics.IncompleteSheets > 0)
+        {
+            <p class="notice">Dados parciais: @Model.Statistics.UnknownAppearances registro(s) sem presença confirmada e @Model.Statistics.IncompleteSheets súmula(s) incompleta(s) ou desatualizada(s).</p>
+        }
+    </section>
+    <section class="panel">
+        <h3>Campanha no campeonato</h3>
+        <dl class="player-edition-summary">
+            <div><dt>Situação da edição</dt><dd>@PortalFormat.Status(Model.Edition.Status)</dd></div>
+            <div><dt>Artilharia por gols registrados</dt><dd>@(Model.ScoringPosition is { } scoring ? $"{scoring}º lugar" : "Sem gols registrados")</dd></div>
+            @if (Model.Edition.Status == "Archived")
+            {
+                <div><dt>Posição final de @Model.Team.Name</dt><dd>@(Model.FinalPosition is { } final ? $"{final}º lugar" : "Não disponível")</dd></div>
+            }
+        </dl>
+        <p class="muted">A artilharia considera partidas encerradas e preserva empates; não equivale a uma premiação oficial.</p>
+        <h3>Reconhecimentos confirmados</h3>
+        @if (Model.Awards.Count == 0)
+        {
+            <p class="muted">Nenhum reconhecimento confirmado nesta edição.</p>
+        }
+        else
+        {
+            <ul class="player-edition-awards">
+                @foreach (var award in Model.Awards)
+                {
+                    <li><strong>@PortalFormat.AwardCategory(award.Code, award.Name)</strong><span class="muted">@PortalFormat.Scope(award.Scope)@(award.Position is { } position ? $" · {position}" : "")</span></li>
+                }
+            </ul>
+        }
+    </section>
+</div>
+<partial name="_StatisticsNote" />

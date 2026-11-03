@@ -35,7 +35,9 @@ public sealed class ImportCoordinator(ViwDbContext db, IChampionshipSource sourc
                 var documents = resources.ToDictionary(x => x.Resource);
                 var core = CopaFacilJson.Core(documents);
                 await ProcessAsync(lease, runId.Value, resources, null,
-                    token => writer.WriteCoreAsync(origin.EditionId, core, token, definition), ct);
+                    token => writer.WriteCoreAsync(origin.EditionId, core, token, definition), ct,
+                    Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
+                        System.Text.Encoding.UTF8.GetBytes(JsonSerializer.Serialize(definition)))));
                 var errors = 0;
                 var matches = await db.MatchRecords.AsNoTracking().Where(x => x.EditionId == origin.EditionId &&
                     x.Provider == ChampionshipCatalog.Provider && (x.Status == MatchStatus.Finished || x.Status == MatchStatus.Live))
@@ -98,13 +100,13 @@ public sealed class ImportCoordinator(ViwDbContext db, IChampionshipSource sourc
     }
 
     private async Task ProcessAsync(LeaseToken lease, Guid runId, SourceDocument[] documents, int? matchRevision,
-        Func<CancellationToken, Task> apply, CancellationToken ct)
+        Func<CancellationToken, Task> apply, CancellationToken ct, string? definitionHash = null)
     {
         db.ChangeTracker.Clear();
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
         await leases.AssertAndRenewAsync(lease, ct);
         var checkpoints = await db.ImportCheckpointRecords.Where(x => x.EditionId == lease.EditionId).ToListAsync(ct);
-        string Cursor(SourceDocument document) => $"{CompetitionImportWriter.MapperVersion}:{document.Hash}:{matchRevision}";
+        string Cursor(SourceDocument document) => $"{CompetitionImportWriter.MapperVersion}:{document.Hash}:{matchRevision}:{definitionHash}";
         var changed = documents.Any(document => checkpoints.SingleOrDefault(x => x.ResourcePath == document.Resource)?.Cursor != Cursor(document));
         var run = await db.ImportRunRecords.SingleAsync(x => x.Id == runId && x.Status == ImportStatus.Running, ct);
         run.RecordsRead += documents.Sum(document => document.Data.EnumerateObject().Count());

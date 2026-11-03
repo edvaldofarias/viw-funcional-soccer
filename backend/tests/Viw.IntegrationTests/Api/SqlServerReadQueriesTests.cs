@@ -65,6 +65,8 @@ public sealed class SqlServerReadQueriesTests
         var leaderboard = await queries.PlayerStatisticsAsync(data.OtherEdition.Slug, new PageRequest(), default);
         var sheet = await queries.MatchPlayersAsync(data.OtherEdition.Slug, past.Id, new PageRequest(), default);
         var reader = await new PlayerStatisticsReader(db).ReadAsync(data.Player.Id, null);
+        var pastRoster = await queries.RosterAsync(data.OtherEdition.Slug, data.ForeignTeam.Id, new PageRequest(), default);
+        var currentRoster = await queries.RosterAsync(data.Edition.Slug, data.Home.Id, new PageRequest(), default);
         // Assert
         player!.Statistics.YellowCards.ShouldBe(7);
         player.Statistics.RedCards.ShouldBe(3);
@@ -76,6 +78,123 @@ public sealed class SqlServerReadQueriesTests
         sheet!.Items.Single().YellowCards.ShouldBe(1);
         reader.YellowCards.ShouldBe(7);
         reader.RedCards.ShouldBe(3);
+        pastRoster!.Items.Single().Discipline.ShouldBe(new PlayerDisciplineResponse(5, 2));
+        currentRoster!.Items.Single().Discipline.ShouldBe(new PlayerDisciplineResponse(2, 1));
+        currentRoster.Items.Single().Statistics!.Goals.ShouldBe(2);
+        var pastDetails = await queries.EditionPlayerAsync(data.OtherEdition.Slug, data.ForeignTeam.Id, historical.Id, default);
+        pastDetails!.Statistics.YellowCards.ShouldBe(5);
+        pastDetails.Statistics.RedCards.ShouldBe(2);
+        pastDetails.Statistics.Goals.ShouldBe(0);
+        pastDetails.Player.Slug.ShouldBe("");
+        pastDetails.Player.Name.ShouldBe("Nome antigo");
+    }
+
+    [SqlServerFact]
+    public async Task Roster_scopes_goals_to_team_and_cards_to_edition_preserving_pagination_and_players_without_facts()
+    {
+        await using var database = await SqlServerTestDatabase.CreateAsync();
+        var db = database.Context;
+        var data = database.Data;
+        var homeGame = data.CreateMatch();
+        homeGame.Status = MatchStatus.Finished; homeGame.HomeScore = 2; homeGame.AwayScore = 0;
+        var awayGame = data.CreateMatch();
+        awayGame.ExternalId = "transfer-game"; awayGame.Status = MatchStatus.Finished;
+        awayGame.HomeScore = 0; awayGame.AwayScore = 7;
+        var liveGame = data.CreateMatch();
+        liveGame.ExternalId = "live-roster-game"; liveGame.Status = MatchStatus.Live;
+        var noFacts = new SourcePlayer {EditionId=data.Edition.Id,Provider="fixture",
+            ExternalId="no-facts",OriginalName="ZZ Sem jogo"};
+        db.AddRange(homeGame, awayGame, liveGame, noFacts,
+            new PlayerRegistration {EditionId=data.Edition.Id,SourcePlayerId=data.SourcePlayer.Id,
+                TeamEntryId=data.Home.Id,ValidFrom=DateTimeOffset.UtcNow.AddDays(-2),ValidTo=DateTimeOffset.UtcNow.AddDays(-1)},
+            new PlayerRegistration {EditionId=data.Edition.Id,SourcePlayerId=data.SourcePlayer.Id,
+                TeamEntryId=data.Away.Id,ValidFrom=DateTimeOffset.UtcNow},
+            new PlayerRegistration {EditionId=data.Edition.Id,SourcePlayerId=noFacts.Id,
+                TeamEntryId=data.Home.Id,ValidFrom=DateTimeOffset.UtcNow},
+            new PlayerMatchStatistics {EditionId=data.Edition.Id,SourcePlayerId=data.SourcePlayer.Id,
+                MatchId=homeGame.Id,TeamEntryId=data.Home.Id,Goals=2,YellowCards=1,RedCards=0,Appearances=1,Revision=1,IsComplete=true},
+            new PlayerMatchStatistics {EditionId=data.Edition.Id,SourcePlayerId=data.SourcePlayer.Id,
+                MatchId=awayGame.Id,TeamEntryId=data.Away.Id,Goals=7,YellowCards=2,RedCards=1,Appearances=1,Revision=1,IsComplete=true},
+            new PlayerMatchStatistics {EditionId=data.Edition.Id,SourcePlayerId=data.SourcePlayer.Id,
+                MatchId=liveGame.Id,TeamEntryId=data.Home.Id,Goals=10,YellowCards=9,RedCards=4,Appearances=1,Revision=1,IsComplete=true});
+        await db.SaveChangesAsync();
+        db.ChangeTracker.Clear();
+        var queries = new ViwQueries(db);
+        var first = await queries.RosterAsync(data.Edition.Slug,data.Home.Id,new PageRequest {PageSize=1},default);
+        var second = await queries.RosterAsync(data.Edition.Slug,data.Home.Id,new PageRequest {Page=2,PageSize=1},default);
+        first.ShouldNotBeNull(); second.ShouldNotBeNull();
+        first.TotalCount.ShouldBe(2); second.TotalCount.ShouldBe(2);
+        var row = first.Items.ShouldHaveSingleItem();
+        row.Player.Id.ShouldBe(data.SourcePlayer.Id);
+        row.Player.Slug.ShouldBe("");
+        row.Statistics!.Goals.ShouldBe(2);
+        row.Discipline.ShouldBe(new PlayerDisciplineResponse(3,1));
+        var empty = second.Items.ShouldHaveSingleItem();
+        empty.Player.Id.ShouldBe(noFacts.Id);
+        empty.Statistics!.Goals.ShouldBe(0);
+        empty.Discipline.ShouldBe(new PlayerDisciplineResponse(0,0));
+        var details = await queries.EditionPlayerAsync(data.Edition.Slug,data.Home.Id,data.SourcePlayer.Id,default);
+        details.ShouldNotBeNull();
+        details.Statistics.Goals.ShouldBe(9);
+        details.Statistics.YellowCards.ShouldBe(3);
+        details.Statistics.RedCards.ShouldBe(1);
+        details.Results.ShouldBe(new PlayerResultsResponse(2,2,0,0));
+        details.ScoringPosition.ShouldBe(1);
+        details.FinalPosition.ShouldBeNull();
+        details.Player.Slug.ShouldBe("");
+        var emptyDetails = await queries.EditionPlayerAsync(data.Edition.Slug,data.Home.Id,noFacts.Id,default);
+        emptyDetails!.Statistics.Goals.ShouldBe(0);
+        emptyDetails.ScoringPosition.ShouldBeNull();
+        (await queries.EditionPlayerAsync(data.OtherEdition.Slug,data.Home.Id,data.SourcePlayer.Id,default)).ShouldBeNull();
+        (await queries.EditionPlayerAsync(data.Edition.Slug,data.ForeignTeam.Id,data.SourcePlayer.Id,default)).ShouldBeNull();
+        (await queries.EditionPlayerAsync(data.Edition.Slug,data.Home.Id,Guid.NewGuid(),default)).ShouldBeNull();
+        (await queries.EditionPlayerAsync("missing",data.Home.Id,data.SourcePlayer.Id,default)).ShouldBeNull();
+        (await queries.RosterAsync(data.Edition.Slug,data.ForeignTeam.Id,new PageRequest(),default)).ShouldBeNull();
+        db.ChangeTracker.Entries().ShouldBeEmpty();
+    }
+
+    [SqlServerFact]
+    public async Task Edition_player_preserves_scoring_ties_confirmed_awards_and_final_position_only_when_archived()
+    {
+        await using var database = await SqlServerTestDatabase.CreateAsync();
+        var db = database.Context; var data = database.Data;
+        var edition = await db.ChampionshipEditionRecords.SingleAsync(x => x.Id == data.Edition.Id);
+        edition.Status = EditionStatus.Active;
+        var home = await db.TeamEntryRecords.SingleAsync(x => x.Id == data.Home.Id);
+        home.AggregateStatisticsJson = """{"group":{"col":1,"dt":"0=0"}}""";
+        var phase = new CompetitionPhase {EditionId=edition.Id,ExternalId="group",Name="Classificação",SortOrder=1};
+        var game = data.CreateMatch();
+        game.PhaseId=phase.Id; game.Status=MatchStatus.Finished; game.HomeScore=2; game.AwayScore=5;
+        var live = data.CreateMatch();
+        live.PhaseId=phase.Id; live.ExternalId="live-ranking"; live.Status=MatchStatus.Live;
+        var leader = new SourcePlayer {EditionId=edition.Id,Provider="fixture",ExternalId="leader",OriginalName="Líder"};
+        var tied = new SourcePlayer {EditionId=edition.Id,Provider="fixture",ExternalId="tied",OriginalName="Empatado"};
+        var draft=data.CreateTopScorerAward(); draft.Status=AwardStatus.Draft; draft.ConfirmedAt=null; draft.Position="Rascunho";
+        var revoked=data.CreateTopScorerAward(); revoked.Status=AwardStatus.Revoked; revoked.Position="Revogado";
+        var confirmed=data.CreateTopScorerAward();
+        db.AddRange(phase,game,live,leader,tied,confirmed,draft,revoked,
+            new PlayerRegistration {EditionId=edition.Id,TeamEntryId=data.Home.Id,SourcePlayerId=data.SourcePlayer.Id,ValidFrom=DateTimeOffset.UtcNow},
+            new PlayerRegistration {EditionId=edition.Id,TeamEntryId=data.Away.Id,SourcePlayerId=tied.Id,ValidFrom=DateTimeOffset.UtcNow},
+            Statistic(data,game,2),
+            new PlayerMatchStatistics {EditionId=edition.Id,MatchId=game.Id,SourcePlayerId=leader.Id,TeamEntryId=data.Away.Id,Goals=3,Appearances=1,Revision=1,IsComplete=true},
+            new PlayerMatchStatistics {EditionId=edition.Id,MatchId=game.Id,SourcePlayerId=tied.Id,TeamEntryId=data.Away.Id,Goals=2,Appearances=1,Revision=1,IsComplete=true},
+            new PlayerMatchStatistics {EditionId=edition.Id,MatchId=live.Id,SourcePlayerId=leader.Id,TeamEntryId=data.Away.Id,Goals=20,Appearances=1,Revision=1,IsComplete=true});
+        await db.SaveChangesAsync();
+        db.ChangeTracker.Clear();
+        var queries = new ViwQueries(db);
+        var current = await queries.EditionPlayerAsync(edition.Slug,home.Id,data.SourcePlayer.Id,default);
+        current!.ScoringPosition.ShouldBe(2);
+        current.FinalPosition.ShouldBeNull();
+        current.Awards.Select(x=>x.Id).ShouldBe(new[]{confirmed.Id});
+        (await queries.EditionPlayerAsync(edition.Slug,data.Away.Id,tied.Id,default))!.ScoringPosition.ShouldBe(2);
+        var archived=await db.ChampionshipEditionRecords.SingleAsync(x=>x.Id==edition.Id);
+        archived.Status=EditionStatus.Archived;
+        await db.SaveChangesAsync();
+        db.ChangeTracker.Clear();
+        var final=await queries.EditionPlayerAsync(edition.Slug,home.Id,data.SourcePlayer.Id,default);
+        final!.FinalPosition.ShouldBe(2);
+        final.ScoringPosition.ShouldBe(2);
+        db.ChangeTracker.Entries().ShouldBeEmpty();
     }
 
     [SqlServerFact]

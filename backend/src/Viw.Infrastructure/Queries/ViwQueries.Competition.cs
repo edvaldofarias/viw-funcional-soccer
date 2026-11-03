@@ -13,6 +13,8 @@ public sealed partial class ViwQueries
         var edition=await FindEdition(slug,ct);if(edition==null)return null;
         var phases=await db.CompetitionPhaseRecords.AsNoTracking().Where(x=>x.EditionId==edition.Id).OrderBy(x=>x.SortOrder).ThenBy(x=>x.Id).ToArrayAsync(ct);
         var groups=await db.CompetitionGroupRecords.AsNoTracking().Where(x=>x.EditionId==edition.Id).OrderBy(x=>x.SortOrder).ThenBy(x=>x.Id).ToArrayAsync(ct);
+        var memberships=await db.CompetitionGroupTeamRecords.AsNoTracking().Where(x=>x.EditionId==edition.Id).ToArrayAsync(ct);
+        var groupTeams=memberships.ToLookup(x=>x.GroupId,x=>x.TeamEntryId);
         var teams=await db.TeamEntryRecords.AsNoTracking().Where(x=>x.EditionId==edition.Id).OrderBy(x=>x.Name).ThenBy(x=>x.Id).ToArrayAsync(ct);
         var games=await db.MatchRecords.AsNoTracking().Where(x=>x.EditionId==edition.Id).OrderBy(x=>x.ScheduledAt==null).ThenBy(x=>x.ScheduledAt).ThenBy(x=>x.Id).ToArrayAsync(ct);
         var all=await MatchDtos(games,ct);var sections=new List<PhaseTableResponse>();
@@ -29,7 +31,8 @@ public sealed partial class ViwQueries
             // Dentro do grupo, a ordenação usa os pontos oficiais e, no empate, a posição
             // global da fase registrada pela fonte; a posição exibida é relativa ao grupo.
             var groupTables=groups.Where(x=>x.PhaseId==phase.Id).Select(group=>{
-                var members=standings.Where(x=>teams.First(t=>t.Id==x.Team.Id).GroupId==group.Id)
+                var memberIds=groupTeams[group.Id].ToHashSet();
+                var members=standings.Where(x=>memberIds.Contains(x.Team.Id))
                     .OrderByDescending(x=>x.Points).ThenBy(x=>x.Position??int.MaxValue).ThenBy(x=>x.Team.Name)
                     .Select((x,index)=>x with {Position=index+1}).ToArray();
                 return new GroupTableResponse(new GroupResponse(group.Id,group.PhaseId,group.Name,group.SortOrder),members);

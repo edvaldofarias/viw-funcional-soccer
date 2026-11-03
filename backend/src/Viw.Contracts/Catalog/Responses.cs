@@ -138,14 +138,32 @@ public sealed record PlayerHistoryResponse(EditionResponse Edition, TeamResponse
     PlayerDisciplineResponse? Discipline = null, int? FinalPosition = null);
 
 /// <summary>Jogador e dados da inscrição observada na equipe.</summary>
-/// <param name="Player">Identidade canônica vinculada ao cadastro original.</param>
+/// <param name="Player">Cadastro original da edição; o slug aponta para a Wiki quando há identidade vinculada.</param>
 /// <param name="OriginalName">Nome do cadastro original nesta edição.</param>
 /// <param name="ShirtNumber">Número da camisa recebido da fonte; null se não informado.</param>
 /// <param name="Position">Posição recebida da fonte; null se não informada.</param>
 /// <param name="ObservedFrom">Início observado da inscrição, sem garantia de data histórica exata.</param>
 /// <param name="ObservedUntil">Fim observado da inscrição; null enquanto aberta.</param>
+/// <param name="Statistics">Estatísticas nas partidas encerradas desta equipe e edição.</param>
+/// <param name="Discipline">Cartões da edição inteira, seguindo a mesma regra da Wiki e da classificação individual.</param>
 public sealed record RosterPlayerResponse(PlayerResponse Player, string OriginalName, string? ShirtNumber,
-    string? Position, DateTimeOffset ObservedFrom, DateTimeOffset? ObservedUntil);
+    string? Position, DateTimeOffset ObservedFrom, DateTimeOffset? ObservedUntil,
+    PlayerTotalsResponse? Statistics = null, PlayerDisciplineResponse? Discipline = null);
+
+/// <summary>Detalhes do cadastro original nesta edição, sem identidade ou navegação da Wiki.</summary>
+/// <param name="Edition">Edição consultada.</param>
+/// <param name="Team">Equipe do elenco consultado, inclusive em caso de transferência.</param>
+/// <param name="Player">Cadastro original; ID da fonte, nome da edição e slug vazio.</param>
+/// <param name="ShirtNumber">Camisa informada pela fonte.</param>
+/// <param name="Position">Posição informada pela fonte.</param>
+/// <param name="Statistics">Totais da edição inteira, incluindo todas as equipes; somente partidas encerradas.</param>
+/// <param name="Results">Resultados nas partidas com presença confirmada na edição.</param>
+/// <param name="ScoringPosition">Posição por gols da edição, com empates; null quando não há gols registrados.</param>
+/// <param name="FinalPosition">Colocação geral da equipe, somente em edição arquivada e quando conhecida.</param>
+/// <param name="Awards">Reconhecimentos confirmados deste cadastro na edição; não são inferidos da artilharia.</param>
+public sealed record EditionPlayerResponse(EditionResponse Edition, TeamResponse Team, PlayerResponse Player,
+    string? ShirtNumber, string? Position, PlayerTotalsResponse Statistics, PlayerResultsResponse Results,
+    int? ScoringPosition, int? FinalPosition, IReadOnlyList<AwardResponse> Awards);
 
 /// <summary>Partida com participantes conhecidos, estado e placar registrado.</summary>
 /// <param name="Id">GUID interno da partida.</param>

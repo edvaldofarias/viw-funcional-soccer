@@ -40,6 +40,11 @@ internal sealed class FixtureApi : HttpMessageHandler
     public bool Fail { get; set; }
     public bool Malformed { get; set; }
     public bool Empty { get; set; }
+    public CompetitionViewResponse? Overview { get; set; }
+    public PlayerTotalsResponse? RosterStatistics { get; set; } = new(4, 2, 1, 3, 0, 0);
+    public PlayerDisciplineResponse? RosterDiscipline { get; set; } = new(5, 2);
+    public DateTimeOffset? RosterObservedUntil { get; set; }
+    public bool MissingEditionPlayer { get; set; }
     public string PlayerName { get; set; } = "Léo Reis";
     public PlayerTotalsResponse PlayerStats { get; set; } = new(0, 1, 0, 0, 1, 1);
     public PlayerHistoryResponse[]? PlayerHistory { get; set; }
@@ -79,10 +84,13 @@ internal sealed class FixtureApi : HttpMessageHandler
         HttpResponseMessage response;
         if (path == "/api/v1/championships") response = Paged(query.TryGetValue("year", out var year) && year != "2026" ? [] : new[] { Edition });
         else if (path == root) response = Json(Detail);
-        else if (path == root + "/overview") response = Json(new CompetitionViewResponse([new PhaseTableResponse(new PhaseResponse(PhaseId, "Primeira fase", 1), [Game, Future], [new StandingRow(Home, 1, 1, 1, 0, 1, 0, 0, 0), new StandingRow(Away, 1, 1, 1, 0, 1, 0, 0, 0)], [])], [new StandingRow(Home, 1, null, 1, 0, 1, 0, 0, 0), new StandingRow(Away, 1, null, 1, 0, 1, 0, 0, 0)]));
+        else if (path == root + "/overview") response = Json(Overview ?? new CompetitionViewResponse([new PhaseTableResponse(new PhaseResponse(PhaseId, "Primeira fase", 1), [Game, Future], [new StandingRow(Home, 1, 1, 1, 0, 1, 0, 0, 0), new StandingRow(Away, 1, 1, 1, 0, 1, 0, 0, 0)], [])], [new StandingRow(Home, 1, null, 1, 0, 1, 0, 0, 0), new StandingRow(Away, 1, null, 1, 0, 1, 0, 0, 0)]));
         else if (path == root + "/teams") response = Paged(new[] { Home, Away });
         else if (path == root + "/teams/" + HomeId.ToString("D")) response = Json(new TeamDetailResponse(Home, [new CoachResponse(Guid.NewGuid(), "tecnico", "Técnico da Equipe", null, DateTimeOffset.UtcNow, null)]));
-        else if (path == root + "/teams/" + HomeId.ToString("D") + "/players") response = Paged(new[] { new RosterPlayerResponse(Player, "Reis", "9", "Atacante", DateTimeOffset.UtcNow, null) });
+        else if (path == root + "/teams/" + HomeId.ToString("D") + "/players") response = Paged(new[] { new RosterPlayerResponse(Player, "Reis", "9", "Atacante", DateTimeOffset.UtcNow, RosterObservedUntil, RosterStatistics, RosterDiscipline) });
+        else if (path == root + "/teams/" + HomeId.ToString("D") + "/players/" + PlayerId.ToString("D") && !MissingEditionPlayer)
+            response = Json(new EditionPlayerResponse(Edition,Home,Player with {Slug=""},"9","Atacante",
+                new(4,5,2,3,1,1),new(3,2,1,0),2,Archived?1:null,[]));
         else if (path == root + "/matches") response = Paged(query.TryGetValue("status", out var status) && status == "Finished" ? new[] { Game } : new[] { Game, Future });
         else if (path == root + "/matches/" + MatchId.ToString("D")) response = Json(Game);
         else if (path == root + "/matches/" + FutureId.ToString("D")) response = Json(Future);

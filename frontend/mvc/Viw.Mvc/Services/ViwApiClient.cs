@@ -29,6 +29,8 @@ public sealed class ViwApiClient(HttpClient http)
     public Task<PageResponse<TeamResponse>?> TeamsAsync(string slug, int page, CancellationToken ct, int size = CardPageSize) => PageAsync<TeamResponse>(PathFor(slug) + "/teams", page, ct, size: size);
     public Task<TeamDetailResponse?> TeamAsync(string slug, Guid id, CancellationToken ct) => ReadAsync<TeamDetailResponse>($"{PathFor(slug)}/teams/{id:D}", ct);
     public Task<PageResponse<RosterPlayerResponse>?> RosterAsync(string slug, Guid id, int page, CancellationToken ct) => PageAsync<RosterPlayerResponse>($"{PathFor(slug)}/teams/{id:D}/players", page, ct);
+    public Task<EditionPlayerResponse?> EditionPlayerAsync(string slug, Guid teamId, Guid sourcePlayerId, CancellationToken ct) =>
+        ReadAsync<EditionPlayerResponse>($"{PathFor(slug)}/teams/{teamId:D}/players/{sourcePlayerId:D}", ct);
     public Task<PageResponse<MatchResponse>?> MatchesAsync(string slug, int page, CancellationToken ct, Guid? team = null, Guid? phase = null, Guid? round = null, MatchState? status = null, int size = CardPageSize) =>
         PageAsync<MatchResponse>(PathFor(slug) + "/matches", page, ct, new() { ["teamId"] = team?.ToString("D"), ["phaseId"] = phase?.ToString("D"), ["roundId"] = round?.ToString("D"), ["status"] = status?.ToString() }, size);
     public Task<MatchResponse?> MatchAsync(string slug, Guid id, CancellationToken ct) => ReadAsync<MatchResponse>($"{PathFor(slug)}/matches/{id:D}", ct);

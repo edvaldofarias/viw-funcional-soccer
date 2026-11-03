@@ -41,6 +41,18 @@ As rotas abreviadas da tabela continuam sob a copa correspondente. Slugs vêm do
 - Imagens usam monogramas enquanto não houver URL pública de mídia no contrato. IDs de assets não são convertidos em URLs privadas ou links com token do Firebase.
 - Recursos ausentes retornam 404; filtros inválidos, 400; indisponibilidade ou resposta inválida da API, 503 com tentativa posterior. A API continua responsável pela preservação dos dados importados.
 
+### Elenco da equipe
+
+A tabela do elenco mostra gols, cartões amarelos (CA) e vermelhos (CV). Gols são os fatos das partidas encerradas da equipe e edição consultadas; cartões são da edição inteira, pela mesma regra da Wiki: agregados históricos disponíveis em edições arquivadas, senão súmulas encerradas. Em transferências, os cartões incluem todas as equipes da edição, conforme a observação exibida na página. Consultas são em lote, restritas aos cadastros da página, e não exigem identidade na Wiki.
+
+Não exibir o estado técnico da inscrição como “Registro”, “Aberto” ou “Encerrado” em nenhuma interface. `ObservedFrom`/`ObservedUntil` continuam no contrato para compatibilidade e controle interno, não indicam inscrições públicas ou situação do campeonato. Estatísticas ausentes em uma resposta aparecem como travessão, não como zero inventado.
+
+No contrato atual do elenco, `Player.Name` e `OriginalName` são ambos o nome importado da edição; por isso “Jogador” e “Nome na edição” podem ser idênticos. O slug canônico eventualmente recebido não deve ser usado nesta tela. O nome é um botão que abre detalhes do **cadastro da edição**, nunca um link para a Wiki.
+
+O modal usa `<dialog>` nativo: foco contido e devolvido ao botão de origem, fechamento pelo botão, Escape ou fundo, rolagem interna e layout responsivo. O conteúdo é carregado sob demanda de `/campeonatos/{slug}/equipes/{id}/jogadores/{sourcePlayerId}` como parcial Razor não indexável, via API própria da edição. Falhas e 404 são informados no modal com tentativa posterior; fechar cancela a requisição pendente. Nenhum cadastro canônico é necessário.
+
+O cabeçalho mantém foto/nome/camisa/posição da edição e a equipe do elenco consultado. Os números do modal são da **edição inteira**, inclusive outras equipes em transferências: gols, cartões, presenças confirmadas, vitórias, empates e derrotas. As limitações de presença e súmulas são sinalizadas. A artilharia é `1 + quantidade de cadastros com mais gols`, preserva empates e fica indisponível sem gols; não concede prêmio. Em edições arquivadas, a posição final da equipe reutiliza a classificação geral existente e mostra indisponibilidade quando desconhecida. Só reconhecimentos confirmados do cadastro nesta edição são exibidos. Não reproduzir pesos, pontuação ou gráfico de MVP da referência visual: não há regra de MVP cadastrada.
+
 ## Busca e compartilhamento
 
 Título, descrição, URL canônica, Open Graph, Twitter e JSON-LD por página; imagem social local de 1200 × 630. A origem canônica vem da configuração e não do cabeçalho Host. Dados estruturados são serializados com escape seguro. Páginas filtradas e erros não são indexáveis.
@@ -73,7 +85,9 @@ A captura legível do Instagram enviada posteriormente orientou a revisão da Ho
 
 O portal usa Bootstrap 5.3.8 com arquivos locais e licença MIT em `wwwroot/lib/bootstrap`. A primeira fase mostra posição e pontos informados pela fonte; valores ausentes aparecem como traço. Jogos são agrupados por fase, com links para as equipes e seus elencos. Os nomes confirmados das fases podem ser configurados em `PhaseNames` no catálogo do Worker, sem inferir regras de edições antigas.
 
-Quando a edição configura `PhaseGroups` no catálogo, a primeira fase exibe uma tabela por grupo (Grupo A, Grupo B...), fiel à apresentação da fonte, com a classificação geral da fase recolhida em um expansível. Dentro do grupo, as equipes são ordenadas pelos pontos oficiais e, no empate, pela posição global da fase registrada pela fonte; a posição exibida é relativa ao grupo. J/V/E/D e gols continuam considerando todos os jogos encerrados da fase, inclusive cruzados entre grupos. Sem grupos configurados, a tabela única da fase permanece.
+Quando a fase tem grupos — configurados em `PhaseGroups` no catálogo ou inferidos automaticamente dos confrontos na importação — a primeira fase exibe uma tabela por grupo (Grupo A, Grupo B...), fiel à apresentação da fonte, com a classificação geral da fase recolhida em um expansível. Dentro do grupo, as equipes são ordenadas pelos pontos oficiais e, no empate, pela posição global da fase registrada pela fonte; a posição exibida é relativa ao grupo. J/V/E/D e gols continuam considerando todos os jogos encerrados da fase, inclusive cruzados entre grupos. Fases sem grupos (pontos corridos, por exemplo) mantêm a tabela única.
+
+A inferência automática se limita à primeira fase; confrontos do mata-mata não criam grupos. A API resolve os participantes por `CompetitionGroupTeam` (edição/fase/equipe), não por um grupo único no cadastro da equipe. Após a migration `ScopeGroupTeamsToPhase`, o mapper v9 reconcilia dados antigos sem apagar o banco. A validação deve conferir os nomes e a quantidade de linhas em cada `tbody`, não apenas a presença dos títulos Grupo A/B. Letras inferidas não substituem a configuração editorial oficial; consulte [o fluxo de importação](../worker/import-pipeline.md).
 
 Edições arquivadas oferecem `?visao=geral`: a classificação considera a fase mais avançada disputada, mantendo empates entre eliminados na mesma fase. Uma final empatada usa o placar de pênaltis quando informado; sem desempate conhecido, mantém a posição compartilhada. Melhor ataque e defesa usam totais de gols nos jogos encerrados, exibindo empates e quantidade de partidas. Artilharia vem das estatísticas individuais. Melhor jogador depende de Ballon d’Or confirmado no Admin; sem atribuição, uma mensagem explícita é exibida.
 

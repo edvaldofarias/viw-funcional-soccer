@@ -16,6 +16,29 @@ namespace Viw.IntegrationTests.Api;
 
 public sealed class ReadApiTests
 {
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Edition_player_endpoint_forwards_source_and_team_scope_and_returns_not_found_when_missing(bool exists)
+    {
+        var teamId=Guid.NewGuid(); var sourceId=Guid.NewGuid();
+        var edition=new EditionResponse(Guid.NewGuid(),Guid.NewGuid(),"test","Copa",2026,1,"Active","UTC",null,null);
+        var details=new EditionPlayerResponse(edition,new(teamId,"Equipe",null),new(sourceId,"","Nome original",null),
+            "9",null,new(2,1,0,1,0,0),new(1,1,0,0),1,null,[]);
+        var queries=new Mock<IViwQueries>(MockBehavior.Strict);
+        queries.Setup(x=>x.EditionPlayerAsync("test",teamId,sourceId,It.IsAny<CancellationToken>()))
+            .ReturnsAsync(exists?details:null);
+        using var factory=Factory(queries);
+        using var client=factory.CreateClient();
+        using var response=await client.GetAsync($"/api/v1/championships/test/teams/{teamId:D}/players/{sourceId:D}");
+        response.StatusCode.ShouldBe(exists?HttpStatusCode.OK:HttpStatusCode.NotFound);
+        if(exists)
+            (await response.Content.ReadFromJsonAsync<EditionPlayerResponse>())!.Player.Id.ShouldBe(sourceId);
+        else
+            (await response.Content.ReadFromJsonAsync<ProblemDetails>())!.Status.ShouldBe(404);
+        queries.VerifyAll();
+    }
+
     private const string Key = "test-monitor-key-for-tests-only-123456789";
     private static WebApplicationFactory<Program> Factory(Mock<IViwQueries>? queries = null, string key = Key, string environment = "Development") =>
         new WebApplicationFactory<Program>().WithWebHostBuilder(web => web.UseEnvironment(environment)

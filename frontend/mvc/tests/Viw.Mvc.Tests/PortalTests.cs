@@ -9,6 +9,118 @@ namespace Viw.Mvc.Tests;
 public sealed class PortalTests
 {
     [Fact]
+    public async Task Roster_opens_edition_modal_instead_of_linking_to_wiki()
+    {
+        await using var fixture=new PortalFixture();
+        using var client=fixture.CreateClient();
+        var html=await client.GetStringAsync($"/campeonatos/{FixtureApi.Slug}/equipes/{FixtureApi.HomeId:D}");
+        var table=Regex.Match(html,@"<table\b[\s\S]*?</table>").Value;
+        table.ShouldNotContain("/wiki");
+        table.ShouldContain($"data-player-details-url=\"/campeonatos/{FixtureApi.Slug}/equipes/{FixtureApi.HomeId:D}/jogadores/{FixtureApi.PlayerId:D}\"");
+        table.ShouldContain("aria-haspopup=\"dialog\"");
+        html.ShouldContain("<dialog id=\"edition-player-dialog\"");
+        fixture.Api.Requests.ShouldNotContain(x=>x.StartsWith("/api/v1/players"));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Edition_player_partial_contains_only_edition_details_and_final_position_when_archived(bool archived)
+    {
+        await using var fixture=new PortalFixture();
+        fixture.Api.Archived=archived;
+        using var client=fixture.CreateClient();
+        using var response=await client.GetAsync($"/campeonatos/{FixtureApi.Slug}/equipes/{FixtureApi.HomeId:D}/jogadores/{FixtureApi.PlayerId:D}");
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var html=WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        html.ShouldContain("Léo Reis");
+        html.ShouldContain("Números na competição");
+        html.ShouldContain("2º lugar");
+        html.ShouldContain("Dados parciais");
+        html.ShouldNotContain("/wiki");
+        html.ShouldNotContain("<html");
+        html.ShouldNotContain(">Registro<");
+        html.ShouldNotContain("Registro:");
+        html.ShouldNotContain("Aberto");
+        if(archived) {html.ShouldContain("Posição final de Aurora");html.ShouldContain("1º lugar");}
+        else html.ShouldNotContain("Posição final");
+        response.Headers.GetValues("X-Robots-Tag").ShouldContain("noindex");
+        fixture.Api.Requests.ShouldHaveSingleItem();
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Edition_player_errors_are_explicit(bool missing)
+    {
+        await using var fixture=new PortalFixture();
+        fixture.Api.MissingEditionPlayer=missing;
+        fixture.Api.Fail=!missing;
+        using var client=fixture.CreateClient();
+        using var response=await client.GetAsync($"/campeonatos/{FixtureApi.Slug}/equipes/{FixtureApi.HomeId:D}/jogadores/{FixtureApi.PlayerId:D}");
+        response.StatusCode.ShouldBe(missing?HttpStatusCode.NotFound:HttpStatusCode.ServiceUnavailable);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Roster_shows_goals_and_cards_without_registration_status(bool closed)
+    {
+        await using var fixture = new PortalFixture();
+        fixture.Api.RosterObservedUntil = closed ? DateTimeOffset.UtcNow : null;
+        using var client = fixture.CreateClient();
+        var html = WebUtility.HtmlDecode(await client.GetStringAsync(
+            $"/campeonatos/{FixtureApi.Slug}/equipes/{FixtureApi.HomeId:D}"));
+        var table = Regex.Match(html, @"<table\b[\s\S]*?</table>").Value;
+        table.ShouldNotContain("Registro");
+        table.ShouldNotContain("Aberto");
+        table.ShouldNotContain("Encerrado");
+        table.ShouldContain("Gols");
+        table.ShouldContain(">CA</abbr>");
+        table.ShouldContain(">CV</abbr>");
+        var values = Regex.Matches(table, @"class=""numeric[^""]*"">([^<]+)</td>")
+            .Select(x=>x.Groups[1].Value).ToArray();
+        values.ShouldBe(new[]{"4","5","2"});
+        html.ShouldContain("edição inteira");
+    }
+
+    [Fact]
+    public async Task Roster_keeps_missing_statistics_distinct_from_zero()
+    {
+        await using var fixture = new PortalFixture();
+        fixture.Api.RosterStatistics = null;
+        fixture.Api.RosterDiscipline = null;
+        using var client = fixture.CreateClient();
+        var html = WebUtility.HtmlDecode(await client.GetStringAsync(
+            $"/campeonatos/{FixtureApi.Slug}/equipes/{FixtureApi.HomeId:D}"));
+        var values = Regex.Matches(html, @"class=""numeric[^""]*"">([^<]+)</td>")
+            .Select(x=>x.Groups[1].Value).ToArray();
+        values.ShouldBe(new[]{"—","—","—"});
+    }
+
+    [Fact]
+    public async Task Group_tables_render_team_rows_not_only_headings()
+    {
+        await using var fixture = new PortalFixture();
+        var home = new StandingRow(new(FixtureApi.HomeId,"Aurora",null),1,3,1,1,0,0,2,0);
+        var away = new StandingRow(new(FixtureApi.AwayId,"Estrela",null),1,1,1,0,1,0,0,0);
+        fixture.Api.Overview = new([
+            new(new(FixtureApi.PhaseId,"Primeira fase",1),[],[home,away],[
+                new(new(Guid.NewGuid(),FixtureApi.PhaseId,"Grupo A",1),[home]),
+                new(new(Guid.NewGuid(),FixtureApi.PhaseId,"Grupo B",2),[away])])],[]);
+        using var client = fixture.CreateClient();
+        var html = await client.GetStringAsync("/campeonatos/"+FixtureApi.Slug);
+        var tables = Regex.Matches(html, @"<table\b[\s\S]*?</table>");
+        tables.Count.ShouldBeGreaterThanOrEqualTo(2);
+        foreach (var (index, team) in new[] { (0,"Aurora"), (1,"Estrela") })
+        {
+            var body = Regex.Match(tables[index].Value, @"<tbody>[\s\S]*?</tbody>").Value;
+            Regex.Matches(body, "<tr>").Count.ShouldBe(1);
+            body.ShouldContain(team);
+        }
+    }
+
+    [Fact]
     public async Task Every_wiki_profile_shows_all_record_labels_but_hides_individual_awards_without_grants()
     {
         // Arrange

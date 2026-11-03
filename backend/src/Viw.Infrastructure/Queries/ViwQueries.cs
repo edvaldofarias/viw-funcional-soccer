@@ -3,6 +3,7 @@ using Viw.Application.Queries;
 using Viw.Contracts.Catalog;
 using Viw.Domain.Competition;
 using Viw.Infrastructure.Persistence;
+using Viw.Infrastructure.Statistics;
 
 namespace Viw.Infrastructure.Queries;
 
@@ -80,8 +81,27 @@ public sealed partial class ViwQueries(ViwDbContext db) : IViwQueries
             where registration.EditionId == edition.Id && source.EditionId == edition.Id && registration.TeamEntryId == teamId
             orderby source.OriginalName, registration.ValidFrom descending, registration.Id
             select new RosterPlayerResponse(new PlayerResponse(source.Id, player==null?"":player.Slug, source.OriginalName, source.SourceImageAssetId),
-                source.OriginalName, source.ShirtNumber, source.AssignedPosition ?? "Jogador de linha", registration.ValidFrom, registration.ValidTo);
-        return await PageAsync(query, request, ct);
+                source.OriginalName, source.ShirtNumber, source.AssignedPosition ?? "Jogador de linha", registration.ValidFrom, registration.ValidTo, null, null);
+        var page = await PageAsync(query, request, ct);
+        if (page.Items.Count == 0) return page;
+        var ids = page.Items.Select(x => x.Player.Id).Distinct().ToArray();
+        var totals = await (from fact in db.PlayerMatchStatisticsRecords.AsNoTracking()
+            join match in db.MatchRecords.AsNoTracking() on fact.MatchId equals match.Id
+            where ids.Contains(fact.SourcePlayerId) && fact.EditionId == edition.Id &&
+                fact.TeamEntryId == teamId && match.EditionId == edition.Id && match.Status == MatchStatus.Finished
+            group new { fact, match } by fact.SourcePlayerId into facts
+            select new { Id = facts.Key, Statistics = new PlayerTotalsResponse(
+                facts.Sum(x => (long)(x.fact.Goals ?? 0)), facts.Sum(x => (long)(x.fact.YellowCards ?? 0)),
+                facts.Sum(x => (long)(x.fact.RedCards ?? 0)), facts.Sum(x => (long)(x.fact.Appearances ?? 0)),
+                facts.Count(x => x.fact.Appearances == null), facts.Count(x => !x.fact.IsComplete || x.fact.Revision != x.match.Revision)) })
+            .ToDictionaryAsync(x => x.Id, x => x.Statistics, ct);
+        var cards = (await new PlayerDisciplineReader(db).ReadAsync(
+            db.SourcePlayerRecords.Where(x => x.EditionId == edition.Id && ids.Contains(x.Id)), ct))
+            .ToDictionary(x => x.SourcePlayerId);
+        return new(page.Items.Select(entry => entry with {
+            Statistics = totals.GetValueOrDefault(entry.Player.Id) ?? new PlayerTotalsResponse(0, 0, 0, 0, 0, 0),
+            Discipline = new PlayerDisciplineResponse(cards[entry.Player.Id].YellowCards, cards[entry.Player.Id].RedCards)
+        }).ToArray(), page.Page, page.PageSize, page.TotalCount);
     }
 
     public async Task<PageResponse<MatchResponse>?> MatchesAsync(string slug, MatchRequest request, CancellationToken ct)

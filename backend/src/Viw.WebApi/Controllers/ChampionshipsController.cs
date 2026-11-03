@@ -77,6 +77,23 @@ public sealed class ChampionshipsController(IViwQueries queries) : ReadControlle
     [ProducesResponseType<TeamDetailResponse>(StatusCodes.Status200OK)]
     public async Task<ActionResult<TeamDetailResponse>> Team(string slug, Guid teamId, CancellationToken ct) => Found(await queries.TeamAsync(slug, teamId, ct));
 
+    /// <summary>Detalha um jogador exclusivamente nesta edição, sem depender de identidade na Wiki.</summary>
+    /// <remarks>Valida a inscrição na equipe. Totais e artilharia incluem todas as equipes da edição, apenas partidas encerradas; empates na artilharia são preservados. Colocação final só é retornada em edição arquivada. Não calcula MVP nem concede premiações.</remarks>
+    /// <param name="slug">Slug da edição.</param>
+    /// <param name="teamId">Equipe do elenco consultado.</param>
+    /// <param name="sourcePlayerId">ID do cadastro original da edição, retornado pelo elenco.</param>
+    /// <param name="ct">Cancelamento da consulta.</param>
+    /// <returns>Perfil da edição, estatísticas, artilharia, colocação da equipe e prêmios confirmados.</returns>
+    /// <response code="200">Dados do cadastro original restritos à edição consultada.</response>
+    /// <response code="400">Identificadores inválidos; retorna ValidationProblemDetails.</response>
+    /// <response code="404">Edição, equipe ou cadastro inexistente, ou cadastro não inscrito na equipe.</response>
+    /// <response code="503">Banco não configurado ou indisponível; retorna ProblemDetails.</response>
+    /// <response code="500">Falha inesperada; retorna ProblemDetails sem detalhes internos.</response>
+    [HttpGet("{slug}/teams/{teamId:guid}/players/{sourcePlayerId:guid}")]
+    [ProducesResponseType<EditionPlayerResponse>(StatusCodes.Status200OK)]
+    public async Task<ActionResult<EditionPlayerResponse>> EditionPlayer(string slug, Guid teamId, Guid sourcePlayerId, CancellationToken ct) =>
+        Found(await queries.EditionPlayerAsync(slug, teamId, sourcePlayerId, ct));
+
     /// <summary>Lista as inscrições de jogadores observadas em uma equipe.</summary>
     /// <remarks>Inclui inscrições abertas e encerradas, nomes originais e identidade oficial. Os períodos são observações do importador, não datas históricas exatas de transferência.</remarks>
     /// <param name="slug">Slug da edição, por exemplo la-liga-2026-2.</param>

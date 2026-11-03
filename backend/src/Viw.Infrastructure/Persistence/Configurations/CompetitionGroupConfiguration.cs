@@ -15,6 +15,7 @@ public sealed class CompetitionGroupConfiguration : IEntityTypeConfiguration<Com
             .HasForeignKey(x => x.EditionId)
             .OnDelete(DeleteBehavior.Restrict);
         builder.HasAlternateKey(x => new { x.EditionId, x.Id });
+        builder.HasAlternateKey(x => new { x.EditionId, x.PhaseId, x.Id });
         builder.HasIndex(x => new { x.EditionId, x.PhaseId, x.SortOrder }).IsUnique();
         builder.HasOne<CompetitionPhase>()
             .WithMany()

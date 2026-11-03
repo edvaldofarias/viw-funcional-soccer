@@ -66,4 +66,14 @@ public sealed class ChampionshipsController(ViwApiClient api, SeoService seo) : 
         var pager = new Pager(PortalRoutes.Cup(edition.Edition.Slug) + "/premiacoes", page, awards.PageSize, awards.TotalCount);
         return Page("Awards", new AwardsPage(edition, awards, pager), $"Premiações · {edition.Edition.Name}", $"Os reconhecimentos oficiais de {edition.Edition.Name}: artilharia, Ballon d’Or, craques e seleções quando confirmados.", pager.Url(page), awards.TotalCount == 0);
     }
+
+    [HttpGet("/campeonatos/{slug}/equipes/{id:guid}/jogadores/{sourcePlayerId:guid}")]
+    public async Task<IActionResult> EditionPlayer(string slug, Guid id, Guid sourcePlayerId, CancellationToken ct)
+    {
+        var player = await api.EditionPlayerAsync(slug, id, sourcePlayerId, ct);
+        if (player is null) return Missing();
+        Response.Headers.CacheControl = "no-store";
+        Response.Headers["X-Robots-Tag"] = "noindex";
+        return PartialView("_EditionPlayer", player);
+    }
 }

@@ -7,7 +7,7 @@ Etapa 3: modelo EF Core para SQL Server, schema `viw`, com baseline única `Init
 | Grupo | Entidades | Finalidade |
 | --- | --- | --- |
 | Competição | Competition, ChampionshipEdition, EditionSource, RuleSet | Competição, edição, vínculo de origem e versões das regras |
-| Calendário | CompetitionPhase, CompetitionRound, CompetitionGroup, TeamEntry, Match | Fases, rodadas, grupos editoriais, equipes da edição, referências futuras e placar |
+| Calendário | CompetitionPhase, CompetitionRound, CompetitionGroup, CompetitionGroupTeam, TeamEntry, Match | Fases, rodadas, grupos e seus vínculos por fase/equipe, referências futuras e placar |
 | Pessoas | Player, SourcePlayer, PlayerIdentityLink, PlayerRegistration | Identidade canônica, nome original, vínculos reversíveis e equipes por período |
 | Estatística | MatchSourceEvent, PlayerMatchStatistics | Eventos recebidos e fatos normalizados por jogador/partida |
 | Organização | Coach, CoachAssignment, AwardDefinition, AwardGrant | Técnicos por período/rodada e decisões oficiais de premiação |
@@ -25,6 +25,7 @@ Todas têm ID interno GUID gerado pela aplicação, criação em UTC e rowversio
 - Chaves estrangeiras compostas impedem usar equipes ou cadastros de outra edição em uma partida/registro.
 - Equipes iguais não podem se enfrentar; placares não são negativos; jogo encerrado exige dois participantes e placares normalizados.
 - Rodada de uma partida pertence à mesma fase/edição.
+- `CompetitionGroupTeam` permite somente um grupo por edição/fase/equipe. FKs compostas garantem grupo da mesma fase/edição e equipe da mesma edição; participar de outra fase não sobrescreve vínculos anteriores.
 - Um único vínculo ativo por cadastro de jogador; vínculos encerrados permanecem no histórico.
 - Estatística única por jogador de origem e partida; valores desconhecidos continuam nulos.
 - Um premiado é jogador OU técnico. Empate permite múltiplos jogadores no mesmo prêmio; duplicação da mesma concessão ativa é impedida.

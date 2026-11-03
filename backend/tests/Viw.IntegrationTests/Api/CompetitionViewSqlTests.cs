@@ -43,9 +43,12 @@ public sealed class CompetitionViewSqlTests
         var groupB=new CompetitionGroup {EditionId=d.Edition.Id,PhaseId=phase.Id,Name="Grupo B",SortOrder=2};
         db.AddRange(phase,groupA,groupB);
         var home=await db.TeamEntryRecords.SingleAsync(x=>x.Id==d.Home.Id);
-        home.AggregateStatisticsJson="{\"group\":{\"col\":1,\"dt\":\"0=3#\"}}";home.GroupId=groupA.Id;
+        home.AggregateStatisticsJson="{\"group\":{\"col\":1,\"dt\":\"0=3#\"}}";
         var away=await db.TeamEntryRecords.SingleAsync(x=>x.Id==d.Away.Id);
-        away.AggregateStatisticsJson="{\"group\":{\"col\":0,\"dt\":\"0=9#\"}}";away.GroupId=groupB.Id;
+        away.AggregateStatisticsJson="{\"group\":{\"col\":0,\"dt\":\"0=9#\"}}";
+        db.AddRange(
+            new CompetitionGroupTeam {EditionId=d.Edition.Id,PhaseId=phase.Id,GroupId=groupA.Id,TeamEntryId=home.Id},
+            new CompetitionGroupTeam {EditionId=d.Edition.Id,PhaseId=phase.Id,GroupId=groupB.Id,TeamEntryId=away.Id});
         var game=d.CreateMatch();game.PhaseId=phase.Id;game.Status=MatchStatus.Finished;game.HomeScore=2;game.AwayScore=0;
         db.Add(game);await db.SaveChangesAsync();
         // Act

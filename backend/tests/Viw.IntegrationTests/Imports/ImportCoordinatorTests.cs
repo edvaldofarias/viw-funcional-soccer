@@ -144,8 +144,98 @@ public sealed class ImportCoordinatorTests
         first.Failed.ShouldBe(0);
         second.Failed.ShouldBe(0);
         groups.Select(x => x.Name).ShouldBe(new[] { "Grupo A", "Grupo B" });
-        home.GroupId.ShouldBe(groups[0].Id);
-        away.GroupId.ShouldBe(groups[1].Id);
+        (await db.CompetitionGroupTeamRecords.SingleAsync(x=>x.TeamEntryId==home.Id)).GroupId.ShouldBe(groups[0].Id);
+        (await db.CompetitionGroupTeamRecords.SingleAsync(x=>x.TeamEntryId==away.Id)).GroupId.ShouldBe(groups[1].Id);
+    }
+
+    [SqlServerFact]
+    public async Task Crossed_groups_are_inferred_without_catalog_configuration()
+    {
+        // Arrange: quatro equipes em dois grupos cruzados, sem PhaseGroups no catálogo.
+        await using var database = await SqlServerTestDatabase.CreateAsync();
+        var source = new FixtureSource { Phase = "fase-1", CrossedGroups = true };
+        var coordinator = Create(database, source);
+
+        // Act
+        var result = await coordinator.RunAsync(default);
+        database.Context.ChangeTracker.Clear();
+        var db = database.Context;
+        var groups = await db.CompetitionGroupRecords.OrderBy(x => x.SortOrder).ToArrayAsync();
+        var edition = await db.ChampionshipEditionRecords.SingleAsync(x=>x.Slug=="fixture-import");
+        var teams = await db.TeamEntryRecords.Where(x=>x.EditionId==edition.Id).ToDictionaryAsync(x => x.ExternalId);
+
+        // Assert
+        result.Failed.ShouldBe(0);
+        groups.Select(x => x.Name).ShouldBe(new[] { "Grupo A", "Grupo B" });
+        var memberships = await db.CompetitionGroupTeamRecords.ToDictionaryAsync(x=>x.TeamEntryId,x=>x.GroupId);
+        memberships[teams["home"].Id].ShouldBe(groups[0].Id);
+        memberships[teams["away"].Id].ShouldBe(groups[0].Id);
+        memberships[teams["extra1"].Id].ShouldBe(groups[1].Id);
+        memberships[teams["extra2"].Id].ShouldBe(groups[1].Id);
+    }
+
+    [SqlServerFact]
+    public async Task Round_robin_phase_infers_no_groups()
+    {
+        // Arrange: todos jogam contra todos — pontos corridos não geram grupos.
+        await using var database = await SqlServerTestDatabase.CreateAsync();
+        var source = new FixtureSource { Phase = "fase-1", RoundRobin = true };
+        var coordinator = Create(database, source);
+
+        // Act
+        var result = await coordinator.RunAsync(default);
+
+        // Assert
+        result.Failed.ShouldBe(0);
+        (await database.Context.CompetitionGroupRecords.CountAsync()).ShouldBe(0);
+    }
+
+    [SqlServerFact]
+    public async Task Knockout_does_not_create_groups_or_empty_first_phase_on_reimport()
+    {
+        await using var database = await SqlServerTestDatabase.CreateAsync();
+        var source = new FixtureSource { Phase = "fase-1", CrossedGroups = true, Knockout = true };
+        var coordinator = Create(database, source);
+        (await coordinator.RunAsync(default)).Failed.ShouldBe(0);
+        var edition = await database.Context.ChampionshipEditionRecords.SingleAsync(x=>x.Slug=="fixture-import");
+        async Task AssertTables()
+        {
+            database.Context.ChangeTracker.Clear();
+            var result = await new Viw.Infrastructure.Queries.ViwQueries(database.Context).CompetitionViewAsync(edition.Slug,default);
+            result.ShouldNotBeNull();
+            var first = result.Phases.First();
+            first.Groups.Count.ShouldBe(2);
+            first.Groups.ShouldAllBe(x=>x.Standings.Count==2);
+            first.Groups.SelectMany(x=>x.Standings).Select(x=>x.Team.Id).Distinct().Count().ShouldBe(4);
+            result.Phases.Skip(1).ShouldAllBe(x=>x.Groups.Count==0);
+        }
+        await AssertTables();
+        source.Goals = 2;
+        (await coordinator.RunAsync(default)).Failed.ShouldBe(0);
+        await AssertTables();
+    }
+
+    [SqlServerFact]
+    public async Task Editorial_memberships_in_later_phase_do_not_replace_first_phase_and_catalog_changes_reprocess()
+    {
+        await using var database = await SqlServerTestDatabase.CreateAsync();
+        var source = new FixtureSource { Phase = "fase-1", CrossedGroups = true, Knockout = true };
+        var definition = new EditionDefinition {
+            Slug="fixture-import",Name="Copa de teste",ExternalId="fixture",Year=2026,Semester=1 };
+        var coordinator = Create(database,source,definition);
+        (await coordinator.RunAsync(default)).Failed.ShouldBe(0);
+        definition.PhaseGroups["fase-2"] = [
+            new() {Name="Grupo editorial",Teams=["home","away"]}];
+        (await coordinator.RunAsync(default)).Failed.ShouldBe(0);
+        database.Context.ChangeTracker.Clear();
+        var result = await new Viw.Infrastructure.Queries.ViwQueries(database.Context).CompetitionViewAsync(definition.Slug,default);
+        result.ShouldNotBeNull();
+        result.Phases[0].Groups.ShouldAllBe(x=>x.Standings.Count==2);
+        var later = result.Phases[1].Groups.ShouldHaveSingleItem();
+        later.Group.Name.ShouldBe("Grupo editorial");
+        later.Standings.Count.ShouldBe(2);
+        var home = await database.Context.TeamEntryRecords.SingleAsync(x=>x.ExternalId=="home");
+        (await database.Context.CompetitionGroupTeamRecords.CountAsync(x=>x.TeamEntryId==home.Id)).ShouldBe(2);
     }
 
     private static ImportCoordinator Create(SqlServerTestDatabase database, FixtureSource source, EditionDefinition? definition = null)
@@ -166,6 +256,9 @@ public sealed class ImportCoordinatorTests
         public int Goals { get; set; } = 1;
         public bool FailDetails { get; set; }
         public string? Phase { get; set; }
+        public bool CrossedGroups { get; set; }
+        public bool RoundRobin { get; set; }
+        public bool Knockout { get; set; }
 
         public Task<SourceDocument> GetAsync(string externalId, string resource, CancellationToken cancellationToken)
         {
@@ -174,17 +267,49 @@ public sealed class ImportCoordinatorTests
             if (Goals == 2) events["goal-2"] = new { ac = 1, pl_id1 = "player-a", team1 = "home" };
             object data = resource switch
             {
-                "fs" => new Dictionary<string,object> { ["unassigned"] = new { title = "Grande Final" } },
+                "fs" => Knockout
+                    ? new Dictionary<string,object> { ["fase-1"] = new { title = "Primeira fase" }, ["fase-2"] = new { title = "Quartas de final" } }
+                    : new Dictionary<string,object> { [Phase ?? "unassigned"] = new { title = "Grande Final" } },
                 "info" => new { name = "Copa de teste" },
-                "teams" => new { home = new { name = "Casa" }, away = new { name = "Fora" } },
+                "teams" => CrossedGroups || RoundRobin
+                    ? new { home = new { name = "Casa" }, away = new { name = "Fora" }, extra1 = new { name = "Extra Um" }, extra2 = new { name = "Extra Dois" } }
+                    : new { home = new { name = "Casa" }, away = new { name = "Fora" } },
                 "player" => new Dictionary<string, object> { ["player-a"] = new { name = "Jogador teste", team = "home" } },
-                "matchs" => Phase is null
-                    ? new Dictionary<string, object> { ["fixture-match"] = new { team1 = "home", team2 = "away", st = 3, dt = new { qt_g1 = Goals, qt_g2 = (int?)null } } }
-                    : new Dictionary<string, object> { ["fixture-match"] = new { team1 = "home", team2 = "away", st = 3, fs = Phase, dt = new { qt_g1 = Goals, qt_g2 = (int?)null } } },
+                "matchs" => Matches(),
                 _ => new { list = events }
             };
             var json = System.Text.Json.JsonSerializer.Serialize(data);
             return Task.FromResult(CopaFacilSource.Parse(resource, Encoding.UTF8.GetBytes(json)));
+        }
+
+        private object Matches()
+        {
+            if (CrossedGroups)
+            {
+                // Casa/Fora só enfrentam Extra Um/Extra Dois: dois grupos cruzados.
+                var games = new Dictionary<string, object> {
+                    ["fixture-match"] = new { team1 = "home", team2 = "extra1", st = 3, fs = Phase, dt = new { qt_g1 = Goals, qt_g2 = (int?)null } },
+                    ["cross-2"] = new { team1 = "home", team2 = "extra2", st = 3, fs = Phase, dt = new { qt_g1 = 1, qt_g2 = 0 } },
+                    ["cross-3"] = new { team1 = "away", team2 = "extra1", st = 3, fs = Phase, dt = new { qt_g1 = 0, qt_g2 = 0 } },
+                    ["cross-4"] = new { team1 = "away", team2 = "extra2", st = 3, fs = Phase, dt = new { qt_g1 = 2, qt_g2 = 2 } } };
+                if (Knockout)
+                {
+                    games["quarter-1"] = new { team1 = "home", team2 = "away", st = 3, fs = "fase-2", dt = new { qt_g1 = 1, qt_g2 = 0 } };
+                    games["quarter-2"] = new { team1 = "extra1", team2 = "extra2", st = 3, fs = "fase-2", dt = new { qt_g1 = 2, qt_g2 = 0 } };
+                }
+                return games;
+            }
+            if (RoundRobin)
+                return new Dictionary<string, object> {
+                    ["fixture-match"] = new { team1 = "home", team2 = "away", st = 3, fs = Phase, dt = new { qt_g1 = Goals, qt_g2 = (int?)null } },
+                    ["rr-2"] = new { team1 = "home", team2 = "extra1", st = 3, fs = Phase, dt = new { qt_g1 = 1, qt_g2 = 0 } },
+                    ["rr-3"] = new { team1 = "home", team2 = "extra2", st = 3, fs = Phase, dt = new { qt_g1 = 1, qt_g2 = 1 } },
+                    ["rr-4"] = new { team1 = "away", team2 = "extra1", st = 3, fs = Phase, dt = new { qt_g1 = 0, qt_g2 = 1 } },
+                    ["rr-5"] = new { team1 = "away", team2 = "extra2", st = 3, fs = Phase, dt = new { qt_g1 = 2, qt_g2 = 0 } },
+                    ["rr-6"] = new { team1 = "extra1", team2 = "extra2", st = 3, fs = Phase, dt = new { qt_g1 = 1, qt_g2 = 1 } } };
+            return Phase is null
+                ? new Dictionary<string, object> { ["fixture-match"] = new { team1 = "home", team2 = "away", st = 3, dt = new { qt_g1 = Goals, qt_g2 = (int?)null } } }
+                : new Dictionary<string, object> { ["fixture-match"] = new { team1 = "home", team2 = "away", st = 3, fs = Phase, dt = new { qt_g1 = Goals, qt_g2 = (int?)null } } };
         }
     }
 }

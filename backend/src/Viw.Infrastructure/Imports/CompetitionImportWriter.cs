@@ -10,7 +10,7 @@ public sealed partial class CompetitionImportWriter(ViwDbContext db)
 {
     private static int? PenaltyScore(long? value) => value is >= 0 and <= int.MaxValue ? (int)value.Value : null;
 
-    public const string MapperVersion = "copafacil-v6";
+    public const string MapperVersion = "copafacil-v9";
 
     public async Task WriteCoreAsync(Guid editionId, CopaFacilCoreDto core, CancellationToken ct, Viw.Application.Imports.EditionDefinition? definition = null)
     {
@@ -119,22 +119,35 @@ public sealed partial class CompetitionImportWriter(ViwDbContext db)
             if (isNew) { matches.Add(item.Key, match); db.Add(match); }
             else if (before != JsonSerializer.Serialize(match)) match.Revision++;
         }
-        await WriteGroupsAsync(editionId, definition, phases, teams, ct);
+        await WriteGroupsAsync(editionId, definition, phases, teams, matches, ct);
     }
 
-    // Grupos são editoriais do catálogo: a fonte não informa grupo, então o
-    // vínculo é regravado a cada importação a partir da definição configurada.
+    // Inferir somente a primeira fase: confrontos desconectados do mata-mata
+    // não são grupos. Usar as partidas rastreadas inclui a primeira importação.
     private async Task WriteGroupsAsync(Guid editionId, Viw.Application.Imports.EditionDefinition? definition,
-        Dictionary<string, CompetitionPhase> phases, Dictionary<string, TeamEntry> teams, CancellationToken ct)
+        Dictionary<string, CompetitionPhase> phases, Dictionary<string, TeamEntry> teams,
+        Dictionary<string, Match> matches, CancellationToken ct)
     {
-        var configured = definition?.PhaseGroups ?? [];
         var groups = await db.CompetitionGroupRecords.Where(x => x.EditionId == editionId).ToListAsync(ct);
+        var memberships = await db.CompetitionGroupTeamRecords.Where(x => x.EditionId == editionId).ToListAsync(ct);
         var keep = new HashSet<Guid>();
-        foreach (var (phaseKey, definitions) in configured)
+        var desired = new Dictionary<(Guid PhaseId, Guid TeamId), Guid>();
+        var teamsById = teams.Values.ToDictionary(x => x.Id);
+        void Assign(CompetitionGroup group, TeamEntry team)
         {
-            if (!phases.TryGetValue(phaseKey, out var phase)) continue;
+            if (!desired.TryAdd((group.PhaseId, team.Id), group.Id))
+                throw new InvalidDataException("Equipe configurada em mais de um grupo da mesma fase.");
+        }
+        foreach (var (phaseKey, definitions) in definition?.PhaseGroups ?? [])
+        {
+            if (!phases.TryGetValue(phaseKey, out var phase))
+                throw new InvalidDataException("Fase dos grupos editoriais não encontrada na edição.");
             for (var index = 0; index < definitions.Count; index++)
             {
+                if (string.IsNullOrWhiteSpace(definitions[index].Name) || definitions[index].Name.Length > 200 ||
+                    definitions[index].Teams.Count == 0 ||
+                    definitions.Count(x => x.Name == definitions[index].Name) != 1)
+                    throw new InvalidDataException("Definição de grupo editorial inválida.");
                 var group = groups.SingleOrDefault(x => x.PhaseId == phase.Id && x.Name == definitions[index].Name);
                 if (group is null)
                 {
@@ -144,13 +157,96 @@ public sealed partial class CompetitionImportWriter(ViwDbContext db)
                 group.SortOrder = index + 1;
                 keep.Add(group.Id);
                 foreach (var externalId in definitions[index].Teams)
-                    if (teams.TryGetValue(externalId, out var team)) team.GroupId = group.Id;
+                {
+                    if (!teams.TryGetValue(externalId, out var team))
+                        throw new InvalidDataException("Equipe dos grupos editoriais não encontrada na edição.");
+                    Assign(group, team);
+                }
             }
         }
-        // Equipes de grupos removidos da configuração voltam a não ter grupo.
-        var removed = groups.Where(x => !keep.Contains(x.Id)).ToArray();
-        foreach (var team in db.TeamEntryRecords.Local.Where(x => x.GroupId != null && removed.Any(g => g.Id == x.GroupId)))
-            team.GroupId = null;
-        db.CompetitionGroupRecords.RemoveRange(removed);
+        // Fases com configuração editorial não recebem inferência.
+        var editorial = (definition?.PhaseGroups ?? []).Keys
+            .Select(k => phases.GetValueOrDefault(k)?.Id).Where(x => x != null).Select(x => x!.Value).ToHashSet();
+        var firstPhase = phases.Values.OrderBy(x => x.SortOrder).ThenBy(x => x.ExternalId, StringComparer.Ordinal).FirstOrDefault();
+        if (firstPhase is not null && !editorial.Contains(firstPhase.Id))
+        {
+            var phaseMatches = matches.Values
+                .Where(x => x.PhaseId == firstPhase.Id && x.HomeTeamId != null && x.AwayTeamId != null).ToArray();
+            var inferred = InferGroups(phaseMatches.Select(x => (x.HomeTeamId!.Value, x.AwayTeamId!.Value)),
+                id => teamsById[id].Name);
+            for (var index = 0; index < inferred.Count; index++)
+            {
+                var name = "Grupo " + (char)('A' + index);
+                var group = groups.SingleOrDefault(x => x.PhaseId == firstPhase.Id && x.Name == name);
+                if (group is null)
+                {
+                    group = new CompetitionGroup { EditionId = editionId, PhaseId = firstPhase.Id, Name = name };
+                    groups.Add(group); db.Add(group);
+                }
+                group.SortOrder = index + 1;
+                keep.Add(group.Id);
+                foreach (var teamId in inferred[index])
+                    Assign(group, teamsById[teamId]);
+            }
+        }
+        foreach (var membership in memberships)
+        {
+            if (desired.Remove((membership.PhaseId, membership.TeamEntryId), out var groupId))
+                membership.GroupId = groupId;
+            else db.Remove(membership);
+        }
+        foreach (var (key, groupId) in desired)
+            db.Add(new CompetitionGroupTeam {
+                EditionId = editionId, PhaseId = key.PhaseId, TeamEntryId = key.TeamId, GroupId = groupId });
+        db.CompetitionGroupRecords.RemoveRange(groups.Where(x => !keep.Contains(x.Id)));
+    }
+
+    // A fonte não informa grupo, então os grupos são inferidos dos confrontos da
+    // fase. Dois formatos são reconhecidos: grupos cruzados (times do Grupo A só
+    // enfrentam o Grupo B — os grupos são os conjuntos de times que nunca se
+    // enfrentaram) e grupos internos (todos jogam dentro do grupo — os grupos são
+    // os componentes desconectados do grafo). Pontos corridos formam um único
+    // bloco e não geram grupos. A ordenação pelo menor nome mantém a nomeação
+    // (Grupo A, Grupo B...) estável entre importações.
+    public static List<List<Guid>> InferGroups(IEnumerable<(Guid Home, Guid Away)> matches, Func<Guid, string?>? nameOf = null)
+    {
+        var played = new Dictionary<Guid, HashSet<Guid>>();
+        foreach (var (home, away) in matches)
+        {
+            if (home == away) continue;
+            (played.TryGetValue(home, out var h) ? h : played[home] = []).Add(away);
+            (played.TryGetValue(away, out var a) ? a : played[away] = []).Add(home);
+        }
+        if (played.Count == 0) return [];
+        nameOf ??= id => id.ToString();
+        string Key(Guid id) => nameOf(id) ?? "";
+        List<List<Guid>> Sort(List<List<Guid>> groups) =>
+            groups.OrderBy(x => x.Select(Key).Min(), StringComparer.Ordinal).ToList();
+
+        // Formato cruzado: times com exatamente o mesmo conjunto de adversários
+        // nunca se enfrentaram entre si — cada conjunto é um grupo.
+        var byOpponents = played.Keys
+            .GroupBy(id => string.Join("\n", played[id].OrderBy(x => x)))
+            .Select(x => x.ToList()).ToList();
+        if (byOpponents.Count >= 2 && byOpponents.All(x => x.Count >= 2)) return Sort(byOpponents);
+
+        // Formato interno: componentes desconectados do grafo de confrontos.
+        var visited = new HashSet<Guid>();
+        var components = new List<List<Guid>>();
+        foreach (var start in played.Keys)
+        {
+            if (!visited.Add(start)) continue;
+            var component = new List<Guid>();
+            var queue = new Queue<Guid>([start]);
+            while (queue.Count > 0)
+            {
+                var current = queue.Dequeue();
+                component.Add(current);
+                foreach (var next in played[current])
+                    if (visited.Add(next)) queue.Enqueue(next);
+            }
+            components.Add(component);
+        }
+        return components.Count < 2 ? [] : Sort(components);
     }
 }

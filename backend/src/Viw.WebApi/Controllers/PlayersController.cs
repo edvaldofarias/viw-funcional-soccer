@@ -10,11 +10,11 @@ namespace Viw.WebApi.Controllers;
 public sealed class PlayersController(IViwQueries queries) : ReadControllerBase
 {
     /// <summary>Busca as identidades canônicas dos jogadores.</summary>
-    /// <remarks>A busca considera nome oficial, nomes originais e apelidos vinculados por identidades ativas. Vários cadastros de origem não duplicam a mesma identidade na lista.</remarks>
+    /// <remarks>A busca ignora acentos e diferenças entre maiúsculas/minúsculas. Considera partes do nome oficial, nomes originais e apelidos de vínculos ativos, incluindo iniciais como E. Santana e pequenas diferenças de escrita com Fastenshtein. Nomes completos exatos têm prioridade sobre partes exatas, iniciais e aproximações; nome e identificador desempatarão resultados. Filtros de edição são aplicados antes da comparação e da paginação. Vários cadastros de origem não duplicam a mesma identidade; sugestões não unem pessoas automaticamente.</remarks>
     /// <param name="request">Busca opcional de até 100 caracteres, edição opcional e paginação.</param>
     /// <param name="ct">Token de cancelamento associado à requisição; não é um parâmetro HTTP.</param>
-    /// <returns>Página de identidades oficiais ordenadas por nome e identificador.</returns>
-    /// <response code="200">Página de identidades oficiais ordenadas por nome e identificador. Listas podem estar vazias.</response>
+    /// <returns>Página de identidades oficiais por relevância quando há busca; sem busca, por nome e identificador.</returns>
+    /// <response code="200">Página de identidades oficiais por relevância quando há busca; sem busca, por nome e identificador. Listas podem estar vazias.</response>
     /// <response code="400">Parâmetros inválidos; retorna ValidationProblemDetails.</response>
     /// <response code="503">Banco não configurado ou indisponível; retorna ProblemDetails sem detalhes internos.</response>
     /// <response code="500">Falha inesperada; retorna ProblemDetails sem detalhes internos.</response>

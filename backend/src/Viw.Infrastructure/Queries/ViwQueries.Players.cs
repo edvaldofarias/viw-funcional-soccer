@@ -22,18 +22,19 @@ public sealed partial class ViwQueries
     public async Task<PageResponse<PlayerResponse>> PlayersAsync(PlayerRequest request, CancellationToken ct)
     {
         var query = db.PlayerRecords.AsNoTracking().Where(player => db.PlayerIdentityLinkRecords.Any(link => link.PlayerId == player.Id && link.UnlinkedAt == null));
-        if (!string.IsNullOrWhiteSpace(request.Search))
-            query = query.Where(player => player.DisplayName.Contains(request.Search) ||
-                (from link in db.PlayerIdentityLinkRecords
-                 join source in db.SourcePlayerRecords on link.SourcePlayerId equals source.Id
-                 where link.PlayerId == player.Id && link.UnlinkedAt == null &&
-                    (source.OriginalName.Contains(request.Search) || (source.Nickname != null && source.Nickname.Contains(request.Search)))
-                 select link.Id).Any());
         if (request.EditionId is not null)
             query = query.Where(player => (from link in db.PlayerIdentityLinkRecords
                 join source in db.SourcePlayerRecords on link.SourcePlayerId equals source.Id
                 where link.PlayerId == player.Id && link.UnlinkedAt == null && source.EditionId == request.EditionId
                 select link.Id).Any());
+        if (!string.IsNullOrWhiteSpace(request.Search))
+        {
+            var matches = await PlayerNameSearch.FindPlayersAsync(db, query, request.Search, ct);
+            var ids = matches.Skip(Offset(request)).Take(request.PageSize).Select(x => x.Id).ToArray();
+            if (ids.Length == 0) return new([], request.Page, request.PageSize, matches.Length);
+            var items = await ProjectPlayers(query.Where(x => ids.Contains(x.Id))).ToArrayAsync(ct);
+            return new(items.OrderBy(x => Array.IndexOf(ids, x.Id)).ToArray(), request.Page, request.PageSize, matches.Length);
+        }
         return await PageAsync(ProjectPlayers(query.OrderBy(x => x.DisplayName).ThenBy(x => x.Id)), request, ct);
     }
 
@@ -63,7 +64,7 @@ public sealed partial class ViwQueries
         totals = totals with { KnownAppearances = career.Results.Played };
         var awards = await PlayerAwardsAsync(player, ct);
         return new(player, totals,names.SelectMany(x=>new[]{x.OriginalName,x.Nickname}).Where(x=>!string.IsNullOrWhiteSpace(x)).Select(x=>x!).Distinct(StringComparer.OrdinalIgnoreCase).Order().ToArray(),
-            career.Records, awards, career.Results, career.CupsPlayed);
+            career.Records, awards, career.Results, career.CupsPlayed, career.Podium);
     }
 
     public async Task<PageResponse<PlayerHistoryResponse>?> PlayerHistoryAsync(string slug, PageRequest request, CancellationToken ct)

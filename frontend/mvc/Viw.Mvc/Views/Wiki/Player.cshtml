@@ -7,10 +7,24 @@
     var records = Model.Player.Records ?? new PlayerRecordsResponse([], [], [], [], [], [], [], false);
     var results = Model.Player.Results;
     var awards = Model.Player.Awards ?? Array.Empty<PlayerAwardResponse>();
+    var podium = Model.Player.Podium;
+    var infoboxClass = "wiki-infobox" + (podium is { Titles: > 0 } ? " wiki-infobox-gold" :
+        podium is { RunnersUp: > 0 } ? " wiki-infobox-silver" : podium is { ThirdPlaces: > 0 } ? " wiki-infobox-bronze" : "");
 }
 <section class="shell section">
     <nav class="breadcrumbs" aria-label="Caminho"><a href="/wiki">Wiki VIW</a><span>/</span><a
         href="/wiki/jogadores">Jogadores</a></nav>
+        <div class="wiki-layout">
+        <nav class="wiki-toc" aria-label="Sumário"><strong>Conteúdo</strong>
+            <ol>
+                <li><a href="#carreira">Carreira</a></li>
+                <li><a href="#estatisticas">Estatísticas por campeonato</a></li>
+                <li><a href="#marcas">Recordes e marcas</a></li>
+                @if (awards.Count > 0) { <li><a href="#premios-individuais">Prêmios individuais</a></li> }
+                <li><a href="#galeria">Galeria</a></li>
+                <li><a href="#metodologia">Notas e metodologia</a></li>
+            </ol>
+        </nav>
         <article class="wiki-article">
             <header class="wiki-article-header">
                 <p class="eyebrow">ARQUIVO HISTÓRICO VIW</p>
@@ -18,7 +32,7 @@
                 <p>Jogador de futebol da comunidade VIW</p>
                 <partial name="_Share" />
             </header>
-            <aside class="wiki-infobox">
+            <aside class="@infoboxClass" aria-label="Perfil e conquistas de @player.Name">
                 <h2>@player.Name</h2>
                 @{
                     var portrait = photos.LastOrDefault();
@@ -29,7 +43,12 @@
                     <figure><img
                         src="@portraitSource" data-media-placeholder="@PortalFormat.PlaceholderPortrait"
                         alt="Foto de @player.Name" referrerpolicy="no-referrer" />
-                        <figcaption>@(portrait is not null ? $"{portrait.Edition.Name} · {portrait.Edition.Year}" : "Foto do jogador")</figcaption>
+                        <figcaption>
+                            @if (portrait is not null) {
+                                <a href="@PortalRoutes.Team(portrait.Edition.Slug, portrait.Team.Id)">@portrait.Team.Name</a><br />
+                                <span>@portrait.Edition.Name · @portrait.Edition.Year</span>
+                            } else { <span>Foto do jogador</span> }
+                        </figcaption>
                     </figure>
                 <h3>Informações do jogador</h3>
                 <dl>
@@ -51,10 +70,16 @@
                     <dd>@(results?.Draws.ToString() ?? "—")</dd>
                     <dt>Derrotas</dt>
                     <dd>@(results?.Losses.ToString() ?? "—")</dd>
+                    <dt>Títulos</dt>
+                    <dd>@(podium?.Titles.ToString() ?? "—")</dd>
+                    <dt>Vice-campeonatos</dt>
+                    <dd>@(podium?.RunnersUp.ToString() ?? "—")</dd>
+                    <dt>Terceiros lugares</dt>
+                    <dd>@(podium?.ThirdPlaces.ToString() ?? "—")</dd>
                 </dl>
                 @if (history.LastOrDefault() is { } latest)
                 {
-                    <h3>Passagem mais recente</h3>
+                    <h3>@(Model.History.Page == 1 ? "Última equipe registrada" : "Equipe nesta página")</h3>
                     <p><a
                         href="@PortalRoutes.Team(latest.Edition.Slug, latest.Team.Id)">@latest.Team.Name</a><br />@latest.Edition.Name
                         · @latest.Edition.Year</p>
@@ -64,16 +89,6 @@
                     reunidos nesta identidade, com as estatísticas de cada edição preservadas separadamente.</p>
                     <p>O arquivo registra <strong>@stats.KnownAppearances jogos e @stats.Goals gols</strong> em partidas
                         encerradas.</p>
-                        <nav class="wiki-toc" aria-label="Sumário"><strong>Sumário</strong>
-                            <ol>
-                                <li><a href="#carreira">Carreira</a></li>
-                                <li><a href="#estatisticas">Estatísticas por campeonato</a></li>
-                                <li><a href="#marcas">Recordes e marcas</a></li>
-                                @if (awards.Count > 0) { <li><a href="#premios-individuais">Prêmios individuais</a></li> }
-                                <li><a href="#galeria">Galeria</a></li>
-                                <li><a href="#metodologia">Notas e metodologia</a></li>
-                            </ol>
-                        </nav>
                         <section id="carreira">
                             <h2>Carreira</h2>
                             @if (history.Length == 0)
@@ -95,7 +110,7 @@
                         <h2>Estatísticas por campeonato</h2>
                         <p>Resultados das equipes nos jogos com participação confirmada do jogador. Pontos abaixo usam a referência de 3
                             por vitória e 1 por empate; não substituem a classificação oficial da copa.</p>
-                            <div class="table-responsive">
+                            <div class="table-responsive" tabindex="0" role="region" aria-label="Estatísticas por campeonato, com rolagem horizontal">
                                 <table class="table table-bordered wiki-stats">
                                     <thead>
                                         <tr>
@@ -211,8 +226,10 @@
                                                             <li>Maior vitória e derrota usam a diferença de gols nos jogos com participação confirmada, sem pênaltis de desempate. Empates entre recordes são preservados.</li>
                                                             <li>Sequências seguem a ordem das datas pela carreira inteira, inclusive entre campeonatos. Empates e participação desconhecida interrompem a sequência; ausências confirmadas não contam como partidas do jogador. Datas ausentes ou coincidentes impedem confirmar a sequência.</li>
                                                             <li>Melhor e pior classificação usam a classificação geral final das equipes nas edições encerradas, com os mesmos critérios da página do campeonato. Posições desconhecidas não são inventadas.</li>
+                                                            <li>Títulos, vices e terceiros seguem essas classificações finais, sem depender de premiações individuais. O lateral é dourado se houver título, senão prateado se houver vice, senão bronze se houver terceiro lugar.</li>
                                                             </ol>
                                                         </section>
                                                         <partial name="_Pagination" model="Model.Pager" />
                                                     </article>
+                                                    </div>
                                                 </section>

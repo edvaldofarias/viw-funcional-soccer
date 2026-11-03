@@ -7,7 +7,7 @@ namespace Viw.Infrastructure.Queries;
 
 public sealed partial class ViwQueries
 {
-    private async Task<(PlayerRecordsResponse Records, PlayerResultsResponse Results, int CupsPlayed)> PlayerCareerAsync(Guid playerId, CancellationToken ct)
+    private async Task<(PlayerRecordsResponse Records, PlayerResultsResponse Results, int CupsPlayed, PlayerPodiumResponse Podium)> PlayerCareerAsync(Guid playerId, CancellationToken ct)
     {
         var sources = LinkedSources(playerId);
         var facts = await (from fact in db.PlayerMatchStatisticsRecords.AsNoTracking()
@@ -35,7 +35,7 @@ public sealed partial class ViwQueries
         var placements = registrations.Where(x => finalPlacements.ContainsKey((x.EditionId, x.TeamEntryId)))
             .Select(x => finalPlacements[(x.EditionId, x.TeamEntryId)]).ToArray();
         return (PlayerRecordsCalculator.Calculate(games, placements), PlayerRecordsCalculator.CalculateResults(games),
-            registrations.Select(x => x.EditionId).Distinct().Count());
+            registrations.Select(x => x.EditionId).Distinct().Count(), PlayerRecordsCalculator.CalculatePodium(placements));
     }
 
     private async Task<Dictionary<(Guid EditionId, Guid TeamId), PlayerPlacementResponse>> FinalPlacementsAsync(

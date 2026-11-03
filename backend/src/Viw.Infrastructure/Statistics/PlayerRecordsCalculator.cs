@@ -4,6 +4,13 @@ namespace Viw.Infrastructure.Statistics;
 
 public static class PlayerRecordsCalculator
 {
+    public static PlayerPodiumResponse CalculatePodium(IEnumerable<PlayerPlacementResponse> placements)
+    {
+        var positions = placements.Where(x => x.Edition.Status == "Archived" && x.Position > 0)
+            .GroupBy(x => x.Edition.Id).Select(x => x.Min(p => p.Position)).ToArray();
+        return new(positions.Count(x => x == 1), positions.Count(x => x == 2), positions.Count(x => x == 3));
+    }
+
     public static PlayerResultsResponse CalculateResults(IEnumerable<PlayerMatchRecordResponse> matches)
     {
         var games = matches.Where(x => x.Match.Status == "Finished" && x.IsPresent == true)

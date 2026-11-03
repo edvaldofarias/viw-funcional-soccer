@@ -6,6 +6,7 @@ using Viw.Contracts.Admin;
 using Viw.Domain.Common;
 using Viw.Domain.Competition;
 using Viw.Infrastructure.Persistence;
+using Viw.Infrastructure.Queries;
 namespace Viw.Infrastructure.Admin;
 
 public sealed partial class AdminService(ViwDbContext db) : IAdminService
@@ -34,13 +35,28 @@ public sealed partial class AdminService(ViwDbContext db) : IAdminService
             var total=await q.CountAsync(ct); var rows=await q.OrderBy(x=>x.DisplayName).ThenBy(x=>x.Id).Skip((page-1)*Size).Take(Size).ToListAsync(ct);
             return new(rows.Select(Person).ToArray(),page,total);
         }
-        var query=db.PlayerRecords.AsNoTracking().Where(x=> search==null || x.DisplayName.Contains(search));
+        var query=db.PlayerRecords.AsNoTracking();
         if (editionId is {} edition)
             query = query.Where(player => (from link in db.PlayerIdentityLinkRecords
                 join source in db.SourcePlayerRecords on link.SourcePlayerId equals source.Id
                 where link.PlayerId == player.Id && link.UnlinkedAt == null && source.EditionId == edition
                 select link.Id).Any());
-        var count=await query.CountAsync(ct); var list=await query.OrderBy(x=>x.DisplayName).ThenBy(x=>x.Id).Skip((page-1)*Size).Take(Size).ToListAsync(ct);
+        int count;
+        List<Player> list;
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var matches = await PlayerNameSearch.FindPlayersAsync(db, query, search, ct);
+            count = matches.Length;
+            var pageIds = matches.Skip((page - 1) * Size).Take(Size).Select(x => x.Id).ToArray();
+            if (pageIds.Length == 0) return new([], page, count);
+            list = await query.Where(x => pageIds.Contains(x.Id)).ToListAsync(ct);
+            list = list.OrderBy(x => Array.IndexOf(pageIds, x.Id)).ToList();
+        }
+        else
+        {
+            count = await query.CountAsync(ct);
+            list = await query.OrderBy(x => x.DisplayName).ThenBy(x => x.Id).Skip((page - 1) * Size).Take(Size).ToListAsync(ct);
+        }
         var ids = list.Select(x => x.Id).ToArray();
         var memberships = await (from link in db.PlayerIdentityLinkRecords.AsNoTracking()
             join source in db.SourcePlayerRecords.AsNoTracking() on link.SourcePlayerId equals source.Id
@@ -76,12 +92,26 @@ public sealed partial class AdminService(ViwDbContext db) : IAdminService
     public async Task<AdminPage<SourceRow>> SourcesAsync(Guid? editionId,string? search,int page,CancellationToken ct,Guid? teamId=null,bool goalkeepers=false,bool unlinkedOnly=false)
     {
         var q=db.SourcePlayerRecords.AsNoTracking().Where(x=>(editionId==null || x.EditionId==editionId) &&
-            (search==null || x.OriginalName.Contains(search) || (x.Nickname!=null && x.Nickname.Contains(search))) &&
             (!goalkeepers || x.AssignedPosition=="Goleiro"));
         if(teamId!=null) q=q.Where(x=>db.PlayerRegistrationRecords.Any(y=>y.SourcePlayerId==x.Id && y.TeamEntryId==teamId));
         if(unlinkedOnly) q=q.Where(x=>!db.PlayerIdentityLinkRecords.Any(l=>l.SourcePlayerId==x.Id && l.UnlinkedAt==null));
-        var total=await q.CountAsync(ct);
-        var rows=await q.OrderBy(x=>x.OriginalName).ThenBy(x=>x.Id).Skip((page-1)*Size).Take(Size).ToArrayAsync(ct);
+        int total;
+        SourcePlayer[] rows;
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var names = await q.Select(x => new PlayerNameSearch.Candidate(x.Id, x.OriginalName, null, x.Nickname)).ToArrayAsync(ct);
+            var matches = PlayerNameSearch.Rank(names, search, ct);
+            total = matches.Length;
+            var pageIds = matches.Skip((page - 1) * Size).Take(Size).Select(x => x.Id).ToArray();
+            if (pageIds.Length == 0) return new([], page, total);
+            rows = await q.Where(x => pageIds.Contains(x.Id)).ToArrayAsync(ct);
+            rows = rows.OrderBy(x => Array.IndexOf(pageIds, x.Id)).ToArray();
+        }
+        else
+        {
+            total = await q.CountAsync(ct);
+            rows = await q.OrderBy(x => x.OriginalName).ThenBy(x => x.Id).Skip((page - 1) * Size).Take(Size).ToArrayAsync(ct);
+        }
         return new(await SourceRows(rows,ct),page,total);
     }
     private async Task<SourceRow[]> SourceRows(SourcePlayer[] rows,CancellationToken ct)
@@ -89,7 +119,12 @@ public sealed partial class AdminService(ViwDbContext db) : IAdminService
         var ids=rows.Select(x=>x.Id).ToArray();
         var links=await (from l in db.PlayerIdentityLinkRecords join p in db.PlayerRecords on l.PlayerId equals p.Id
             where ids.Contains(l.SourcePlayerId) && l.UnlinkedAt==null select new {l.SourcePlayerId,l.Id,l.PlayerId,p.DisplayName}).ToArrayAsync(ct);
-        return rows.Select(x=>{var l=links.SingleOrDefault(y=>y.SourcePlayerId==x.Id);return new SourceRow(x.Id,x.EditionId,x.OriginalName,l?.PlayerId,l?.DisplayName,l?.Id,x.AssignedPosition,Version(x));}).ToArray();
+        var teams = await (from registration in db.PlayerRegistrationRecords.AsNoTracking()
+            join team in db.TeamEntryRecords.AsNoTracking() on registration.TeamEntryId equals team.Id
+            where ids.Contains(registration.SourcePlayerId)
+            select new { registration.SourcePlayerId, team.Id, team.Name }).Distinct().OrderBy(x => x.Name).ToArrayAsync(ct);
+        return rows.Select(x=>{var l=links.SingleOrDefault(y=>y.SourcePlayerId==x.Id);return new SourceRow(x.Id,x.EditionId,x.OriginalName,l?.PlayerId,l?.DisplayName,l?.Id,x.AssignedPosition,Version(x),
+            teams.Where(t => t.SourcePlayerId == x.Id).Select(t => new SourceTeamRow(t.Id, t.Name)).ToArray());}).ToArray();
     }
     public async Task<AdminPage<AuditRow>> AuditAsync(int page,CancellationToken ct)
     {

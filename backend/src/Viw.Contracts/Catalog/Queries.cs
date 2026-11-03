@@ -21,7 +21,7 @@ public sealed class EditionRequest : PageRequest
 /// <summary>Busca das identidades canônicas por nome, apelido e edição.</summary>
 public sealed class PlayerRequest : PageRequest
 {
-    /// <summary>Busca opcional de até 100 caracteres por nome oficial, nome original ou apelido.</summary>
+    /// <summary>Busca opcional de até 100 caracteres por nome oficial, nome original ou apelido, sem acentos e com sugestões aproximadas.</summary>
     [StringLength(100, MinimumLength = 1)] public string? Search { get; set; }
     /// <summary>GUID interno opcional da edição; não é o ID do Firebase.</summary>
     public Guid? EditionId { get; set; }

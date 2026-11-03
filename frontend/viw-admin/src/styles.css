@@ -5,3 +5,5 @@
 .identity-edition{display:block;font-weight:500;margin:3px 0}.choices small{white-space:normal;overflow-wrap:anywhere}
 
 .admin-photo{display:inline-flex;align-items:center;justify-content:center;position:relative;overflow:hidden;width:48px;height:48px;border-radius:50%;background:#e2edf3;color:#23465a;flex-shrink:0;font-weight:700}.admin-photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#fff}.admin-photo img[hidden]{display:none}.person-with-photo{display:flex;align-items:center;gap:14px}.person-with-photo h2{margin:0}.identity-photo{margin-bottom:20px}.identity-photo .admin-photo{width:80px;height:80px}.choices viw-player-photo{display:block;margin-bottom:8px}
+.admin-photo.admin-photo-large{width:120px;height:150px;border-radius:6px}.admin-photo-large img{object-fit:contain;background:#e5e7eb}.source-team{display:block;font-size:.8rem;color:#294c63;line-height:1.5;margin-top:6px}
+.choices .source-team{font-size:.8rem;font-weight:500}

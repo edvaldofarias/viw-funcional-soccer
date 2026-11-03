@@ -44,6 +44,7 @@ internal sealed class FixtureApi : HttpMessageHandler
     public PlayerRecordsResponse? PlayerRecords { get; set; }
     public PlayerAwardResponse[] PlayerAwards { get; set; } = [];
     public PlayerResultsResponse? PlayerResults { get; set; } = new(0, 0, 0, 0);
+    public PlayerPodiumResponse? PlayerPodium { get; set; } = new(0, 0, 0);
     public int? CupsPlayed { get; set; } = 1;
     public ConcurrentBag<string> Requests { get; } = [];
     private EditionResponse Edition => new(EditionId, Guid.Empty, Slug, "Copa de Teste", 2026, 2, Archived?"Archived":"Active", "America/Sao_Paulo", null, null);
@@ -90,7 +91,7 @@ internal sealed class FixtureApi : HttpMessageHandler
         else if (path == root + "/awards") response = Paged(new[] { new AwardResponse(Guid.NewGuid(), "ballon-dor", "Ballon d’Or", "Championship", null, null, PlayerId, PlayerName, null, null, null, DateTimeOffset.UtcNow) });
         else if (path == "/api/v1/players") response = Paged(PlayerList ?? new[] { Player });
         else if (path == "/api/v1/players/leo-reis") response = Json(new PlayerDetailResponse(Player, PlayerStats,
-            Records: PlayerRecords, Awards: PlayerAwards, Results: PlayerResults, CupsPlayed: CupsPlayed));
+            Records: PlayerRecords, Awards: PlayerAwards, Results: PlayerResults, CupsPlayed: CupsPlayed, Podium: PlayerPodium));
         else if (path == "/api/v1/players/by-id/" + PlayerId.ToString("D")) response = Json(Player);
         else if (path == "/api/v1/players/leo-reis/history") response = Paged(PlayerHistory ?? new[] { new PlayerHistoryResponse(Edition, Home, "Reis", DateTimeOffset.UtcNow, null) });
         else response = new HttpResponseMessage(HttpStatusCode.NotFound);

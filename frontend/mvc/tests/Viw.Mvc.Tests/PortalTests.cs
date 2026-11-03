@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.WebUtilities;
 using Viw.Contracts.Catalog;
+using Viw.Mvc.Services;
 
 namespace Viw.Mvc.Tests;
 
@@ -48,9 +49,10 @@ public sealed class PortalTests
             gallery.ShouldContain($"/imagens/teams/{team}");
         }
         Regex.Matches(gallery, "<figure>").Count.ShouldBe(2);
-        gallery.ShouldContain("src=\"https://placehold.co/240x300/e5e7eb/e5e7eb?text=+\"");
+        gallery.ShouldContain($"src=\"{PortalFormat.PlaceholderPortrait}\"");
         gallery.ShouldContain("Foto não disponível.");
-        gallery.ShouldContain("data-media-placeholder=\"https://placehold.co/240x300/e5e7eb/e5e7eb?text=+\"");
+        gallery.ShouldContain($"data-media-placeholder=\"{PortalFormat.PlaceholderPortrait}\"");
+        gallery.ShouldContain("text=Sem+foto");
         html.ShouldNotContain("player-placeholder.svg");
         gallery.ShouldNotContain("https://example.invalid/photo.png");
     }
@@ -101,7 +103,7 @@ public sealed class PortalTests
         using var client = fixture.CreateClient();
         // Act
         var html = WebUtility.HtmlDecode(await client.GetStringAsync("/wiki/jogadores/leo-reis"));
-        var infobox = Regex.Match(html, """<aside class="wiki-infobox">[\s\S]*?</aside>""").Value;
+        var infobox = Regex.Match(html, """<aside class="wiki-infobox[^"]*"[\s\S]*?</aside>""").Value;
         // Assert
         foreach (var (label, value) in new[] { ("Copas disputadas", 6), ("Jogos", 51), ("Gols", 7),
             ("Cartões amarelos", 12), ("Cartões vermelhos", 2), ("Vitórias", 30), ("Empates", 10), ("Derrotas", 11) })
@@ -109,6 +111,31 @@ public sealed class PortalTests
         html.ShouldNotContain("Presenças");
         html.ShouldNotContain("presenças");
         html.ShouldNotContain("Participações registradas");
+    }
+
+    [Theory]
+    [InlineData(2, 3, 4, "gold")]
+    [InlineData(0, 3, 4, "silver")]
+    [InlineData(0, 0, 4, "bronze")]
+    [InlineData(0, 0, 0, "")]
+    public async Task Wiki_infobox_shows_global_podium_totals_and_uses_the_highest_achievement_theme(int titles, int runnersUp, int thirds, string theme)
+    {
+        // Arrange
+        await using var fixture = new PortalFixture();
+        fixture.Api.PlayerPodium = new(titles, runnersUp, thirds);
+        using var client = fixture.CreateClient();
+        // Act
+        var html = WebUtility.HtmlDecode(await client.GetStringAsync("/wiki/jogadores/leo-reis"));
+        var infobox = Regex.Match(html, """<aside class="wiki-infobox[^"]*"[\s\S]*?</aside>""").Value;
+        // Assert
+        foreach (var (label, value) in new[] { ("Títulos", titles), ("Vice-campeonatos", runnersUp), ("Terceiros lugares", thirds) })
+            Regex.IsMatch(infobox, $@"<dt>{label}</dt>\s*<dd>{value}</dd>").ShouldBeTrue(label);
+        if (theme.Length > 0) infobox.ShouldContain("wiki-infobox-" + theme);
+        else infobox.ShouldNotContain("wiki-infobox-");
+        html.ShouldNotContain("href=\"#conquistas\"");
+        html.ShouldNotContain("id=\"conquistas\"");
+        html.ShouldNotContain("Títulos e pódios");
+        html.ShouldContain("tabindex=\"0\" role=\"region\" aria-label=\"Estatísticas por campeonato, com rolagem horizontal\"");
     }
 
     [Theory]

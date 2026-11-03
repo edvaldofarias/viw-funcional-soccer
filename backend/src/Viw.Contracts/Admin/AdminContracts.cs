@@ -6,7 +6,10 @@ public sealed record AdminPage<T>(IReadOnlyList<T> Items, int Page, int TotalCou
 /// <summary>Identificador, nome e versão de um cadastro oficial.</summary>
 public sealed record PersonRow(Guid Id, string Name, string Slug, Guid? ImageId, string Version, IReadOnlyList<string>? Championships = null);
 /// <summary>Cadastro da fonte e identidade atual, sem tokens ou URLs privadas.</summary>
-public sealed record SourceRow(Guid Id, Guid EditionId, string Name, Guid? PlayerId, string? PlayerName, Guid? LinkId, string? Position = null, string Version = "");
+public sealed record SourceRow(Guid Id, Guid EditionId, string Name, Guid? PlayerId, string? PlayerName, Guid? LinkId, string? Position = null, string Version = "",
+    IReadOnlyList<SourceTeamRow>? Teams = null);
+/// <summary>Equipe da inscrição original nessa copa, sem inferir qual transferência é a atual.</summary>
+public sealed record SourceTeamRow(Guid Id, string Name);
 /// <summary>Prêmio com situação e versão para edição concorrente.</summary>
 public sealed record AwardRow(Guid Id, Guid EditionId, Guid DefinitionId, Guid? MatchId, Guid? RoundId, Guid? SourcePlayerId, Guid? CoachId, string? Position, string Status, string Version, string? RecipientName = null);
 /// <summary>Categoria oficial de premiação.</summary>

@@ -74,6 +74,7 @@ public sealed class PlayerRecordsSqlTests
         records.WorstPlacements.Single().Position.ShouldBe(6);
         profile.Results.ShouldBe(new PlayerResultsResponse(3, 2, 0, 1));
         profile.CupsPlayed.ShouldBe(2);
+        profile.Podium.ShouldBe(new PlayerPodiumResponse(0, 1, 0));
         history.Items.Single().FinalPosition.ShouldBe(2);
         var olderHistory = await queries.PlayerHistoryAsync(data.Player.Slug, new PageRequest { Page = 2, PageSize = 1 }, default);
         olderHistory!.Items.Single().FinalPosition.ShouldBe(6);
@@ -113,6 +114,7 @@ public sealed class PlayerRecordsSqlTests
         var history = await queries.PlayerHistoryAsync(data.Player.Slug, new PageRequest { PageSize = 1 }, default);
         // Assert
         profile!.CupsPlayed.ShouldBe(1);
+        profile.Podium.ShouldBe(new PlayerPodiumResponse(0, 0, 0));
         profile.Statistics.KnownAppearances.ShouldBe(1);
         profile.Results.ShouldBe(new PlayerResultsResponse(1, 1, 0, 0));
         history!.TotalCount.ShouldBe(2);

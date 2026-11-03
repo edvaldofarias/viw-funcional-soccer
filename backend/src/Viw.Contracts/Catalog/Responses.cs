@@ -93,9 +93,13 @@ public sealed record PlayerDisciplineResponse(long YellowCards, long RedCards);
 /// <param name="Awards">Reconhecimentos individuais confirmados de todos os cadastros vinculados.</param>
 /// <param name="Results">Jogos e resultados de toda a carreira, contando cada partida uma vez.</param>
 /// <param name="CupsPlayed">Quantidade de edições distintas com inscrição vinculada, incluindo campeonatos em andamento.</param>
+/// <param name="Podium">Títulos, vices e terceiros nas classificações finais das edições encerradas, contando uma conquista por edição.</param>
 public sealed record PlayerDetailResponse(PlayerResponse Player, PlayerTotalsResponse Statistics,
     IReadOnlyList<string>? Aliases = null, PlayerRecordsResponse? Records = null, IReadOnlyList<PlayerAwardResponse>? Awards = null,
-    PlayerResultsResponse? Results = null, int? CupsPlayed = null);
+    PlayerResultsResponse? Results = null, int? CupsPlayed = null, PlayerPodiumResponse? Podium = null);
+
+/// <summary>Conquistas finais da carreira; cada edição encerrada conta pela melhor colocação entre as equipes vinculadas.</summary>
+public sealed record PlayerPodiumResponse(int Titles, int RunnersUp, int ThirdPlaces);
 
 /// <summary>Jogos confirmados e resultados da carreira, sem duplicar partidas entre cadastros vinculados.</summary>
 /// <param name="Played">Jogos encerrados com participação confirmada, mesmo quando o placar é desconhecido.</param>

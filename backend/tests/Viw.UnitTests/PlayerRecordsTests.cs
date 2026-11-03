@@ -5,6 +5,22 @@ namespace Viw.UnitTests;
 
 public sealed class PlayerRecordsTests
 {
+    [Fact]
+    public void Podium_counts_final_editions_once_using_the_best_team_position_and_ignores_active_or_unknown_positions()
+    {
+        // Arrange
+        var first = Edition(2025); var second = Edition(2024); var third = Edition(2023);
+        var active = Edition(2026, "Active");
+        // Act
+        var result = PlayerRecordsCalculator.CalculatePodium([
+            new(first, Home, 1), new(first, Home, 1), new(first, Away, 2),
+            new(second, Home, 2), new(second, Away, 3), new(third, Away, 3),
+            new(active, Home, 1), new(Edition(2022), Home, 0), new(Edition(2021), Home, 8)]);
+        // Assert
+        result.ShouldBe(new PlayerPodiumResponse(1, 1, 1));
+        PlayerRecordsCalculator.CalculatePodium([]).ShouldBe(new PlayerPodiumResponse(0, 0, 0));
+    }
+
     private static readonly TeamResponse Home = new(Guid.NewGuid(), "Casa", null);
     private static readonly TeamResponse Away = new(Guid.NewGuid(), "Fora", null);
     private static EditionResponse Edition(int year, string status = "Archived") =>

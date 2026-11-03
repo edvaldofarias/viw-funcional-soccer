@@ -4,8 +4,8 @@ namespace Viw.Mvc.Services;
 
 public static class PortalFormat
 {
-    public const string PlaceholderPortrait = "https://placehold.co/240x300/e5e7eb/e5e7eb?text=+";
-    public const string PlaceholderAvatar = "https://placehold.co/96x96/e5e7eb/e5e7eb?text=+";
+    public const string PlaceholderPortrait = "https://placehold.co/240x300/e5e7eb/64748b?text=Sem+foto%0Adispon%C3%ADvel";
+    public const string PlaceholderAvatar = "https://placehold.co/96x96/e5e7eb/64748b?text=Sem+foto";
     public static string AwardCategory(string code, string name) => code switch {
         "official-top-scorer" or "top-scorer" => "Artilheiro do campeonato",
         "official-ballon-dor" or "ballon-dor" => "Craque do campeonato (Ballon d’Or)",

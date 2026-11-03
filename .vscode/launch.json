@@ -1,0 +1,111 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "WebApi",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/backend/src/Viw.WebApi/bin/Debug/net10.0/Viw.WebApi.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/backend/src/Viw.WebApi",
+            "stopAtEntry": false,
+            "serverReadyAction": {
+                "action": "openExternally",
+                "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
+            },
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "ASPNETCORE_URLS": "http://localhost:5080",
+                "ConnectionStrings__ViwDatabase": "Server=localhost,1433;Database=ViwDevelopment;User Id=sa;Password=LocalDev#2026!Viw;Encrypt=True;TrustServerCertificate=True",
+                "Monitoring__ApiKey": "zif1q4KDE5cjRTdAw9Bhnuk8LSaNGIyvmUFVx37PZrMC6lg0",
+                "Admin__BootstrapEmail": "admin@viw.local",
+                "Admin__BootstrapPassword": "Admin#Local2026!",
+                "Admin__DataProtectionKeysPath": "${workspaceFolder}/.local/admin-keys",
+                "Media__LocalPath": "${workspaceFolder}/.local/media"
+            }
+        },
+        {
+            "name": "WebApi (bootstrap-admin)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/backend/src/Viw.WebApi/bin/Debug/net10.0/Viw.WebApi.dll",
+            "args": ["--bootstrap-admin"],
+            "cwd": "${workspaceFolder}/backend/src/Viw.WebApi",
+            "stopAtEntry": false,
+            "console": "internalConsole",
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "ASPNETCORE_URLS": "http://localhost:5080",
+                "ConnectionStrings__ViwDatabase": "Server=localhost,1433;Database=ViwDevelopment;User Id=sa;Password=LocalDev#2026!Viw;Encrypt=True;TrustServerCertificate=True",
+                "Monitoring__ApiKey": "zif1q4KDE5cjRTdAw9Bhnuk8LSaNGIyvmUFVx37PZrMC6lg0",
+                "Admin__BootstrapEmail": "admin@viw.local",
+                "Admin__BootstrapPassword": "Admin#Local2026!",
+                "Admin__DataProtectionKeysPath": "${workspaceFolder}/.local/admin-keys",
+                "Media__LocalPath": "${workspaceFolder}/.local/media"
+            }
+        },
+        {
+            "name": "Worker",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/backend/src/Viw.Worker/bin/Debug/net10.0/Viw.Worker.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/backend/src/Viw.Worker",
+            "stopAtEntry": false,
+            "console": "internalConsole",
+            "env": {
+                "DOTNET_ENVIRONMENT": "Development",
+                "Imports__Enabled": "false",
+                "ConnectionStrings__ViwDatabase": "Server=localhost,1433;Database=ViwDevelopment;User Id=sa;Password=LocalDev#2026!Viw;Encrypt=True;TrustServerCertificate=True",
+                "Media__LocalPath": "${workspaceFolder}/.local/media"
+            }
+        },
+        {
+            "name": "Worker (validate source only)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/backend/src/Viw.Worker/bin/Debug/net10.0/Viw.Worker.dll",
+            "args": ["--Imports:ValidateSourceOnly=true", "--Imports:RunOnce=true"],
+            "cwd": "${workspaceFolder}/backend/src/Viw.Worker",
+            "stopAtEntry": false,
+            "console": "internalConsole",
+            "env": {
+                "DOTNET_ENVIRONMENT": "Development",
+                "Imports__Enabled": "false",
+                "ConnectionStrings__ViwDatabase": "Server=localhost,1433;Database=ViwDevelopment;User Id=sa;Password=LocalDev#2026!Viw;Encrypt=True;TrustServerCertificate=True",
+                "Media__LocalPath": "${workspaceFolder}/.local/media"
+            }
+        },
+        {
+            "name": "MVC",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/frontend/mvc/Viw.Mvc/bin/Debug/net10.0/Viw.Mvc.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/frontend/mvc/Viw.Mvc",
+            "stopAtEntry": false,
+            "serverReadyAction": {
+                "action": "openExternally",
+                "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
+            },
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "ASPNETCORE_URLS": "http://localhost:5081",
+                "ViwApi__BaseUrl": "http://localhost:5080/",
+                "Site__PublicBaseUrl": "http://localhost:5081/"
+            }
+        }
+    ],
+    "compounds": [
+        {
+            "name": "API + MVC + Worker",
+            "configurations": ["WebApi", "MVC", "Worker"],
+            "stopAll": true
+        }
+    ]
+}

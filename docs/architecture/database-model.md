@@ -7,7 +7,7 @@ Etapa 3: modelo EF Core para SQL Server, schema `viw`, com baseline única `Init
 | Grupo | Entidades | Finalidade |
 | --- | --- | --- |
 | Competição | Competition, ChampionshipEdition, EditionSource, RuleSet | Competição, edição, vínculo de origem e versões das regras |
-| Calendário | CompetitionPhase, CompetitionRound, TeamEntry, Match | Fases, rodadas, equipes da edição, referências futuras e placar |
+| Calendário | CompetitionPhase, CompetitionRound, CompetitionGroup, TeamEntry, Match | Fases, rodadas, grupos editoriais, equipes da edição, referências futuras e placar |
 | Pessoas | Player, SourcePlayer, PlayerIdentityLink, PlayerRegistration | Identidade canônica, nome original, vínculos reversíveis e equipes por período |
 | Estatística | MatchSourceEvent, PlayerMatchStatistics | Eventos recebidos e fatos normalizados por jogador/partida |
 | Organização | Coach, CoachAssignment, AwardDefinition, AwardGrant | Técnicos por período/rodada e decisões oficiais de premiação |

@@ -119,5 +119,38 @@ public sealed partial class CompetitionImportWriter(ViwDbContext db)
             if (isNew) { matches.Add(item.Key, match); db.Add(match); }
             else if (before != JsonSerializer.Serialize(match)) match.Revision++;
         }
+        await WriteGroupsAsync(editionId, definition, phases, teams, ct);
+    }
+
+    // Grupos são editoriais do catálogo: a fonte não informa grupo, então o
+    // vínculo é regravado a cada importação a partir da definição configurada.
+    private async Task WriteGroupsAsync(Guid editionId, Viw.Application.Imports.EditionDefinition? definition,
+        Dictionary<string, CompetitionPhase> phases, Dictionary<string, TeamEntry> teams, CancellationToken ct)
+    {
+        var configured = definition?.PhaseGroups ?? [];
+        var groups = await db.CompetitionGroupRecords.Where(x => x.EditionId == editionId).ToListAsync(ct);
+        var keep = new HashSet<Guid>();
+        foreach (var (phaseKey, definitions) in configured)
+        {
+            if (!phases.TryGetValue(phaseKey, out var phase)) continue;
+            for (var index = 0; index < definitions.Count; index++)
+            {
+                var group = groups.SingleOrDefault(x => x.PhaseId == phase.Id && x.Name == definitions[index].Name);
+                if (group is null)
+                {
+                    group = new CompetitionGroup { EditionId = editionId, PhaseId = phase.Id, Name = definitions[index].Name };
+                    groups.Add(group); db.Add(group);
+                }
+                group.SortOrder = index + 1;
+                keep.Add(group.Id);
+                foreach (var externalId in definitions[index].Teams)
+                    if (teams.TryGetValue(externalId, out var team)) team.GroupId = group.Id;
+            }
+        }
+        // Equipes de grupos removidos da configuração voltam a não ter grupo.
+        var removed = groups.Where(x => !keep.Contains(x.Id)).ToArray();
+        foreach (var team in db.TeamEntryRecords.Local.Where(x => x.GroupId != null && removed.Any(g => g.Id == x.GroupId)))
+            team.GroupId = null;
+        db.CompetitionGroupRecords.RemoveRange(removed);
     }
 }

@@ -118,7 +118,37 @@ public sealed class ImportCoordinatorTests
         next.Generation.ShouldBeGreaterThan(first.Generation);
     }
 
-    private static ImportCoordinator Create(SqlServerTestDatabase database, FixtureSource source)
+    [SqlServerFact]
+    public async Task Catalog_groups_assign_teams_and_survive_reimport()
+    {
+        // Arrange
+        await using var database = await SqlServerTestDatabase.CreateAsync();
+        var source = new FixtureSource { Phase = "fase-1" };
+        var definition = new EditionDefinition {
+            Slug = "fixture-import", Name = "Copa de teste", ExternalId = "fixture", Year = 2026, Semester = 1,
+            PhaseGroups = { ["fase-1"] = [
+                new GroupDefinition { Name = "Grupo A", Teams = ["home"] },
+                new GroupDefinition { Name = "Grupo B", Teams = ["away"] }] } };
+        var coordinator = Create(database, source, definition);
+
+        // Act
+        var first = await coordinator.RunAsync(default);
+        var second = await coordinator.RunAsync(default);
+        database.Context.ChangeTracker.Clear();
+        var db = database.Context;
+        var groups = await db.CompetitionGroupRecords.OrderBy(x => x.SortOrder).ToArrayAsync();
+        var home = await db.TeamEntryRecords.SingleAsync(x => x.ExternalId == "home");
+        var away = await db.TeamEntryRecords.SingleAsync(x => x.ExternalId == "away");
+
+        // Assert
+        first.Failed.ShouldBe(0);
+        second.Failed.ShouldBe(0);
+        groups.Select(x => x.Name).ShouldBe(new[] { "Grupo A", "Grupo B" });
+        home.GroupId.ShouldBe(groups[0].Id);
+        away.GroupId.ShouldBe(groups[1].Id);
+    }
+
+    private static ImportCoordinator Create(SqlServerTestDatabase database, FixtureSource source, EditionDefinition? definition = null)
     {
         var db = database.Context;
         var leases = new ImportLeaseManager(db);
@@ -126,7 +156,7 @@ public sealed class ImportCoordinatorTests
             new LocalMediaStore(Options.Create(new MediaOptions())), Options.Create(new MediaOptions { Enabled = false }),
             NullLogger<MediaImportService>.Instance);
         return new ImportCoordinator(db, source, new ChampionshipCatalog(db), leases, new CompetitionImportWriter(db), media,
-            Options.Create(new ChampionshipCatalogOptions { Editions = [new EditionDefinition {
+            Options.Create(new ChampionshipCatalogOptions { Editions = [definition ?? new EditionDefinition {
                 Slug = "fixture-import", Name = "Copa de teste", ExternalId = "fixture", Year = 2026, Semester = 1 }] }),
             Options.Create(new ImportExecutionOptions()), NullLogger<ImportCoordinator>.Instance);
     }
@@ -135,6 +165,7 @@ public sealed class ImportCoordinatorTests
     {
         public int Goals { get; set; } = 1;
         public bool FailDetails { get; set; }
+        public string? Phase { get; set; }
 
         public Task<SourceDocument> GetAsync(string externalId, string resource, CancellationToken cancellationToken)
         {
@@ -147,7 +178,9 @@ public sealed class ImportCoordinatorTests
                 "info" => new { name = "Copa de teste" },
                 "teams" => new { home = new { name = "Casa" }, away = new { name = "Fora" } },
                 "player" => new Dictionary<string, object> { ["player-a"] = new { name = "Jogador teste", team = "home" } },
-                "matchs" => new Dictionary<string, object> { ["fixture-match"] = new { team1 = "home", team2 = "away", st = 3, dt = new { qt_g1 = Goals, qt_g2 = (int?)null } } },
+                "matchs" => Phase is null
+                    ? new Dictionary<string, object> { ["fixture-match"] = new { team1 = "home", team2 = "away", st = 3, dt = new { qt_g1 = Goals, qt_g2 = (int?)null } } }
+                    : new Dictionary<string, object> { ["fixture-match"] = new { team1 = "home", team2 = "away", st = 3, fs = Phase, dt = new { qt_g1 = Goals, qt_g2 = (int?)null } } },
                 _ => new { list = events }
             };
             var json = System.Text.Json.JsonSerializer.Serialize(data);

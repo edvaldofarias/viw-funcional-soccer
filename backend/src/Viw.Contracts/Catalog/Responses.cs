@@ -28,6 +28,13 @@ public sealed record EditionResponse(Guid Id, Guid CompetitionId, string Slug, s
 /// <param name="SortOrder">Ordem de apresentação da fase.</param>
 public sealed record PhaseResponse(Guid Id, string Name, int SortOrder);
 
+/// <summary>Grupo editorial de uma fase (ex.: Grupo A), definido no catálogo da edição.</summary>
+/// <param name="Id">GUID interno do grupo.</param>
+/// <param name="PhaseId">GUID interno da fase que contém o grupo.</param>
+/// <param name="Name">Nome cadastrado do grupo.</param>
+/// <param name="SortOrder">Ordem de apresentação do grupo dentro da fase.</param>
+public sealed record GroupResponse(Guid Id, Guid PhaseId, string Name, int SortOrder);
+
 /// <summary>Rodada cadastrada na edição.</summary>
 /// <param name="Id">GUID interno da rodada.</param>
 /// <param name="PhaseId">GUID interno da fase que contém a rodada.</param>

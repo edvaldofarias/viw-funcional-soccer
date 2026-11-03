@@ -11,6 +11,7 @@ public sealed class ViwDbContext(DbContextOptions<ViwDbContext> options) : DbCon
     public DbSet<RuleSet> RuleSetRecords => Set<RuleSet>();
     public DbSet<CompetitionPhase> CompetitionPhaseRecords => Set<CompetitionPhase>();
     public DbSet<CompetitionRound> CompetitionRoundRecords => Set<CompetitionRound>();
+    public DbSet<CompetitionGroup> CompetitionGroupRecords => Set<CompetitionGroup>();
     public DbSet<TeamEntry> TeamEntryRecords => Set<TeamEntry>();
     public DbSet<Player> PlayerRecords => Set<Player>();
     public DbSet<SourcePlayer> SourcePlayerRecords => Set<SourcePlayer>();

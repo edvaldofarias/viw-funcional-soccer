@@ -16,8 +16,11 @@ internal sealed class PortalFixture : WebApplicationFactory<Program>
     public FixtureApi Api { get; } = new();
     public bool Indexing { get; set; } = true;
     protected override void ConfigureWebHost(IWebHostBuilder builder) => builder.UseEnvironment("Development")
-        .ConfigureAppConfiguration((_, configuration) => configuration.AddInMemoryCollection(new Dictionary<string, string?> {
-            ["ViwApi:BaseUrl"] = "http://api.test/", ["Site:PublicBaseUrl"] = "https://viw.test/", ["Site:EnableIndexing"] = Indexing.ToString()
+        .ConfigureAppConfiguration((_, configuration) => configuration.AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["ViwApi:BaseUrl"] = "http://api.test/",
+            ["Site:PublicBaseUrl"] = "https://viw.test/",
+            ["Site:EnableIndexing"] = Indexing.ToString()
         })).ConfigureServices(services => services.AddHttpClient<ViwApiClient>().ConfigurePrimaryHttpMessageHandler(() => Api));
 }
 
@@ -47,7 +50,7 @@ internal sealed class FixtureApi : HttpMessageHandler
     public PlayerPodiumResponse? PlayerPodium { get; set; } = new(0, 0, 0);
     public int? CupsPlayed { get; set; } = 1;
     public ConcurrentBag<string> Requests { get; } = [];
-    private EditionResponse Edition => new(EditionId, Guid.Empty, Slug, "Copa de Teste", 2026, 2, Archived?"Archived":"Active", "America/Sao_Paulo", null, null);
+    private EditionResponse Edition => new(EditionId, Guid.Empty, Slug, "Copa de Teste", 2026, 2, Archived ? "Archived" : "Active", "America/Sao_Paulo", null, null);
     private static TeamResponse Home => new(HomeId, "Aurora", null);
     private static TeamResponse Away => new(AwayId, "Estrela", null);
     private PlayerResponse Player => new(PlayerId, "leo-reis", PlayerName, null);
@@ -76,7 +79,7 @@ internal sealed class FixtureApi : HttpMessageHandler
         HttpResponseMessage response;
         if (path == "/api/v1/championships") response = Paged(query.TryGetValue("year", out var year) && year != "2026" ? [] : new[] { Edition });
         else if (path == root) response = Json(Detail);
-        else if(path == root + "/overview") response=Json(new CompetitionViewResponse([new PhaseTableResponse(new PhaseResponse(PhaseId,"Primeira fase",1),[Game,Future],[new StandingRow(Home,1,1,1,0,1,0,0,0),new StandingRow(Away,1,1,1,0,1,0,0,0)])],[new StandingRow(Home,1,null,1,0,1,0,0,0),new StandingRow(Away,1,null,1,0,1,0,0,0)]));
+        else if (path == root + "/overview") response = Json(new CompetitionViewResponse([new PhaseTableResponse(new PhaseResponse(PhaseId, "Primeira fase", 1), [Game, Future], [new StandingRow(Home, 1, 1, 1, 0, 1, 0, 0, 0), new StandingRow(Away, 1, 1, 1, 0, 1, 0, 0, 0)], [])], [new StandingRow(Home, 1, null, 1, 0, 1, 0, 0, 0), new StandingRow(Away, 1, null, 1, 0, 1, 0, 0, 0)]));
         else if (path == root + "/teams") response = Paged(new[] { Home, Away });
         else if (path == root + "/teams/" + HomeId.ToString("D")) response = Json(new TeamDetailResponse(Home, [new CoachResponse(Guid.NewGuid(), "tecnico", "Técnico da Equipe", null, DateTimeOffset.UtcNow, null)]));
         else if (path == root + "/teams/" + HomeId.ToString("D") + "/players") response = Paged(new[] { new RosterPlayerResponse(Player, "Reis", "9", "Atacante", DateTimeOffset.UtcNow, null) });
@@ -87,7 +90,7 @@ internal sealed class FixtureApi : HttpMessageHandler
         else if (path == root + "/matches/" + FutureId.ToString("D") + "/players") response = Paged(Array.Empty<MatchPlayerResponse>());
         else if (path == root + "/statistics/players") response = Paged(new[] { new PlayerStatisticsResponse(Player, Stats) });
         else if (path == root + "/statistics/teams") response = Paged(new[] { new TeamStatisticsResponse(Home, 1, 0, 1, 0, 0, 0), new TeamStatisticsResponse(Away, 1, 0, 1, 0, 0, 0) });
-        else if(path==root+"/awards" && MissingAward) response=Paged(Array.Empty<AwardResponse>());
+        else if (path == root + "/awards" && MissingAward) response = Paged(Array.Empty<AwardResponse>());
         else if (path == root + "/awards") response = Paged(new[] { new AwardResponse(Guid.NewGuid(), "ballon-dor", "Ballon d’Or", "Championship", null, null, PlayerId, PlayerName, null, null, null, DateTimeOffset.UtcNow) });
         else if (path == "/api/v1/players") response = Paged(PlayerList ?? new[] { Player });
         else if (path == "/api/v1/players/leo-reis") response = Json(new PlayerDetailResponse(Player, PlayerStats,

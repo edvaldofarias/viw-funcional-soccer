@@ -88,6 +88,6 @@ A implantação real, a carga dos campeonatos e as verificações SQL permanecem
 
 ## Visão consolidada da edição
 
-`GET /api/v1/championships/{slug}/overview` retorna fases com jogos e classificações, além da classificação geral por avanço na competição. Posição e pontos da fase são preservados da fonte; são nulos quando indisponíveis. Estatísticas coletivas consideram apenas partidas encerradas com equipes e placar completos. A operação e seus contratos têm comentários XML para a documentação OpenAPI/Swagger.
+`GET /api/v1/championships/{slug}/overview` retorna fases com jogos e classificações, além da classificação geral por avanço na competição. Posição e pontos da fase são preservados da fonte; são nulos quando indisponíveis. Estatísticas coletivas consideram apenas partidas encerradas com equipes e placar completos. Cada fase inclui `groups` com as classificações dos grupos editoriais configurados em `PhaseGroups` no catálogo do Worker (vazio quando a edição não tem grupos); dentro do grupo a posição é relativa ao grupo, ordenada por pontos oficiais e posição global da fonte no desempate. A operação e seus contratos têm comentários XML para a documentação OpenAPI/Swagger.
 
 Os contratos de partidas incluem `homePenalties` e `awayPenalties` opcionais. Null significa valor não informado; zero é um placar válido. Pênaltis não compõem gols pró/contra.

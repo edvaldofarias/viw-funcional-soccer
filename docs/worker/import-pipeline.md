@@ -43,6 +43,19 @@ O mapper `copafacil-v4` reprocessa checkpoints anteriores. Por convenção defin
 
 `PhaseNames` permite associar IDs externos a nomes confirmados e à sua ordem. O catálogo contém o mapeamento conhecido da La Liga; fases históricas sem metadados mantêm seus nomes existentes.
 
+`PhaseGroups` registra os grupos editoriais de uma fase (ex.: Grupo A/Grupo B da primeira fase), porque o JSON do Copa Fácil não informa grupo — apenas fase (`fs`), conjunto (`m_set`) e a posição global da equipe na fase (`dt` por fase, campo `col`). A chave é o ID externo da fase e cada grupo lista os IDs externos das equipes, na ordem oficial de apresentação. A importação cria os grupos em `CompetitionGroup` e preenche `TeamEntry.GroupId`; o vínculo é regravado a cada ciclo, então correções no catálogo se aplicam na importação seguinte, e remover um grupo da configuração o exclui e desvincula suas equipes. Fases sem `PhaseGroups` seguem com classificação única. Exemplo:
+
+```json
+"PhaseGroups": {
+  "1780479913323": [
+    { "Name": "Grupo A", "Teams": ["id-externo-time-1", "id-externo-time-2"] },
+    { "Name": "Grupo B", "Teams": ["id-externo-time-3", "id-externo-time-4"] }
+  ]
+}
+```
+
+Os IDs externos das equipes são as chaves do recurso `teams` da fonte, preservados em `TeamEntry.ExternalId` após a primeira importação — consulte o banco para montar a configuração de edições já importadas.
+
 Os campos `dt.qt_p1` e `dt.qt_p2` são persistidos como placares de pênaltis opcionais, sem substituir `qt_g1`/`qt_g2`. O mapper v4 reimporta as partidas já processadas após aplicar a migração `AddMatchPenaltyScores`.
 
 ## Atualização de identidade — 02/11/2026

@@ -33,9 +33,9 @@ public sealed class CompetitionCampaignTests
             =>new(Guid.NewGuid(),Guid.NewGuid(),phase,null,h,a,null,null,null,"Finished",hs,aws,1,hp,ap);
         var first=Guid.NewGuid();var semi=Guid.NewGuid();var final=Guid.NewGuid();
         var phases=new PhaseTableResponse[]{
-            new(new(first,"Fase 1",1),new[]{Game(first,senegal,portugal,4,0) with {Title="3º X 6º"}},[]),
-            new(new(semi,"Fase 2",2),new[]{Game(semi,japan,portugal,4,1),Game(semi,brazil,senegal,3,1)},[]),
-            new(new(final,"Grande Final",3),new[]{Game(final,japan,brazil,penalties?1:3,1,penalties?4:null,penalties?2:null)},[])};
+            new(new(first,"Fase 1",1),new[]{Game(first,senegal,portugal,4,0) with {Title="3º X 6º"}},[],[]),
+            new(new(semi,"Fase 2",2),new[]{Game(semi,japan,portugal,4,1),Game(semi,brazil,senegal,3,1)},[],[]),
+            new(new(final,"Grande Final",3),new[]{Game(final,japan,brazil,penalties?1:3,1,penalties?4:null,penalties?2:null)},[],[])};
         var rows=CompetitionCampaign.Rank(phases,[brazil,japan,portugal,senegal]);
         rows.Select(x=>x.Team.Name).ShouldBe(new[]{"JAPÃO","BRASIL","SENEGAL","PORTUGAL"});
         rows.Select(x=>x.Position).ShouldBe(new int?[]{1,2,3,4});
@@ -52,10 +52,10 @@ public sealed class CompetitionCampaignTests
         MatchResponse Game(Guid phase,TeamResponse h,TeamResponse a,int hs,int aws,string title,int? hp=null,int? ap=null)
             =>new(Guid.NewGuid(),Guid.NewGuid(),phase,null,h,a,null,null,title,"Finished",hs,aws,1,hp,ap);
         var rows=CompetitionCampaign.Rank([
-            new(new(group,"Primeira fase",1),[Game(group,napoli,viola,9,0,"")],[]),
+            new(new(group,"Primeira fase",1),[Game(group,napoli,viola,9,0,"")],[],[]),
             new(new(final,"Grande Final",2),[
                 Game(final,viola,napoli,penalties?1:2,1,"DISPUTA DE 3º",penalties?4:null,penalties?2:null),
-                Game(final,inter,lazio,0,1,"GRANDE FINAL")],[])],[napoli,viola,inter,lazio]);
+                Game(final,inter,lazio,0,1,"GRANDE FINAL")],[],[])],[napoli,viola,inter,lazio]);
         rows.Select(x=>x.Team.Name).ShouldBe(new[]{"LAZIO","INTER","FIORENTINA","NAPOLI"});
         rows.Select(x=>x.Position).ShouldBe(new int?[]{1,2,3,4});
     }
@@ -70,7 +70,7 @@ public sealed class CompetitionCampaignTests
             =>new(Guid.NewGuid(),Guid.NewGuid(),phase,null,teams[a-1],teams[b-1],null,null,title,"Finished",hs,aws,1,hp,ap);
         var rows=CompetitionCampaign.Rank([new(new(phase,"Grande Final",1),[
             Game(7,8,4,2,"DISPUTA DE 7º e 8º"),Game(5,6,5,5,"DISPUTA DE 5º e 6º",penalties?4:null,penalties?2:null),
-            Game(3,4,6,3,"DISPUTA DE 3º e 4º"),Game(1,2,2,2,"GRANDE FINAL",penalties?4:null,penalties?2:null)],[])],teams);
+            Game(3,4,6,3,"DISPUTA DE 3º e 4º"),Game(1,2,2,2,"GRANDE FINAL",penalties?4:null,penalties?2:null)],[],[])],teams);
         rows.Single(x=>x.Team.Id==teams[2].Id).Position.ShouldBe(3);
         rows.Single(x=>x.Team.Id==teams[3].Id).Position.ShouldBe(4);
         rows.Single(x=>x.Team.Id==teams[6].Id).Position.ShouldBe(7);

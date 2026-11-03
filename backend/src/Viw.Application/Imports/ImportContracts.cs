@@ -17,7 +17,15 @@ public sealed class EditionDefinition
     public bool Archived { get; set; }
     public bool Enabled { get; set; } = true;
     public Dictionary<string,string> PhaseNames { get; set; } = [];
+    /// <summary>Grupos editoriais por fase: chave = ID externo da fase, valor = grupos com IDs externos das equipes.</summary>
+    public Dictionary<string,List<GroupDefinition>> PhaseGroups { get; set; } = [];
     public bool ReserveMeansAbsent { get; set; }
+}
+
+public sealed class GroupDefinition
+{
+    public string Name { get; set; } = "";
+    public List<string> Teams { get; set; } = [];
 }
 
 public sealed record SourceDocument(string Resource, string Json, JsonElement Data, string Hash);

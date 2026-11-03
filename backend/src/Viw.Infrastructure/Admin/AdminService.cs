@@ -73,12 +73,13 @@ public sealed partial class AdminService(ViwDbContext db) : IAdminService
         if(await db.CoachRecords.AnyAsync(x=>x.Slug==c.Slug,ct)) throw new AdminRuleException("Slug já utilizado.",409);
         var row=new Coach { DisplayName=c.Name.Trim(),Slug=c.Slug };db.CoachRecords.Add(row);Audit(row,null,actor,c.Reason,Person(row));await db.SaveChangesAsync(ct);return Person(row);
     }
-    public async Task<AdminPage<SourceRow>> SourcesAsync(Guid? editionId,string? search,int page,CancellationToken ct,Guid? teamId=null,bool goalkeepers=false)
+    public async Task<AdminPage<SourceRow>> SourcesAsync(Guid? editionId,string? search,int page,CancellationToken ct,Guid? teamId=null,bool goalkeepers=false,bool unlinkedOnly=false)
     {
         var q=db.SourcePlayerRecords.AsNoTracking().Where(x=>(editionId==null || x.EditionId==editionId) &&
             (search==null || x.OriginalName.Contains(search) || (x.Nickname!=null && x.Nickname.Contains(search))) &&
             (!goalkeepers || x.AssignedPosition=="Goleiro"));
         if(teamId!=null) q=q.Where(x=>db.PlayerRegistrationRecords.Any(y=>y.SourcePlayerId==x.Id && y.TeamEntryId==teamId));
+        if(unlinkedOnly) q=q.Where(x=>!db.PlayerIdentityLinkRecords.Any(l=>l.SourcePlayerId==x.Id && l.UnlinkedAt==null));
         var total=await q.CountAsync(ct);
         var rows=await q.OrderBy(x=>x.OriginalName).ThenBy(x=>x.Id).Skip((page-1)*Size).Take(Size).ToArrayAsync(ct);
         return new(await SourceRows(rows,ct),page,total);

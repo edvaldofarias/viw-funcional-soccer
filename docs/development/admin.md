@@ -87,3 +87,6 @@ O Worker cria somente SourcePlayer. Copas, inscrições, estatísticas e prêmio
 Cada SourcePlayer pertence a no máximo um Player ativo. Cada Player aceita no máximo um SourcePlayer por edição. Dois homônimos na mesma copa são pessoas diferentes. O banco reforça essas regras com índices únicos filtrados e chave estrangeira composta por edição e cadastro.
 
 A busca de destinatários de prêmios usa GET /api/admin/sources?editionId=...; não exige Player. Identidades usam POST/PUT/DELETE /api/admin/identities, com versão para alterações e exclusões. Posições usam PUT /api/admin/sources/{id}/position. Os contratos estão documentados no OpenAPI.
+
+### Filtros da união de jogadores
+A busca inicial permite filtrar por copa, equipe, nome opcional e somente cadastros ainda sem Player ativo. Em cada etapa da união, o filtro de equipe corresponde à copa atual e é limpo ao mudar de copa. Para buscar pelo time sem lembrar o nome, deixe a busca por nome vazia. Os filtros são aplicados antes da paginação.

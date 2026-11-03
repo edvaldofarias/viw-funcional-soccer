@@ -22,8 +22,8 @@ public sealed class AdminCatalogController(IAdminService service) : ControllerBa
     [HttpPut("coaches/{id:guid}")] public async Task<IActionResult> Coach(Guid id,PersonCommand c,CancellationToken ct)=>Ok(await service.UpdatePersonAsync(true,id,c,Actor,ct));
     /// <summary>Cadastra técnico oficial sem alterar a origem importada.</summary>
     [HttpPost("coaches")] public async Task<IActionResult> NewCoach(CoachCommand c,CancellationToken ct)=>Ok(await service.CreateCoachAsync(c,Actor,ct));
-    /// <summary>Lista cadastros originais e seus vínculos atuais para comparação.</summary>
-    [HttpGet("sources")] public async Task<IActionResult> Sources(Guid? editionId,Guid? teamId,bool goalkeepers,[StringLength(100)] string? search,[Range(1,100000)] int page=1,CancellationToken ct=default)=>Ok(await service.SourcesAsync(editionId,search,page,ct,teamId,goalkeepers));
+    /// <summary>Lista cadastros originais paginados e seus vínculos atuais. Filtra por editionId, teamId, nome, goalkeepers e unlinkedOnly (somente sem Player ativo). Retorna itens, página e total filtrado.</summary>
+    [HttpGet("sources")] public async Task<IActionResult> Sources(Guid? editionId,Guid? teamId,bool goalkeepers,bool unlinkedOnly,[StringLength(100)] string? search,[Range(1,100000)] int page=1,CancellationToken ct=default)=>Ok(await service.SourcesAsync(editionId,search,page,ct,teamId,goalkeepers,unlinkedOnly));
     /// <summary>Retorna identidade e cadastros associados para edição, ou 404.</summary>
     [HttpGet("identities/{id:guid}")] public async Task<IActionResult> Identity(Guid id,CancellationToken ct)=>Ok(await service.IdentityAsync(id,ct));
     /// <summary>Cria Player somente após revisão. Espera nome final e IDs de SourcePlayer, um por copa; conflitos retornam 409.</summary>

@@ -21,8 +21,11 @@ public sealed class AdminSqlTests
         conflict.Status.ShouldBe(409);
         var saved=await service.SaveIdentityAsync(null,new IdentityCommand {Name="Felipinho",SourceIds=[d.SourcePlayer.Id,alias.Id]},"editor",default);
         (await service.IdentityAsync(saved.Id,default)).Sources.Count.ShouldBe(2);
+        var unlinked=await service.SourcesAsync(d.Edition.Id,null,1,default,unlinkedOnly:true);
+        unlinked.TotalCount.ShouldBe(1);unlinked.Items.Single().Id.ShouldBe(duplicate.Id);
         var edited=await service.SaveIdentityAsync(saved.Id,new IdentityCommand {Name="Meireles",SourceIds=[alias.Id],Version=saved.Version},"editor",default);
         (await service.IdentityAsync(saved.Id,default)).Sources.Single().Id.ShouldBe(alias.Id);
+        (await service.SourcesAsync(d.Edition.Id,null,1,default,unlinkedOnly:true)).TotalCount.ShouldBe(2);
         await service.DeleteIdentityAsync(edited.Id,edited.Version,"editor",default);
         (await db.SourcePlayerRecords.CountAsync()).ShouldBe(3);
         (await db.AwardGrantRecords.CountAsync()).ShouldBe(1);

@@ -4,7 +4,7 @@ namespace Viw.Application.Admin;
 public interface IAdminService
 {
     Task<AdminPage<PersonRow>> PeopleAsync(bool coaches, string? search, int page, CancellationToken ct, Guid? editionId = null);
-    Task<AdminPage<SourceRow>> SourcesAsync(Guid? editionId, string? search, int page, CancellationToken ct, Guid? teamId = null, bool goalkeepers = false);
+    Task<AdminPage<SourceRow>> SourcesAsync(Guid? editionId, string? search, int page, CancellationToken ct, Guid? teamId = null, bool goalkeepers = false, bool unlinkedOnly = false);
     Task<IdentityRow> IdentityAsync(Guid id, CancellationToken ct);
     Task<PersonRow> SaveIdentityAsync(Guid? id, IdentityCommand command, string actor, CancellationToken ct);
     Task DeleteIdentityAsync(Guid id, string version, string actor, CancellationToken ct);

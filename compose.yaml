@@ -10,6 +10,8 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__ViwDatabase: ${ConnectionStrings__ViwDatabase:-}
       Monitoring__ApiKey: ${VIW_MONITORING_API_KEY:-}
+      Admin__BootstrapEmail: ${ADMIN_BOOTSTRAP_EMAIL:-}
+      Admin__BootstrapPassword: ${ADMIN_BOOTSTRAP_PASSWORD:-}
       Admin__DataProtectionKeysPath: /data/keys
       Media__LocalPath: /media/media
     volumes:

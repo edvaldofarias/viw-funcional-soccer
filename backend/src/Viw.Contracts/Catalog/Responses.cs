@@ -89,7 +89,20 @@ public sealed record PlayerDisciplineResponse(long YellowCards, long RedCards);
 /// <param name="Player">Identificação oficial do jogador.</param>
 /// <param name="Statistics">Totais das edições vinculadas; sujeitos à disponibilidade das súmulas.</param>
 /// <param name="Aliases">Nomes e apelidos originais dos cadastros associados.</param>
-public sealed record PlayerDetailResponse(PlayerResponse Player, PlayerTotalsResponse Statistics, IReadOnlyList<string>? Aliases = null);
+/// <param name="Records">Recordes de toda a carreira vinculada, independentes da paginação do histórico.</param>
+/// <param name="Awards">Reconhecimentos individuais confirmados de todos os cadastros vinculados.</param>
+/// <param name="Results">Jogos e resultados de toda a carreira, contando cada partida uma vez.</param>
+/// <param name="CupsPlayed">Quantidade de edições distintas com inscrição vinculada, incluindo campeonatos em andamento.</param>
+public sealed record PlayerDetailResponse(PlayerResponse Player, PlayerTotalsResponse Statistics,
+    IReadOnlyList<string>? Aliases = null, PlayerRecordsResponse? Records = null, IReadOnlyList<PlayerAwardResponse>? Awards = null,
+    PlayerResultsResponse? Results = null, int? CupsPlayed = null);
+
+/// <summary>Jogos confirmados e resultados da carreira, sem duplicar partidas entre cadastros vinculados.</summary>
+/// <param name="Played">Jogos encerrados com participação confirmada, mesmo quando o placar é desconhecido.</param>
+/// <param name="Wins">Vitórias nos jogos com placar conhecido, sem pênaltis de desempate.</param>
+/// <param name="Draws">Empates nos jogos com placar conhecido, sem pênaltis de desempate.</param>
+/// <param name="Losses">Derrotas nos jogos com placar conhecido, sem pênaltis de desempate.</param>
+public sealed record PlayerResultsResponse(long Played, int Wins, int Draws, int Losses);
 
 /// <summary>Totais de um jogador em uma edição específica.</summary>
 /// <param name="Player">Identidade canônica usada para consolidar os cadastros da fonte.</param>
@@ -107,10 +120,11 @@ public sealed record PlayerStatisticsResponse(PlayerResponse Player, PlayerTotal
 /// <param name="Statistics">Estatísticas individuais restritas à edição e equipe desta inscrição.</param>
 /// <param name="Results">Resultados nos jogos com presença conhecida do jogador.</param>
 /// <param name="Discipline">Cartões da edição inteira; repetidos nas inscrições quando há mais de uma equipe na mesma edição.</param>
+/// <param name="FinalPosition">Classificação geral final da equipe em uma edição encerrada; null se ainda não encerrada ou desconhecida.</param>
 public sealed record PlayerHistoryResponse(EditionResponse Edition, TeamResponse Team, string OriginalName,
     DateTimeOffset ObservedFrom, DateTimeOffset? ObservedUntil,
     string? ImageUrl = null, PlayerTotalsResponse? Statistics = null, TeamStatisticsResponse? Results = null,
-    PlayerDisciplineResponse? Discipline = null);
+    PlayerDisciplineResponse? Discipline = null, int? FinalPosition = null);
 
 /// <summary>Jogador e dados da inscrição observada na equipe.</summary>
 /// <param name="Player">Identidade canônica vinculada ao cadastro original.</param>

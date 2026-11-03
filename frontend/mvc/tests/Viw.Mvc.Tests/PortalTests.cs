@@ -7,6 +7,86 @@ namespace Viw.Mvc.Tests;
 
 public sealed class PortalTests
 {
+    [Fact]
+    public async Task Every_wiki_profile_shows_all_record_labels_and_award_categories_even_without_records()
+    {
+        // Arrange
+        await using var fixture = new PortalFixture();
+        using var client = fixture.CreateClient();
+        // Act
+        var html = WebUtility.HtmlDecode(await client.GetStringAsync("/wiki/jogadores/leo-reis"));
+        // Assert
+        foreach (var label in new[] { "Partidas em que mais fez gols", "Maior vitória", "Maior derrota",
+            "Melhor classificação", "Pior classificação", "Maior sequência de vitórias", "Maior sequência de derrotas",
+            "Prêmios individuais", "Artilheiro do campeonato", "Craque do campeonato (Ballon d’Or)",
+            "Seleção do campeonato", "Seleção da rodada" })
+            html.ShouldContain(label);
+        html.ShouldContain("Sem registro disponível.");
+        html.ShouldContain("Nenhum prêmio confirmado nesta categoria.");
+    }
+
+    [Fact]
+    public async Task Career_and_gallery_keep_team_crests_and_frames_for_editions_without_photos()
+    {
+        // Arrange
+        await using var fixture = new PortalFixture();
+        var edition = new EditionResponse(FixtureApi.EditionId, Guid.Empty, FixtureApi.Slug,
+            "Copa de Teste", 2026, 1, "Archived", "America/Sao_Paulo", null, null);
+        fixture.Api.PlayerHistory = [
+            new(edition, new(FixtureApi.HomeId, "Aurora", null), "Reis", DateTimeOffset.UtcNow, null),
+            new(edition with { Id = Guid.NewGuid(), Year = 2025 }, new(FixtureApi.AwayId, "Estrela", null),
+                "Reis", DateTimeOffset.UtcNow, null, ImageUrl: "https://example.invalid/photo.png")
+        ];
+        using var client = fixture.CreateClient();
+        // Act
+        var html = WebUtility.HtmlDecode(await client.GetStringAsync("/wiki/jogadores/leo-reis"));
+        var career = Regex.Match(html, """<section id="carreira">[\s\S]*?</section>""").Value;
+        var gallery = Regex.Match(html, """<section id="galeria">[\s\S]*?</section>""").Value;
+        // Assert
+        foreach (var team in new[] { FixtureApi.HomeId, FixtureApi.AwayId })
+        {
+            career.ShouldContain($"/imagens/teams/{team}");
+            gallery.ShouldContain($"/imagens/teams/{team}");
+        }
+        Regex.Matches(gallery, "<figure>").Count.ShouldBe(2);
+        gallery.ShouldContain("src=\"https://placehold.co/240x300/e5e7eb/e5e7eb?text=+\"");
+        gallery.ShouldContain("Foto não disponível.");
+        gallery.ShouldContain("data-media-placeholder=\"https://placehold.co/240x300/e5e7eb/e5e7eb?text=+\"");
+        html.ShouldNotContain("player-placeholder.svg");
+        gallery.ShouldNotContain("https://example.invalid/photo.png");
+    }
+
+    [Fact]
+    public async Task Wiki_renders_global_records_and_confirmed_award_context_not_just_history_statistics()
+    {
+        // Arrange
+        await using var fixture = new PortalFixture();
+        var edition = new EditionResponse(FixtureApi.EditionId, Guid.Empty, FixtureApi.Slug,
+            "Copa antiga", 2024, 1, "Archived", "America/Sao_Paulo", null, null);
+        var home = new TeamResponse(FixtureApi.HomeId, "Aurora", null);
+        var away = new TeamResponse(FixtureApi.AwayId, "Estrela", null);
+        var game = new PlayerMatchRecordResponse(edition,
+            new(FixtureApi.MatchId, edition.Id, null, null, home, away,
+                new DateTimeOffset(2024, 1, 1, 12, 0, 0, TimeSpan.Zero), null, null, "Finished", 7, 0, 1),
+            home.Id, 5, true);
+        fixture.Api.PlayerRecords = new([game], [game], [], [new(edition, home, 1)], [], [new([game])], [], false);
+        fixture.Api.PlayerAwards = [new(edition,
+            new(Guid.NewGuid(), "selection-round", "Seleção da rodada", "Round", null, FixtureApi.RoundId,
+                FixtureApi.PlayerId, "Léo Reis", null, null, "Atacante", DateTimeOffset.UtcNow), "Rodada 3", null)];
+        using var client = fixture.CreateClient();
+        // Act
+        var html = WebUtility.HtmlDecode(await client.GetStringAsync("/wiki/jogadores/leo-reis"));
+        // Assert
+        html.ShouldContain("Aurora 7 × 0 Estrela");
+        html.ShouldContain("5 gols do jogador");
+        html.ShouldContain("1º lugar");
+        html.ShouldContain("Copa antiga");
+        html.ShouldContain("Rodada 3");
+        html.ShouldContain("Atacante");
+        html.ShouldContain("rodada=" + FixtureApi.RoundId);
+        html.ShouldNotContain("Mais gols entre as participações desta");
+    }
+
     [Theory]
     [InlineData("/wiki/jogadores", "/api/v1/players")]
     [InlineData("/campeonatos", "/api/v1/championships")]

@@ -17,7 +17,7 @@ public sealed class StatisticsController(ViwApiClient api, SeoService seo) : Por
         var players = ViwApiClient.Required(await api.PlayerStatsAsync(slug, page, ct));
         if (BeyondPage(players)) return Missing();
         var pager = new Pager(PortalRoutes.Cup(edition.Edition.Slug) + "/estatisticas/jogadores", page, players.PageSize, players.TotalCount);
-        return Page("Players", new PlayerStatsPage(edition, players, pager), $"Estatísticas dos jogadores · {edition.Edition.Name}", $"Gols, cartões e presenças registrados dos jogadores em {edition.Edition.Name}.", pager.Url(page), players.TotalCount == 0);
+        return Page("Players", new PlayerStatsPage(edition, players, pager), $"Estatísticas dos jogadores · {edition.Edition.Name}", $"Gols, cartões e jogos registrados dos jogadores em {edition.Edition.Name}.", pager.Url(page), players.TotalCount == 0);
     }
     [HttpGet("/campeonatos/{slug}/estatisticas/equipes")]
     public async Task<IActionResult> Teams(string slug, [Range(1, 100000)] int page = 1, CancellationToken ct = default)

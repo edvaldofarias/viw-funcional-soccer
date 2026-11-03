@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Razor.TagHelpers;
 using Viw.Mvc.Services;
 namespace Viw.Mvc.TagHelpers;
 
-/// <summary>Avatar com cópia própria, alternativa Firebase pela API e iniciais se ambas falharem.</summary>
+/// <summary>Avatar com cópia própria, alternativa Firebase pela API e imagem cinza externa quando indisponível.</summary>
 [HtmlTargetElement("viw-avatar")]
 public sealed class AvatarTagHelper : TagHelper
 {
@@ -18,9 +18,13 @@ public sealed class AvatarTagHelper : TagHelper
         output.Attributes.SetAttribute("class", Class + " media-avatar");
         output.Attributes.SetAttribute("aria-hidden", "true");
         output.Content.SetContent(PortalFormat.Initials(Name));
-        if (EntityId is not {} id || Kind is not ("players" or "sourceplayers" or "teams" or "editions")) return;
-        var image = new TagBuilder("img"); image.Attributes["src"] = $"/imagens/{Kind}/{id:D}" + (EditionId is {} edition ? $"?editionId={edition:D}" : "");
-        image.Attributes["alt"] = ""; image.Attributes["loading"] = "lazy"; image.Attributes["data-media-avatar"] = "";
+        var image = new TagBuilder("img");
+        image.Attributes["src"] = EntityId is {} id && Kind is ("players" or "sourceplayers" or "teams" or "editions")
+            ? $"/imagens/{Kind}/{id:D}" + (EditionId is {} edition ? $"?editionId={edition:D}" : "")
+            : PortalFormat.PlaceholderAvatar;
+        image.Attributes["alt"] = ""; image.Attributes["loading"] = "lazy";
+        image.Attributes["referrerpolicy"] = "no-referrer";
+        image.Attributes["data-media-placeholder"] = PortalFormat.PlaceholderAvatar;
         output.Content.AppendHtml(image);
     }
 }

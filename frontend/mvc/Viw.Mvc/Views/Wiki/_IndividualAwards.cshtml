@@ -1,0 +1,22 @@
+@model IReadOnlyList<PlayerAwardResponse>
+@{
+    var awards = Model.GroupBy(x => PortalFormat.AwardCategory(x.Award.Code, x.Award.Name)).ToDictionary(x => x.Key, x => x.ToArray());
+    var categories = new[] { "Artilheiro do campeonato", "Craque do campeonato (Ballon d’Or)", "Seleção do campeonato", "Seleção da rodada", "Craque da partida" }
+        .Concat(awards.Keys).Distinct().Where(awards.ContainsKey).ToArray();
+}
+<p>Reconhecimentos oficiais confirmados de toda a carreira. Estatísticas não concedem prêmios automaticamente.</p>
+<div class="wiki-awards">
+@foreach (var category in categories)
+{
+    <article><h3>@category</h3>
+        <ul>@foreach (var grant in awards[category])
+        {
+            <li><a href="@PortalRoutes.Cup(grant.Edition.Slug)">@grant.Edition.Name · @grant.Edition.Year/@grant.Edition.Semester</a>
+            @if (grant.Award.RoundId is { } round) { <span> · <a href="@(PortalRoutes.Cup(grant.Edition.Slug) + "/jogos?rodada=" + round.ToString("D"))">@(grant.RoundName ?? "Ver rodada")</a></span> }
+            @if (grant.Award.MatchId is { } match) { <span> · <a href="@PortalRoutes.Match(grant.Edition.Slug, match)">@(grant.MatchTitle ?? "Ver partida")</a></span> }
+            @if (!string.IsNullOrWhiteSpace(grant.Award.Position)) { <span> · @grant.Award.Position</span> }
+            </li>
+        }</ul>
+    </article>
+}
+</div>

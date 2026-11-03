@@ -4,7 +4,9 @@
     var history = Model.History.Items.OrderBy(x => x.Edition.Year).ThenBy(x => x.Edition.Semester).ToArray();
     var photos = history.Where(x => Uri.TryCreate(x.ImageUrl, UriKind.Absolute, out var uri) && uri.Scheme ==
 "https").ToArray();
-    var mostGoals = history.Where(x => x.Statistics != null).OrderByDescending(x => x.Statistics!.Goals).FirstOrDefault();
+    var records = Model.Player.Records ?? new PlayerRecordsResponse([], [], [], [], [], [], [], false);
+    var results = Model.Player.Results;
+    var awards = Model.Player.Awards ?? Array.Empty<PlayerAwardResponse>();
 }
 <section class="shell section">
     <nav class="breadcrumbs" aria-label="Caminho"><a href="/wiki">Wiki VIW</a><span>/</span><a
@@ -18,24 +20,37 @@
             </header>
             <aside class="wiki-infobox">
                 <h2>@player.Name</h2>
-                @if (photos.LastOrDefault() is { } portrait)
-                {
-                    <figure><img
-                        src="/imagens/players/@player.Id?editionId=@portrait.Edition.Id"
-                        alt="@player.Name na edição @portrait.Edition.Name" referrerpolicy="no-referrer" />
-                        <figcaption>@portrait.Edition.Name · @portrait.Edition.Year</figcaption>
-                    </figure>
+                @{
+                    var portrait = photos.LastOrDefault();
+                    var portraitSource = portrait is not null
+                        ? $"/imagens/players/{player.Id}?editionId={portrait.Edition.Id}"
+                        : player.ImageAssetId is not null ? $"/imagens/players/{player.Id}" : PortalFormat.PlaceholderPortrait;
                 }
+                    <figure><img
+                        src="@portraitSource" data-media-placeholder="@PortalFormat.PlaceholderPortrait"
+                        alt="Foto de @player.Name" referrerpolicy="no-referrer" />
+                        <figcaption>@(portrait is not null ? $"{portrait.Edition.Name} · {portrait.Edition.Year}" : "Foto do jogador")</figcaption>
+                    </figure>
                 <h3>Informações do jogador</h3>
                 <dl>
                     <dt>Nome</dt>
                     <dd>@player.Name</dd>
-                    <dt>Participações registradas</dt>
-                    <dd>@Model.History.TotalCount</dd>
-                    <dt>Presenças</dt>
+                    <dt>Copas disputadas</dt>
+                    <dd>@(Model.Player.CupsPlayed?.ToString() ?? "—")</dd>
+                    <dt>Jogos</dt>
                     <dd>@stats.KnownAppearances</dd>
                     <dt>Gols</dt>
                     <dd>@stats.Goals</dd>
+                    <dt>Cartões amarelos</dt>
+                    <dd>@stats.YellowCards</dd>
+                    <dt>Cartões vermelhos</dt>
+                    <dd>@stats.RedCards</dd>
+                    <dt>Vitórias</dt>
+                    <dd>@(results?.Wins.ToString() ?? "—")</dd>
+                    <dt>Empates</dt>
+                    <dd>@(results?.Draws.ToString() ?? "—")</dd>
+                    <dt>Derrotas</dt>
+                    <dd>@(results?.Losses.ToString() ?? "—")</dd>
                 </dl>
                 @if (history.LastOrDefault() is { } latest)
                 {
@@ -47,13 +62,14 @@
                 </aside>
                 <p><strong>@player.Name</strong> é um jogador da comunidade VIW. Seus cadastros em diferentes campeonatos estão
                     reunidos nesta identidade, com as estatísticas de cada edição preservadas separadamente.</p>
-                    <p>O arquivo registra <strong>@stats.KnownAppearances presenças e @stats.Goals gols</strong> em partidas
+                    <p>O arquivo registra <strong>@stats.KnownAppearances jogos e @stats.Goals gols</strong> em partidas
                         encerradas.</p>
                         <nav class="wiki-toc" aria-label="Sumário"><strong>Sumário</strong>
                             <ol>
                                 <li><a href="#carreira">Carreira</a></li>
                                 <li><a href="#estatisticas">Estatísticas por campeonato</a></li>
                                 <li><a href="#marcas">Recordes e marcas</a></li>
+                                @if (awards.Count > 0) { <li><a href="#premios-individuais">Prêmios individuais</a></li> }
                                 <li><a href="#galeria">Galeria</a></li>
                                 <li><a href="#metodologia">Notas e metodologia</a></li>
                             </ol>
@@ -68,7 +84,7 @@
                             <div class="wiki-career">@foreach (var entry in history) {
                                 <article><small>@(entry.Edition.Semester)º
                                     semestre de @entry.Edition.Year</small>
-                                    <h3><a href="@PortalRoutes.Team(entry.Edition.Slug, entry.Team.Id)">@entry.Team.Name</a></h3><a
+                                    <div class="wiki-club"><viw-avatar kind="teams" entity-id="@(entry.Team.Id)" name="@(entry.Team.Name)" class="wiki-crest"></viw-avatar><h3><a href="@PortalRoutes.Team(entry.Edition.Slug, entry.Team.Id)">@entry.Team.Name</a></h3></div><a
                                     href="@PortalRoutes.Cup(entry.Edition.Slug)">@entry.Edition.Name</a>
                                     <p>@PortalFormat.Status(entry.Edition.Status) · Nome na origem: @entry.OriginalName</p>
                                 </article>
@@ -77,7 +93,7 @@
                     </section>
                     <section id="estatisticas">
                         <h2>Estatísticas por campeonato</h2>
-                        <p>Resultados das equipes nos jogos com presença registrada do jogador. Pontos abaixo usam a referência de 3
+                        <p>Resultados das equipes nos jogos com participação confirmada do jogador. Pontos abaixo usam a referência de 3
                             por vitória e 1 por empate; não substituem a classificação oficial da copa.</p>
                             <div class="table-responsive">
                                 <table class="table table-bordered wiki-stats">
@@ -146,30 +162,32 @@
                                         </section>
                                         <section id="marcas">
                                             <h2>Recordes e marcas</h2>
-                                            <ul>
-                                                <li><strong>Total de gols:</strong> @stats.Goals em @stats.KnownAppearances presenças registradas.</li>
-                                                @if (mostGoals is { Statistics: { } best })
-                                                {
-                                                    <li><strong>Mais gols entre as participações desta
-                                                        página:</strong> @best.Goals por @mostGoals.Team.Name (@mostGoals.Edition.Name ·
-                                                        @mostGoals.Edition.Year).</li>
-                                                    }
-                                                    <li><strong>Histórico:</strong> @Model.History.TotalCount participações preservadas.</li>
-                                                </ul>
-                                            </section>
+                                            <p><strong>Total de gols:</strong> @stats.Goals em @stats.KnownAppearances jogos registrados. Os recordes abaixo abrangem toda a carreira vinculada, não apenas esta página.</p>
+                                            <partial name="_Records" model="records" />
+                                        </section>
+                                        @if (awards.Count > 0) {
+                                        <section id="premios-individuais">
+                                            <h2>Prêmios individuais</h2>
+                                            <partial name="_IndividualAwards" model="awards" />
+                                        </section>
+                                        }
                                             <section id="galeria">
                                                 <h2>Galeria</h2>
-                                                <div class="wiki-gallery">@foreach (var entry in photos) {
+                                                <div class="wiki-gallery">@foreach (var entry in history) {
+                                                    var hasPhoto = Uri.TryCreate(entry.ImageUrl, UriKind.Absolute, out var photoUri) && photoUri.Scheme == "https";
                                                     <figure><img
-                                                        src="/imagens/players/@player.Id?editionId=@entry.Edition.Id"
-                                                        alt="@player.Name por @entry.Team.Name em @entry.Edition.Year" loading="lazy"
+                                                        src="@(hasPhoto ? $"/imagens/players/{player.Id}?editionId={entry.Edition.Id}" : PortalFormat.PlaceholderPortrait)"
+                                                        data-media-placeholder="@PortalFormat.PlaceholderPortrait"
+                                                        alt="@(hasPhoto ? $"{player.Name} por {entry.Team.Name} em {entry.Edition.Year}" : $"Foto de {player.Name} não disponível nesta edição")" loading="lazy"
                                                         referrerpolicy="no-referrer" />
-                                                        <figcaption><strong>@entry.Edition.Year</strong><br />@entry.Team.Name<br />@entry.Edition.Name
+                                                        <figcaption><strong>@entry.Edition.Year/@entry.Edition.Semester</strong><div class="wiki-club"><viw-avatar kind="teams" entity-id="@(entry.Team.Id)" name="@(entry.Team.Name)" class="wiki-crest"></viw-avatar><a href="@PortalRoutes.Team(entry.Edition.Slug, entry.Team.Id)">@entry.Team.Name</a></div>@entry.Edition.Name
+                                                        <span class="wiki-record-context">Classificação final: @(entry.Edition.Status == "Archived" && entry.FinalPosition is { } position ? $"{position}º lugar" : entry.Edition.Status == "Archived" ? "não disponível" : "campeonato não encerrado").</span>
+                                                        @if (!hasPhoto) { <span class="wiki-record-context">Foto não disponível.</span> }
                                                         </figcaption>
                                                     </figure>
                                                 }
-                                            </div>@if (photos.Length == 0) {
-                                            <p>Fotos históricas ainda não disponíveis.</p>
+                                            </div>@if (history.Length == 0) {
+                                            <p>As participações ainda não estão disponíveis para a galeria.</p>
                                         }
                                     </section>
                                     <section id="metodologia">
@@ -178,14 +196,18 @@
                                             <li>Os vínculos manuais reúnem a pessoa sem apagar cadastros originais, estatísticas ou fotos dos
                                                 campeonatos.</li>
                                                 <li>Até a Copa do Mundo 2026, jogadores do elenco são considerados presentes nos jogos encerrados.
-                                                    Edições posteriores usam as presenças informadas.</li>
-                                                    <li>Há @stats.UnknownAppearances registros com presença desconhecida e @stats.IncompleteSheets registros
+                                                    Edições posteriores usam os jogos com participação informada.</li>
+                                                    <li>Há @stats.UnknownAppearances registros com participação desconhecida e @stats.IncompleteSheets registros
                                                         de súmulas parciais ou desatualizadas. Valor desconhecido não significa ausência.</li>
                                                         <li>Vitórias, empates e derrotas usam o placar da partida antes da disputa de pênaltis. GP e GC são gols
                                                             das equipes nos jogos em que o jogador esteve presente.</li>
                                                             <li>Em edições arquivadas, cartões usam os totais do jogador na origem quando disponíveis, pois súmulas
                                                                 antigas podem não registrar esses eventos. Sem o total da origem, ou em edições em andamento, são
                                                                 contados os eventos das partidas encerradas. As duas fontes não são somadas.</li>
+                                                            <li>Jogos e resultados da carreira contam cada partida uma vez, mesmo com mais de um cadastro vinculado. Copas disputadas contam edições distintas com inscrição, incluindo campeonatos em andamento. Jogos sem placar conhecido não são classificados como vitória, empate ou derrota.</li>
+                                                            <li>Maior vitória e derrota usam a diferença de gols nos jogos com participação confirmada, sem pênaltis de desempate. Empates entre recordes são preservados.</li>
+                                                            <li>Sequências seguem a ordem das datas pela carreira inteira, inclusive entre campeonatos. Empates e participação desconhecida interrompem a sequência; ausências confirmadas não contam como partidas do jogador. Datas ausentes ou coincidentes impedem confirmar a sequência.</li>
+                                                            <li>Melhor e pior classificação usam a classificação geral final das equipes nas edições encerradas, com os mesmos critérios da página do campeonato. Posições desconhecidas não são inventadas.</li>
                                                             </ol>
                                                         </section>
                                                         <partial name="_Pagination" model="Model.Pager" />

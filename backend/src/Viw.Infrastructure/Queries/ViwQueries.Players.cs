@@ -59,7 +59,11 @@ public sealed partial class ViwQueries
         totals = (totals ?? new PlayerTotalsResponse(0, 0, 0, 0, 0, 0)) with {
             YellowCards = cards.Sum(x => x.YellowCards), RedCards = cards.Sum(x => x.RedCards)
         };
-        return new(player, totals,names.SelectMany(x=>new[]{x.OriginalName,x.Nickname}).Where(x=>!string.IsNullOrWhiteSpace(x)).Select(x=>x!).Distinct(StringComparer.OrdinalIgnoreCase).Order().ToArray());
+        var career = await PlayerCareerAsync(player.Id, ct);
+        totals = totals with { KnownAppearances = career.Results.Played };
+        var awards = await PlayerAwardsAsync(player, ct);
+        return new(player, totals,names.SelectMany(x=>new[]{x.OriginalName,x.Nickname}).Where(x=>!string.IsNullOrWhiteSpace(x)).Select(x=>x!).Distinct(StringComparer.OrdinalIgnoreCase).Order().ToArray(),
+            career.Records, awards, career.Results, career.CupsPlayed);
     }
 
     public async Task<PageResponse<PlayerHistoryResponse>?> PlayerHistoryAsync(string slug, PageRequest request, CancellationToken ct)
@@ -79,6 +83,7 @@ public sealed partial class ViwQueries
                 registration.ValidFrom, registration.ValidTo, source.SourceImageUrl, null, null);
         var page = await PageAsync(query, request, ct);
         var editionIds = page.Items.Select(x => x.Edition.Id).Distinct().ToArray();
+        var placements = await FinalPlacementsAsync(page.Items.Select(x => x.Edition), ct);
         var cards = await new PlayerDisciplineReader(db).ReadAsync(
             LinkedSources(playerId.Value).Where(x => editionIds.Contains(x.EditionId)), ct);
         var discipline = cards.GroupBy(x => x.EditionId).ToDictionary(x => x.Key,
@@ -97,6 +102,7 @@ public sealed partial class ViwQueries
                 .DistinctBy(x => x.Match.Id).Select(x => new { For = x.Match.HomeTeamId == entry.Team.Id ? x.Match.HomeScore!.Value : x.Match.AwayScore!.Value,
                     Against = x.Match.HomeTeamId == entry.Team.Id ? x.Match.AwayScore!.Value : x.Match.HomeScore!.Value }).ToArray();
             return entry with { Statistics = totals, Discipline = discipline.GetValueOrDefault(entry.Edition.Id),
+                FinalPosition = placements.GetValueOrDefault((entry.Edition.Id, entry.Team.Id))?.Position,
                 Results = new TeamStatisticsResponse(entry.Team, games.Length, games.Count(x => x.For > x.Against),
                 games.Count(x => x.For == x.Against), games.Count(x => x.For < x.Against), games.Sum(x => (long)x.For), games.Sum(x => (long)x.Against)) };
         }).ToArray(), page.Page, page.PageSize, page.TotalCount);

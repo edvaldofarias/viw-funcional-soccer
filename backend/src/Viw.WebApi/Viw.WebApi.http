@@ -1,5 +1,6 @@
 @baseUrl = http://localhost:5080
 @edition = la-liga-2026-2
+@player = substituir-pelo-slug-retornado-na-busca
 
 GET {{baseUrl}}/api/v1/system
 Accept: application/json
@@ -26,6 +27,10 @@ Accept: application/json
 
 ### Preparação do banco
 GET {{baseUrl}}/health/ready
+
+### Perfil completo: totais, recordes da carreira e prêmios confirmados
+GET {{baseUrl}}/api/v1/players/{{player}}
+Accept: application/json
 
 ### Monitoramento: fornecer X-Viw-Monitor-Key pelo gerenciador de segredos do cliente HTTP.
 # Não salvar a chave neste arquivo. Sem credencial, a resposta esperada é 401.

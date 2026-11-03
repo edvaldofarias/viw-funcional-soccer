@@ -37,8 +37,8 @@ public sealed class PlayersController(IViwQueries queries) : ReadControllerBase
     [ProducesResponseType<PlayerResponse>(StatusCodes.Status200OK)]
     public async Task<ActionResult<PlayerResponse>> ById(Guid id, CancellationToken ct) => Found(await queries.PlayerByIdAsync(id, ct));
 
-    /// <summary>Consulta a identidade oficial e os totais da carreira.</summary>
-    /// <remarks>Soma os fatos disponíveis em partidas encerradas das edições vinculadas. Valores podem estar incompletos quando faltam súmulas; presenças desconhecidas não são confirmadas como zero.</remarks>
+    /// <summary>Consulta a identidade, totais, recordes e prêmios individuais da carreira.</summary>
+    /// <remarks>Recordes e prêmios abrangem todos os vínculos ativos, sem depender da paginação do histórico. Classificações finais usam somente edições encerradas. Sequências continuam entre copas, mas empates e presença desconhecida interrompem a sequência; datas insuficientes impedem calculá-las. Apenas prêmios confirmados são publicados.</remarks>
     /// <param name="slug">Slug estável da identidade canônica, por exemplo jogador seguido de seu identificador.</param>
     /// <param name="ct">Token de cancelamento da requisição; não é um parâmetro HTTP.</param>
     /// <returns>Identidade canônica e totais registrados da carreira.</returns>

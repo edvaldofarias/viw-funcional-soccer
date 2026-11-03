@@ -18,10 +18,20 @@ document.querySelectorAll("[data-share-url]").forEach(button => {
     });
 });
 
+function showMissingPhoto(image) {
+  image.referrerPolicy = 'no-referrer';
+  image.src = image.dataset.mediaPlaceholder;
+  image.alt = 'Foto não disponível.';
+  image.removeAttribute('data-media-placeholder');
+}
 document.addEventListener('error', event => {
   const image = event.target;
-  if (image instanceof HTMLImageElement && image.hasAttribute('data-media-avatar')) image.remove();
+  if (image instanceof HTMLImageElement && image.hasAttribute('data-media-placeholder')) {
+    showMissingPhoto(image);
+  }
 }, true);
-document.querySelectorAll('img[data-media-avatar]').forEach(image => {
-  if (image.complete && image.naturalWidth === 0) image.remove();
+document.querySelectorAll('img[data-media-placeholder]').forEach(image => {
+  if (image.complete && image.naturalWidth === 0) {
+    showMissingPhoto(image);
+  }
 });

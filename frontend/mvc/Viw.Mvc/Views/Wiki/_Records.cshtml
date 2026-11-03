@@ -1,0 +1,40 @@
+@model PlayerRecordsResponse
+@{
+    var games = new (string Label, IReadOnlyList<PlayerMatchRecordResponse> Items)[] {
+        ("Partidas em que mais fez gols", Model.MostGoals),
+        ("Maior vitória", Model.BiggestWins),
+        ("Maior derrota", Model.BiggestLosses)
+    };
+    var positions = new (string Label, IReadOnlyList<PlayerPlacementResponse> Items)[] {
+        ("Melhor classificação", Model.BestPlacements),
+        ("Pior classificação", Model.WorstPlacements)
+    };
+    var streaks = new (string Label, IReadOnlyList<PlayerStreakResponse> Items)[] {
+        ("Maior sequência de vitórias", Model.LongestWinningStreaks),
+        ("Maior sequência de derrotas", Model.LongestLosingStreaks)
+    };
+}
+<div class="wiki-records">
+@foreach (var record in games)
+{
+    <article><h3>@record.Label</h3>
+    @if (record.Items.Count == 0) { <p>Sem registro disponível.</p> }
+    else { <ul>@foreach (var game in record.Items) { <li><partial name="_RecordMatch" model="game" /></li> }</ul> }
+    </article>
+}
+@foreach (var record in positions)
+{
+    <article><h3>@record.Label</h3>
+    @if (record.Items.Count == 0) { <p>Classificação final ainda não disponível.</p> }
+    else { <ul>@foreach (var position in record.Items) { <li><strong>@(position.Position)º lugar</strong> · <a href="@PortalRoutes.Team(position.Edition.Slug, position.Team.Id)">@position.Team.Name</a><span class="wiki-record-context">@position.Edition.Name · @position.Edition.Year/@position.Edition.Semester</span></li> }</ul> }
+    </article>
+}
+@foreach (var record in streaks)
+{
+    <article><h3>@record.Label</h3>
+    @if (Model.ChronologyIncomplete) { <p>Datas insuficientes para ordenar toda a carreira e confirmar a sequência.</p> }
+    else if (record.Items.Count == 0) { <p>Sem sequência registrada.</p> }
+    else { @foreach (var streak in record.Items) { <p><strong>@streak.Matches.Count partidas consecutivas</strong></p><ol>@foreach (var game in streak.Matches) { <li><partial name="_RecordMatch" model="game" /></li> }</ol> } }
+    </article>
+}
+</div>

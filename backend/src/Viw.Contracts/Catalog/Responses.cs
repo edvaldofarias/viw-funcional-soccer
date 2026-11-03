@@ -80,7 +80,7 @@ public sealed record TeamDetailResponse(TeamResponse Team, IReadOnlyList<CoachRe
 public sealed record PlayerResponse(Guid Id, string Slug, string Name, Guid? ImageAssetId);
 
 /// <summary>Totais registrados; cartões de edições arquivadas usam os agregados quando disponíveis, sem somá-los às súmulas.</summary>
-/// <param name="Goals">Soma dos gols conhecidos; não concede automaticamente premiação oficial.</param>
+/// <param name="Goals">Soma dos gols conhecidos; em edições encerradas, líderes empatados recebem o reconhecimento de artilheiro.</param>
 /// <param name="YellowCards">Soma dos cartões amarelos conhecidos.</param>
 /// <param name="RedCards">Soma dos cartões vermelhos conhecidos.</param>
 /// <param name="KnownAppearances">Soma das presenças explicitamente registradas.</param>
@@ -97,7 +97,7 @@ public sealed record PlayerDisciplineResponse(long YellowCards, long RedCards);
 /// <param name="Statistics">Totais das edições vinculadas; sujeitos à disponibilidade das súmulas.</param>
 /// <param name="Aliases">Nomes e apelidos originais dos cadastros associados.</param>
 /// <param name="Records">Recordes de toda a carreira vinculada, independentes da paginação do histórico.</param>
-/// <param name="Awards">Reconhecimentos individuais confirmados de todos os cadastros vinculados.</param>
+/// <param name="Awards">Reconhecimentos editoriais confirmados e artilharia automática das edições encerradas de todos os cadastros vinculados.</param>
 /// <param name="Results">Jogos e resultados de toda a carreira, contando cada partida uma vez.</param>
 /// <param name="CupsPlayed">Quantidade de edições distintas com inscrição vinculada, incluindo campeonatos em andamento.</param>
 /// <param name="Podium">Títulos, vices e terceiros nas classificações finais das edições encerradas, contando uma conquista por edição.</param>
@@ -160,7 +160,7 @@ public sealed record RosterPlayerResponse(PlayerResponse Player, string Original
 /// <param name="Results">Resultados nas partidas com presença confirmada na edição.</param>
 /// <param name="ScoringPosition">Posição por gols da edição, com empates; null quando não há gols registrados.</param>
 /// <param name="FinalPosition">Colocação geral da equipe, somente em edição arquivada e quando conhecida.</param>
-/// <param name="Awards">Reconhecimentos confirmados deste cadastro na edição; não são inferidos da artilharia.</param>
+/// <param name="Awards">Reconhecimentos editoriais confirmados e artilharia automática deste cadastro na edição encerrada.</param>
 public sealed record EditionPlayerResponse(EditionResponse Edition, TeamResponse Team, PlayerResponse Player,
     string? ShirtNumber, string? Position, PlayerTotalsResponse Statistics, PlayerResultsResponse Results,
     int? ScoringPosition, int? FinalPosition, IReadOnlyList<AwardResponse> Awards);
@@ -208,8 +208,8 @@ public sealed record MatchPlayerResponse(Guid? PlayerId, string Name, Guid TeamI
 public sealed record TeamStatisticsResponse(TeamResponse Team, int Played, int Wins, int Draws,
     int Losses, long GoalsFor, long GoalsAgainst);
 
-/// <summary>Premiação oficial confirmada; rascunhos e concessões revogadas não são publicados.</summary>
-/// <param name="Id">GUID interno da concessão oficial do prêmio.</param>
+/// <summary>Premiação editorial confirmada ou reconhecimento automático de artilharia em edição encerrada.</summary>
+/// <param name="Id">GUID da concessão, ou identificador estável do reconhecimento automático.</param>
 /// <param name="Code">Código cadastrado da categoria do prêmio.</param>
 /// <param name="Name">Nome oficial da categoria.</param>
 /// <param name="Scope">Abrangência da categoria: Championship, Round ou Match.</param>
@@ -220,7 +220,8 @@ public sealed record TeamStatisticsResponse(TeamResponse Team, int Played, int W
 /// <param name="CoachId">GUID do técnico premiado, ou null para premiação de jogador.</param>
 /// <param name="CoachName">Nome oficial do técnico premiado, quando aplicável.</param>
 /// <param name="Position">Posição relacionada à seleção/premiação, quando cadastrada.</param>
-/// <param name="ConfirmedAt">Instante de confirmação oficial da concessão.</param>
+/// <param name="ConfirmedAt">Instante de confirmação editorial; null para reconhecimento automático, sem data inventada.</param>
+/// <param name="Automatic">True quando a artilharia da edição encerrada concede o reconhecimento sem concessão editorial.</param>
 public sealed record AwardResponse(Guid Id, string Code, string Name, string Scope, Guid? MatchId,
     Guid? RoundId, Guid? SourcePlayerId, string? PlayerName, Guid? CoachId, string? CoachName,
-    string? Position, DateTimeOffset? ConfirmedAt);
+    string? Position, DateTimeOffset? ConfirmedAt, bool Automatic = false);

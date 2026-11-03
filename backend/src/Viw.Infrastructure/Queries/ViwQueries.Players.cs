@@ -162,7 +162,7 @@ public sealed partial class ViwQueries
     {
         var edition = await FindEdition(slug, ct);
         if (edition is null) return null;
-        var query = from grant in db.AwardGrantRecords.AsNoTracking()
+        var query = from grant in PublicAwardGrants()
             join definition in db.AwardDefinitionRecords.AsNoTracking() on grant.AwardDefinitionId equals definition.Id
             join player in db.SourcePlayerRecords.AsNoTracking() on grant.SourcePlayerId equals player.Id into players
             from player in players.DefaultIfEmpty()
@@ -172,7 +172,10 @@ public sealed partial class ViwQueries
             orderby grant.ConfirmedAt descending, grant.Id
             select new AwardResponse(grant.Id, definition.Code, definition.Name, definition.Scope.ToString(), grant.MatchId,
                 grant.RoundId, grant.SourcePlayerId, player == null ? null : player.OriginalName, grant.CoachId,
-                coach == null ? null : coach.DisplayName, grant.Position, grant.ConfirmedAt);
-        return await PageAsync(query, request, ct);
+                coach == null ? null : coach.DisplayName, grant.Position, grant.ConfirmedAt, false);
+        var page = await PageAsync(query, request, ct);
+        var automatic = await AutomaticTopScorersAsync(db.ChampionshipEditionRecords.Where(x => x.Id == edition.Id), ct);
+        var extra = automatic.Skip(Math.Max(0, Offset(request) - page.TotalCount)).Take(request.PageSize - page.Items.Count);
+        return new(page.Items.Concat(extra.Select(x => x.Award)).ToArray(), page.Page, page.PageSize, page.TotalCount + automatic.Length);
     }
 }

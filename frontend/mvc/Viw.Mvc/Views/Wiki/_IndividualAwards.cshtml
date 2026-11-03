@@ -4,7 +4,7 @@
     var categories = new[] { "Artilheiro do campeonato", "Craque do campeonato (Ballon d’Or)", "Seleção do campeonato", "Seleção da rodada", "Craque da partida" }
         .Concat(awards.Keys).Distinct().Where(awards.ContainsKey).ToArray();
 }
-<p>Reconhecimentos oficiais confirmados de toda a carreira. Estatísticas não concedem prêmios automaticamente.</p>
+<p>Reconhecimentos de toda a carreira. Em edições encerradas, todos os líderes empatados em gols recebem o reconhecimento de artilheiro. Os demais prêmios dependem de confirmação oficial.</p>
 <div class="wiki-awards">
 @foreach (var category in categories)
 {
@@ -15,6 +15,7 @@
             @if (grant.Award.RoundId is { } round) { <span> · <a href="@(PortalRoutes.Cup(grant.Edition.Slug) + "/jogos?rodada=" + round.ToString("D"))">@(grant.RoundName ?? "Ver rodada")</a></span> }
             @if (grant.Award.MatchId is { } match) { <span> · <a href="@PortalRoutes.Match(grant.Edition.Slug, match)">@(grant.MatchTitle ?? "Ver partida")</a></span> }
             @if (!string.IsNullOrWhiteSpace(grant.Award.Position)) { <span> · @grant.Award.Position</span> }
+            @if (grant.Award.Automatic) { <span> · Artilharia automática da edição encerrada</span> }
             </li>
         }</ul>
     </article>

@@ -45,8 +45,11 @@ internal sealed class FixtureApi : HttpMessageHandler
     public PlayerDisciplineResponse? RosterDiscipline { get; set; } = new(5, 2);
     public DateTimeOffset? RosterObservedUntil { get; set; }
     public bool MissingEditionPlayer { get; set; }
+    public AwardResponse[] EditionPlayerAwards { get; set; } = [];
+    public AwardResponse[]? EditionAwards { get; set; }
     public string PlayerName { get; set; } = "Léo Reis";
     public PlayerTotalsResponse PlayerStats { get; set; } = new(0, 1, 0, 0, 1, 1);
+    public PlayerTotalsResponse EditionPlayerStatistics { get; set; } = new(0, 1, 0, 0, 1, 1);
     public PlayerHistoryResponse[]? PlayerHistory { get; set; }
     public PlayerResponse[]? PlayerList { get; set; }
     public PlayerRecordsResponse? PlayerRecords { get; set; }
@@ -90,16 +93,16 @@ internal sealed class FixtureApi : HttpMessageHandler
         else if (path == root + "/teams/" + HomeId.ToString("D") + "/players") response = Paged(new[] { new RosterPlayerResponse(Player, "Reis", "9", "Atacante", DateTimeOffset.UtcNow, RosterObservedUntil, RosterStatistics, RosterDiscipline) });
         else if (path == root + "/teams/" + HomeId.ToString("D") + "/players/" + PlayerId.ToString("D") && !MissingEditionPlayer)
             response = Json(new EditionPlayerResponse(Edition,Home,Player with {Slug=""},"9","Atacante",
-                new(4,5,2,3,1,1),new(3,2,1,0),2,Archived?1:null,[]));
+                new(4,5,2,3,1,1),new(3,2,1,0),2,Archived?1:null,EditionPlayerAwards));
         else if (path == root + "/matches") response = Paged(query.TryGetValue("status", out var status) && status == "Finished" ? new[] { Game } : new[] { Game, Future });
         else if (path == root + "/matches/" + MatchId.ToString("D")) response = Json(Game);
         else if (path == root + "/matches/" + FutureId.ToString("D")) response = Json(Future);
         else if (path == root + "/matches/" + MatchId.ToString("D") + "/players") response = Paged(new[] { new MatchPlayerResponse(PlayerId, PlayerName, HomeId, 0, 1, 0, null, false) });
         else if (path == root + "/matches/" + FutureId.ToString("D") + "/players") response = Paged(Array.Empty<MatchPlayerResponse>());
-        else if (path == root + "/statistics/players") response = Paged(new[] { new PlayerStatisticsResponse(Player, Stats) });
+        else if (path == root + "/statistics/players") response = Paged(new[] { new PlayerStatisticsResponse(Player, EditionPlayerStatistics) });
         else if (path == root + "/statistics/teams") response = Paged(new[] { new TeamStatisticsResponse(Home, 1, 0, 1, 0, 0, 0), new TeamStatisticsResponse(Away, 1, 0, 1, 0, 0, 0) });
         else if (path == root + "/awards" && MissingAward) response = Paged(Array.Empty<AwardResponse>());
-        else if (path == root + "/awards") response = Paged(new[] { new AwardResponse(Guid.NewGuid(), "ballon-dor", "Ballon d’Or", "Championship", null, null, PlayerId, PlayerName, null, null, null, DateTimeOffset.UtcNow) });
+        else if (path == root + "/awards") response = Paged(EditionAwards ?? new[] { new AwardResponse(Guid.NewGuid(), "ballon-dor", "Ballon d’Or", "Championship", null, null, PlayerId, PlayerName, null, null, null, DateTimeOffset.UtcNow) });
         else if (path == "/api/v1/players") response = Paged(PlayerList ?? new[] { Player });
         else if (path == "/api/v1/players/leo-reis") response = Json(new PlayerDetailResponse(Player, PlayerStats,
             Records: PlayerRecords, Awards: PlayerAwards, Results: PlayerResults, CupsPlayed: CupsPlayed, Podium: PlayerPodium));

@@ -38,16 +38,18 @@ public sealed partial class ViwQueries
                 .CountAsync(group => group.Sum(x => (long)(x.Fact.Goals ?? 0)) > totals.Goals, ct)
             : null;
         var placements = await FinalPlacementsAsync([editionDto], ct);
-        var awards = await (from grant in db.AwardGrantRecords.AsNoTracking()
+        var awards = await (from grant in PublicAwardGrants()
             join definition in db.AwardDefinitionRecords.AsNoTracking() on grant.AwardDefinitionId equals definition.Id
             where grant.EditionId == edition.Id && grant.SourcePlayerId == source.Id &&
                 grant.Status == AwardStatus.Confirmed && definition.RecipientKind == RecipientKind.Player
             orderby grant.ConfirmedAt descending, grant.Id
             select new AwardResponse(grant.Id, definition.Code, definition.Name, definition.Scope.ToString(),
-                grant.MatchId, grant.RoundId, source.Id, source.OriginalName, null, null, grant.Position, grant.ConfirmedAt))
+                grant.MatchId, grant.RoundId, source.Id, source.OriginalName, null, null, grant.Position, grant.ConfirmedAt, false))
             .ToArrayAsync(ct);
+        var automatic = await AutomaticTopScorersAsync(db.ChampionshipEditionRecords.Where(x => x.Id == edition.Id), ct);
         return new(editionDto, TeamDto(team), new(source.Id, "", source.OriginalName, source.SourceImageAssetId),
             source.ShirtNumber, source.AssignedPosition, totals, results, scoringPosition,
-            placements.GetValueOrDefault((edition.Id, teamId))?.Position, awards);
+            placements.GetValueOrDefault((edition.Id, teamId))?.Position,
+            awards.Concat(automatic.Where(x => x.Award.SourcePlayerId == source.Id).Select(x => x.Award)).ToArray());
     }
 }

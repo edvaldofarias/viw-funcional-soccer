@@ -52,8 +52,9 @@ public sealed partial class ViwQueries
         return placements;
     }
 
-    private async Task<PlayerAwardResponse[]> PlayerAwardsAsync(PlayerResponse player, CancellationToken ct) =>
-        await (from grant in db.AwardGrantRecords.AsNoTracking()
+    private async Task<PlayerAwardResponse[]> PlayerAwardsAsync(PlayerResponse player, CancellationToken ct)
+    {
+        var awards = await (from grant in PublicAwardGrants()
             join source in LinkedSources(player.Id) on grant.SourcePlayerId equals source.Id
             join definition in db.AwardDefinitionRecords.AsNoTracking() on grant.AwardDefinitionId equals definition.Id
             join edition in db.ChampionshipEditionRecords.AsNoTracking() on grant.EditionId equals edition.Id
@@ -66,6 +67,15 @@ public sealed partial class ViwQueries
             select new PlayerAwardResponse(new EditionResponse(edition.Id, edition.CompetitionId, edition.Slug, edition.Name,
                 edition.Year, edition.Semester, edition.Status.ToString(), edition.TimeZoneId, edition.SourceImageAssetId, edition.SourceCoverAssetId),
                 new AwardResponse(grant.Id, definition.Code, definition.Name, definition.Scope.ToString(), grant.MatchId,
-                    grant.RoundId, player.Id, player.Name, null, null, grant.Position, grant.ConfirmedAt),
+                    grant.RoundId, player.Id, player.Name, null, null, grant.Position, grant.ConfirmedAt, false),
                 round == null ? null : round.Name, match == null ? null : match.OriginalTitle)).ToArrayAsync(ct);
+        var sources = LinkedSources(player.Id);
+        var sourceIds = await sources.Select(x => x.Id).ToArrayAsync(ct);
+        var automatic = await AutomaticTopScorersAsync(
+            db.ChampionshipEditionRecords.Where(edition => sources.Any(source => source.EditionId == edition.Id)), ct);
+        return awards.Concat(automatic.Where(x => x.Award.SourcePlayerId is { } id && sourceIds.Contains(id))
+            .Select(x => x with { Award = x.Award with { SourcePlayerId = player.Id, PlayerName = player.Name } }))
+            .OrderByDescending(x => x.Edition.Year).ThenByDescending(x => x.Edition.Semester)
+            .ThenByDescending(x => x.Award.ConfirmedAt).ThenBy(x => x.Award.Id).ToArray();
+    }
 }

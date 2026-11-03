@@ -44,7 +44,7 @@ Jogadores recebem identidade inicial própria; nomes semelhantes nunca são unid
 
 Um lado `null` dentro do objeto de placar de uma partida em andamento/encerrada significa zero. Uma partida futura ou em andamento sem objeto de placar permanece sem resultado. Quando a partida está encerrada (`st=3` ou timestamp `finished` positivo), `dt` nulo ou ausente representa **0 × 0**, conforme confirmado pelo responsável com as telas de Liverpool × Wolves (Premier League 2024, 20/04/2024) e Coritiba × Flamengo (Copa do Brasil 2023, 30/09/2023). Objetos de placar com tipos inválidos continuam rejeitados. Os snapshots preservam o valor original; o mapeamento `copafacil-v2` força a revisão dos checkpoints anteriores no próximo ciclo.
 
-Gols e cartões são derivados dos eventos observados. Agregados da fonte também são preservados separadamente. Presença não é inferida apenas por jogador inscrito ou gol. O significado de reserva como ausência é habilitado apenas na edição cujo contrato foi conferido. Estatística calculada não concede automaticamente artilheiro oficial nem Ballon d’Or; essas decisões continuam administrativas.
+Gols e cartões são derivados dos eventos observados. Agregados da fonte também são preservados separadamente. Presença não é inferida apenas por jogador inscrito ou gol. O significado de reserva como ausência é habilitado apenas na edição cujo contrato foi conferido. Em edições encerradas, a leitura pública reconhece automaticamente todos os líderes empatados no maior total positivo de gols das partidas encerradas. O Worker não grava concessões de artilharia; correções nos fatos se refletem nessa leitura sem reimportação adicional. Ballon d’Or e demais categorias continuam administrativos.
 
 ## Fotos
 

@@ -12,7 +12,11 @@ Nomes semelhantes geram sugestões, nunca união automática. Um vínculo manual
 
 ## Administração
 
-Persistir artilheiro oficial (inclusive empate), Ballon d’Or da edição, craque da partida, seleções e técnicos por rodada/período. Usar AwardDefinition e AwardGrant com situação rascunho/confirmado, observação e auditoria. Distinguir liderança calculada em gols de prêmio oficial confirmado.
+Persistir decisões editoriais, como Ballon d’Or da edição, craque da partida, seleções e técnicos por rodada/período, em AwardDefinition/AwardGrant com situação rascunho/confirmado, observação e auditoria.
+
+**Artilharia de edição encerrada:** todos os cadastros empatados no maior total positivo de gols recebem o reconhecimento de artilheiro. Somar fatos das partidas encerradas da edição inteira, inclusive transferências; não usar carreira, gols de partidas em andamento ou desempate por nome. Sem gols registrados não há artilheiro. Antes de encerrar a edição, liderança não gera reconhecimento automático.
+
+A leitura pública compartilha essa regra entre premiações, modal da edição e carreira vinculada. O reconhecimento automático é derivado dos fatos, não grava AwardGrant em GET, tem ID estável e `Automatic=true`, com `ConfirmedAt=null` (não inventar data de confirmação). Uma concessão editorial confirmada para um líder é reutilizada sem duplicação; concessões antigas de artilharia de quem não lidera deixam de compor a leitura pública encerrada, mas não são apagadas nem sobrescritas no Admin. Alterar gols ou reabrir a edição recalcula a parte automática. Demais categorias continuam exigindo confirmação editorial.
 
 A importação não sobrescreve decisões manuais. Mudanças na fonte podem sinalizar divergências para revisão. Registrar autor, instante, motivo e valores anteriores; alterações de técnicos não reescrevem o passado.
 

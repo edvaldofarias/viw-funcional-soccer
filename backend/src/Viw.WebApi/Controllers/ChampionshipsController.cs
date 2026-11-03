@@ -78,12 +78,12 @@ public sealed class ChampionshipsController(IViwQueries queries) : ReadControlle
     public async Task<ActionResult<TeamDetailResponse>> Team(string slug, Guid teamId, CancellationToken ct) => Found(await queries.TeamAsync(slug, teamId, ct));
 
     /// <summary>Detalha um jogador exclusivamente nesta edição, sem depender de identidade na Wiki.</summary>
-    /// <remarks>Valida a inscrição na equipe. Totais e artilharia incluem todas as equipes da edição, apenas partidas encerradas; empates na artilharia são preservados. Colocação final só é retornada em edição arquivada. Não calcula MVP nem concede premiações.</remarks>
+    /// <remarks>Valida a inscrição na equipe. Totais e artilharia incluem todas as equipes da edição, apenas partidas encerradas; empates na artilharia são preservados. Em edição arquivada, todos os líderes em gols recebem reconhecimento de artilheiro. Colocação final só é retornada em edição arquivada. Não calcula MVP.</remarks>
     /// <param name="slug">Slug da edição.</param>
     /// <param name="teamId">Equipe do elenco consultado.</param>
     /// <param name="sourcePlayerId">ID do cadastro original da edição, retornado pelo elenco.</param>
     /// <param name="ct">Cancelamento da consulta.</param>
-    /// <returns>Perfil da edição, estatísticas, artilharia, colocação da equipe e prêmios confirmados.</returns>
+    /// <returns>Perfil da edição, estatísticas, artilharia, colocação da equipe e reconhecimentos editoriais ou automáticos.</returns>
     /// <response code="200">Dados do cadastro original restritos à edição consultada.</response>
     /// <response code="400">Identificadores inválidos; retorna ValidationProblemDetails.</response>
     /// <response code="404">Edição, equipe ou cadastro inexistente, ou cadastro não inscrito na equipe.</response>
@@ -160,7 +160,7 @@ public sealed class ChampionshipsController(IViwQueries queries) : ReadControlle
         Found(await queries.MatchPlayersAsync(slug, matchId, request, ct));
 
     /// <summary>Consulta os totais individuais de uma edição.</summary>
-    /// <remarks>Considera apenas partidas encerradas e vínculos de identidade ativos. Ordena por gols, nome e identificador. Totais não concedem automaticamente o prêmio de artilheiro; presenças desconhecidas e súmulas incompletas são informadas separadamente.</remarks>
+    /// <remarks>Considera apenas partidas encerradas e vínculos de identidade ativos. Ordena por gols, nome e identificador. Em edições encerradas, todos os líderes empatados em gols recebem o reconhecimento de artilheiro; presenças desconhecidas e súmulas incompletas são informadas separadamente.</remarks>
     /// <param name="slug">Slug da edição, por exemplo la-liga-2026-2.</param>
     /// <param name="request">Paginação: page entre 1 e 100000; pageSize entre 1 e 100; padrões 1 e 20.</param>
     /// <param name="ct">Token de cancelamento associado à requisição; não é um parâmetro HTTP.</param>
@@ -191,8 +191,8 @@ public sealed class ChampionshipsController(IViwQueries queries) : ReadControlle
     public async Task<ActionResult<PageResponse<TeamStatisticsResponse>>> TeamStatistics(string slug, [FromQuery] PageRequest request, CancellationToken ct) =>
         Found(await queries.TeamStatisticsAsync(slug, request, ct));
 
-    /// <summary>Lista as premiações oficiais confirmadas de uma edição.</summary>
-    /// <remarks>Inclui artilheiro oficial, Ballon d’Or, craques e seleções quando cadastrados. Rascunhos e concessões revogadas não são publicados. Preserva o contexto de campeonato, rodada ou partida.</remarks>
+    /// <summary>Lista premiações confirmadas e reconhecimentos automáticos de artilharia.</summary>
+    /// <remarks>Em edição encerrada, reconhece todos os líderes empatados com gols registrados, sem duplicar concessões editoriais válidas. As demais categorias exigem confirmação. Rascunhos e concessões revogadas não são publicados. Pagina primeiro as concessões editoriais por data e ID, depois a artilharia por nome e ID do cadastro.</remarks>
     /// <param name="slug">Slug da edição, por exemplo la-liga-2026-2.</param>
     /// <param name="request">Paginação: page entre 1 e 100000; pageSize entre 1 e 100; padrões 1 e 20.</param>
     /// <param name="ct">Token de cancelamento associado à requisição; não é um parâmetro HTTP.</param>

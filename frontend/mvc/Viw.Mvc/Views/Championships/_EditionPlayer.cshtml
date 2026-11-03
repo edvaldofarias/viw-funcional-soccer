@@ -36,18 +36,18 @@
                 <div><dt>Posição final de @Model.Team.Name</dt><dd>@(Model.FinalPosition is { } final ? $"{final}º lugar" : "Não disponível")</dd></div>
             }
         </dl>
-        <p class="muted">A artilharia considera partidas encerradas e preserva empates; não equivale a uma premiação oficial.</p>
-        <h3>Reconhecimentos confirmados</h3>
+        <p class="muted">A artilharia considera partidas encerradas e preserva empates. Ao encerrar o campeonato, todos os líderes recebem o reconhecimento de artilheiro.</p>
+        <h3>Reconhecimentos</h3>
         @if (Model.Awards.Count == 0)
         {
-            <p class="muted">Nenhum reconhecimento confirmado nesta edição.</p>
+            <p class="muted">Nenhum reconhecimento nesta edição.</p>
         }
         else
         {
             <ul class="player-edition-awards">
                 @foreach (var award in Model.Awards)
                 {
-                    <li><strong>@PortalFormat.AwardCategory(award.Code, award.Name)</strong><span class="muted">@PortalFormat.Scope(award.Scope)@(award.Position is { } position ? $" · {position}" : "")</span></li>
+                    <li><strong>@PortalFormat.AwardCategory(award.Code, award.Name)</strong><span class="muted">@PortalFormat.Scope(award.Scope)@(award.Position is { } position ? $" · {position}" : "")</span>@if (award.Automatic) { <span class="muted">Reconhecimento automático pela liderança de gols na edição encerrada.</span> }</li>
                 }
             </ul>
         }

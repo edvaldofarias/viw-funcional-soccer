@@ -8,6 +8,52 @@ namespace Viw.Mvc.Tests;
 
 public sealed class PortalTests
 {
+    [Theory]
+    [InlineData(0, 0, 0)]
+    [InlineData(7, 2, 2)]
+    public async Task Player_statistics_show_only_game_total_without_records_column(int games, int unknown, int incomplete)
+    {
+        await using var fixture = new PortalFixture();
+        fixture.Api.EditionPlayerStatistics = new(11, 1, 0, games, unknown, incomplete);
+        using var client = fixture.CreateClient();
+        var html = WebUtility.HtmlDecode(await client.GetStringAsync(
+            $"/campeonatos/{FixtureApi.Slug}/estatisticas/jogadores"));
+        var table = Regex.Match(html, @"<table\b[\s\S]*?</table>").Value;
+        Regex.Matches(table, @"<th(?:\s[^>]*)?>").Count.ShouldBe(5);
+        var cells = Regex.Matches(table, @"<td(?:\s[^>]*)?>([\s\S]*?)</td>");
+        cells.Count.ShouldBe(5);
+        Regex.Replace(cells[4].Groups[1].Value, "<[^>]*>", "").Trim().ShouldBe(games.ToString());
+        table.ShouldNotContain("Registros");
+        table.ShouldNotContain("confirmados");
+        table.ShouldNotContain("sem confirmação");
+        table.ShouldNotContain("parciais");
+        table.ShouldNotContain("pendências");
+    }
+
+    [Fact]
+    public async Task Automatic_shared_top_scorer_recognitions_are_visible_in_modal_awards_and_wiki()
+    {
+        await using var fixture=new PortalFixture();
+        fixture.Api.Archived=true;
+        var edition=new EditionResponse(FixtureApi.EditionId,Guid.Empty,FixtureApi.Slug,"Copa de Teste",2026,2,"Archived","UTC",null,null);
+        var award=new AwardResponse(Guid.NewGuid(),"official-top-scorer","Artilheiro do campeonato","Championship",
+            null,null,FixtureApi.PlayerId,"Léo Reis",null,null,null,null,Automatic:true);
+        fixture.Api.EditionPlayerAwards=[award];
+        fixture.Api.EditionAwards=[award,award with {Id=Guid.NewGuid(),SourcePlayerId=Guid.NewGuid(),PlayerName="Outro artilheiro"}];
+        fixture.Api.PlayerAwards=[new(edition,award,null,null)];
+        using var client=fixture.CreateClient();
+        var modal=WebUtility.HtmlDecode(await client.GetStringAsync($"/campeonatos/{FixtureApi.Slug}/equipes/{FixtureApi.HomeId:D}/jogadores/{FixtureApi.PlayerId:D}"));
+        modal.ShouldContain("Artilheiro do campeonato");
+        modal.ShouldContain("Reconhecimento automático pela liderança de gols");
+        var awards=WebUtility.HtmlDecode(await client.GetStringAsync($"/campeonatos/{FixtureApi.Slug}/premiacoes"));
+        Regex.Matches(awards,"<article class=\"award-card\">").Count.ShouldBe(2);
+        awards.ShouldContain("Outro artilheiro");
+        awards.ShouldContain("todos os líderes empatados");
+        var wiki=WebUtility.HtmlDecode(await client.GetStringAsync("/wiki/jogadores/leo-reis"));
+        wiki.ShouldContain("Artilharia automática da edição encerrada");
+        wiki.ShouldNotContain("Estatísticas não concedem prêmios automaticamente");
+    }
+
     [Fact]
     public async Task Roster_opens_edition_modal_instead_of_linking_to_wiki()
     {

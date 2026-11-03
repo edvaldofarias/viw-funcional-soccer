@@ -1,3 +1,28 @@
 @model AwardsPage
 <partial name="_EditionHeader" model="Model.Edition" />
-<section class="shell section"><div class="section-heading"><div><p class="eyebrow">QUEM DEIXOU SUA MARCA</p><h2>Premiações oficiais</h2></div></div><p class="section-description">Reconhecimentos confirmados para os protagonistas desta edição. Os números contam parte da história; aqui estão as escolhas oficiais.</p>@if (Model.Awards.Items.Count == 0) { <div class="empty-state awards-empty"><span class="empty-symbol" aria-hidden="true">✦</span><h3>Os destaques ainda serão anunciados.</h3><p>As premiações aparecerão aqui após a confirmação oficial.</p></div> } else { <div class="award-grid">@foreach (var award in Model.Awards.Items) { <article class="award-card"><span class="award-star" aria-hidden="true">✦</span><p class="eyebrow">@PortalFormat.Scope(award.Scope)</p><h3>@award.Name</h3><p class="award-recipient">@if (award.SourcePlayerId is not null) { @award.PlayerName } else { @award.CoachName }</p>@if (!string.IsNullOrWhiteSpace(award.Position)) { <span class="status">@award.Position</span> }@if (award.MatchId is { } matchId) { <a class="text-link" href="@PortalRoutes.Match(Model.Edition.Edition.Slug, matchId)">Ver partida ↗</a> } else if (award.RoundId is { } roundId) { <a class="text-link" href="@(PortalRoutes.Cup(Model.Edition.Edition.Slug) + "/jogos?rodada=" + roundId.ToString("D"))">Ver jogos da rodada ↗</a> }</article> }</div> }<partial name="_Pagination" model="Model.Pager" /></section>
+<section class="shell section">
+    <div class="section-heading"><div><p class="eyebrow">QUEM DEIXOU SUA MARCA</p><h2>Premiações oficiais</h2></div></div>
+    <p class="section-description">Reconhecimentos dos protagonistas desta edição. Em campeonatos encerrados, todos os líderes empatados em gols são artilheiros. Os demais prêmios dependem de confirmação oficial.</p>
+    @if (Model.Awards.Items.Count == 0)
+    {
+        <div class="empty-state awards-empty"><span class="empty-symbol" aria-hidden="true">✦</span><h3>Os destaques ainda serão anunciados.</h3><p>Os reconhecimentos aparecerão conforme a conclusão da artilharia ou a confirmação dos demais prêmios.</p></div>
+    }
+    else
+    {
+        <div class="award-grid">
+        @foreach (var award in Model.Awards.Items)
+        {
+            <article class="award-card">
+                <span class="award-star" aria-hidden="true">✦</span>
+                <p class="eyebrow">@PortalFormat.Scope(award.Scope)</p><h3>@award.Name</h3>
+                <p class="award-recipient">@(award.SourcePlayerId is not null ? award.PlayerName : award.CoachName)</p>
+                @if (award.Automatic) { <p class="muted">Artilharia automática da edição encerrada</p> }
+                @if (!string.IsNullOrWhiteSpace(award.Position)) { <span class="status">@award.Position</span> }
+                @if (award.MatchId is { } matchId) { <a class="text-link" href="@PortalRoutes.Match(Model.Edition.Edition.Slug, matchId)">Ver partida ↗</a> }
+                else if (award.RoundId is { } roundId) { <a class="text-link" href="@(PortalRoutes.Cup(Model.Edition.Edition.Slug) + "/jogos?rodada=" + roundId.ToString("D"))">Ver jogos da rodada ↗</a> }
+            </article>
+        }
+        </div>
+    }
+    <partial name="_Pagination" model="Model.Pager" />
+</section>

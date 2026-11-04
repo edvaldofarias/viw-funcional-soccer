@@ -15,7 +15,7 @@
             <article class="award-card">
                 <span class="award-star" aria-hidden="true">✦</span>
                 <p class="eyebrow">@PortalFormat.Scope(award.Scope)</p><h3>@award.Name</h3>
-                <p class="award-recipient">@(award.SourcePlayerId is not null ? award.PlayerName : award.CoachName)</p>
+                <p class="award-recipient">@if (award.SourcePlayerId is not null) { <partial name="_EditionPlayerTrigger" model='new EditionPlayerTrigger(Model.Edition.Edition, award.SourcePlayerId, award.PlayerName ?? "Jogador")' /> } else { @award.CoachName }</p>
                 @if (award.Automatic) { <p class="muted">Artilharia automática da edição encerrada</p> }
                 @if (!string.IsNullOrWhiteSpace(award.Position)) { <span class="status">@award.Position</span> }
                 @if (award.MatchId is { } matchId) { <a class="text-link" href="@PortalRoutes.Match(Model.Edition.Edition.Slug, matchId)">Ver partida ↗</a> }

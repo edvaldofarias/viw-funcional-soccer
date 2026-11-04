@@ -9,7 +9,7 @@
         <thead><tr><th>Jogador</th><th class="numeric">Gols</th><th class="numeric">Amarelos</th><th class="numeric">Vermelhos</th><th>Jogos</th></tr></thead>
         <tbody>@foreach (var player in Model.Players.Items) {
             var stats = player.Statistics;
-            <tr><td><a class="person-link" href="@(string.IsNullOrEmpty(player.Player.Slug) ? null : PortalRoutes.Player(player.Player.Slug))"><viw-avatar kind="sourceplayers" entity-id="@(player.Player.Id)" name="@(player.Player.Name)" class="avatar small" edition-id="@(Model.Edition.Edition.Id)"></viw-avatar>@player.Player.Name</a></td><td class="numeric goals-cell">@stats.Goals</td><td class="numeric">@stats.YellowCards</td><td class="numeric">@stats.RedCards</td><td><strong>@stats.KnownAppearances</strong></td></tr>
+            <tr><td><partial name="_EditionPlayerTrigger" model="new EditionPlayerTrigger(Model.Edition.Edition, player.Player.Id, player.Player.Name)" /></td><td class="numeric goals-cell">@stats.Goals</td><td class="numeric">@stats.YellowCards</td><td class="numeric">@stats.RedCards</td><td><strong>@stats.KnownAppearances</strong></td></tr>
         }</tbody>
     </table></div>
 }

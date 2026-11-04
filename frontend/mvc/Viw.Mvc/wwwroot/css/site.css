@@ -1522,11 +1522,23 @@ body:has(.player-dialog[open]) {
 }
 .podium-place-1 .podium-step {
   min-height: 150px;
-  background: var(--ink);
-  color: var(--white);
+  background: #e8ba42;
+  color: #3b2b08;
 }
 .podium-place-2 .podium-step {
   min-height: 115px;
+  background: #cbd2da;
+  color: #293442;
+}
+.podium-place-3 .podium-step {
+  background: #c88b60;
+  color: #352115;
+}
+.podium-place-2 .eyebrow {
+  color: #536171;
+}
+.podium-place-3 .eyebrow {
+  color: #86502e;
 }
 .competition-awards,
 .competition-highlights,

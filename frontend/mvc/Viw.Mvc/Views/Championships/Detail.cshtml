@@ -74,7 +74,7 @@
                         <ul class="competition-leaders">
                             @foreach (var scorer in scorerGroups[index].OrderBy(x => x.Player.Name))
                             {
-                                <li><span class="person-link"><viw-avatar kind="sourceplayers" entity-id="@scorer.Player.Id" name="@scorer.Player.Name" class="avatar small" edition-id="@cup.Id"></viw-avatar>@scorer.Player.Name</span><strong>@scorer.Statistics.Goals <small>gols</small></strong></li>
+                                <li><partial name="_EditionPlayerTrigger" model="new EditionPlayerTrigger(cup, scorer.Player.Id, scorer.Player.Name)" /><strong>@scorer.Statistics.Goals <small>gols</small></strong></li>
                             }
                         </ul>
                     }
@@ -85,7 +85,7 @@
                 <p class="eyebrow">BALLON D’OR</p><h3>Melhor jogador da copa</h3>
                 @foreach (var award in bestPlayers)
                 {
-                    <p class="person-link"><viw-avatar kind="sourceplayers" entity-id="@award.SourcePlayerId" name="@award.PlayerName" class="avatar small" edition-id="@cup.Id"></viw-avatar><strong>@award.PlayerName</strong></p>
+                    <p><partial name="_EditionPlayerTrigger" model='new EditionPlayerTrigger(cup, award.SourcePlayerId, award.PlayerName ?? "Jogador")' /></p>
                 }
                 @if (bestPlayers.Length == 0) { <p class="muted">Prêmio ainda não confirmado.</p> }
             </article>

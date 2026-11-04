@@ -5,6 +5,8 @@ public static class PortalRoutes
     public static string Cup(string slug) => "/campeonatos/" + Uri.EscapeDataString(slug);
     public static string Team(string slug, Guid id) => $"{Cup(slug)}/equipes/{id:D}";
     public static string Match(string slug, Guid id) => $"{Cup(slug)}/jogos/{id:D}";
+    public static string EditionPlayer(string slug, Guid sourceId, Guid? teamId = null) =>
+        (teamId is { } team ? Team(slug, team) : Cup(slug)) + $"/jogadores/{sourceId:D}";
     public static string Player(string slug) => "/wiki/jogadores/" + Uri.EscapeDataString(slug);
     // Resolve o slug atual pela API; não deduz nomes ou slugs a partir do identificador.
     public static string Player(Guid id) => "/wiki/jogadores/id/" + id.ToString("D");

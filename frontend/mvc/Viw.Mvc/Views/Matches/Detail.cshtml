@@ -39,14 +39,7 @@
                         <tbody>@foreach (var player in side.Players) {
                             <tr>
                                 <td>
-                                    @if (player.PlayerId is { } id)
-                                    {
-                                        <a class="person-link" href="@PortalRoutes.Player(id)"><viw-avatar kind="@(player.SourcePlayerId is not null ? "sourceplayers" : "players")" entity-id="@(player.SourcePlayerId ?? player.PlayerId)" name="@player.Name" class="avatar small" edition-id="@Model.Edition.Edition.Id"></viw-avatar>@player.Name</a>
-                                    }
-                                    else
-                                    {
-                                        <span class="person-link"><viw-avatar kind="sourceplayers" entity-id="@player.SourcePlayerId" name="@player.Name" class="avatar small" edition-id="@Model.Edition.Edition.Id"></viw-avatar>@player.Name</span>
-                                    }
+                                    <partial name="_EditionPlayerTrigger" model="new EditionPlayerTrigger(Model.Edition.Edition, player.SourcePlayerId, player.Name, side.Team?.Id, player.PlayerId)" />
                                 </td>
                                 <td class="numeric strong">@PortalFormat.Score(player.Goals)</td>
                                 <td class="numeric">@PortalFormat.Score(player.YellowCards)</td>

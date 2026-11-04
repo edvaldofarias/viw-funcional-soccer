@@ -45,6 +45,8 @@ internal sealed class FixtureApi : HttpMessageHandler
     public PlayerDisciplineResponse? RosterDiscipline { get; set; } = new(5, 2);
     public DateTimeOffset? RosterObservedUntil { get; set; }
     public bool MissingEditionPlayer { get; set; }
+    public string? EditionPlayerWikiSlug { get; set; }
+    public bool EditionPlayerWithoutTeam { get; set; }
     public AwardResponse[] EditionPlayerAwards { get; set; } = [];
     public AwardResponse[]? EditionAwards { get; set; }
     public string PlayerName { get; set; } = "Léo Reis";
@@ -95,9 +97,10 @@ internal sealed class FixtureApi : HttpMessageHandler
         else if (path == root + "/teams") response = Paged(new[] { Home, Away });
         else if (path == root + "/teams/" + HomeId.ToString("D")) response = Json(new TeamDetailResponse(Home, [new CoachResponse(Guid.NewGuid(), "tecnico", "Técnico da Equipe", null, DateTimeOffset.UtcNow, null)]));
         else if (path == root + "/teams/" + HomeId.ToString("D") + "/players") response = Paged(RosterPlayers ?? new[] { new RosterPlayerResponse(Player, "Reis", "9", "Atacante", DateTimeOffset.UtcNow, RosterObservedUntil, RosterStatistics, RosterDiscipline) });
-        else if (path == root + "/teams/" + HomeId.ToString("D") + "/players/" + PlayerId.ToString("D") && !MissingEditionPlayer)
-            response = Json(new EditionPlayerResponse(Edition,Home,Player with {Slug=""},"9","Atacante",
-                new(4,5,2,3,1,1),new(3,2,1,0),2,Archived?1:null,EditionPlayerAwards));
+        else if ((path == root + "/teams/" + HomeId.ToString("D") + "/players/" + PlayerId.ToString("D") ||
+                  path == root + "/players/" + PlayerId.ToString("D")) && !MissingEditionPlayer)
+            response = Json(new EditionPlayerResponse(Edition,EditionPlayerWithoutTeam ? null : Home,Player with {Slug=""},"9","Atacante",
+                new(4,5,2,3,1,1),new(3,2,1,0),2,Archived?1:null,EditionPlayerAwards,EditionPlayerWikiSlug));
         else if (path == root + "/matches") response = Paged(query.TryGetValue("status", out var status) && status == "Finished" ? new[] { Game } : new[] { Game, Future });
         else if (path == root + "/matches/" + MatchId.ToString("D")) response = Json(Game);
         else if (path == root + "/matches/" + FutureId.ToString("D")) response = Json(Future);

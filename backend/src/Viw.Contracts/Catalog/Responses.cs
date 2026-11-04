@@ -150,9 +150,9 @@ public sealed record RosterPlayerResponse(PlayerResponse Player, string Original
     string? Position, DateTimeOffset ObservedFrom, DateTimeOffset? ObservedUntil,
     PlayerTotalsResponse? Statistics = null, PlayerDisciplineResponse? Discipline = null);
 
-/// <summary>Detalhes do cadastro original nesta edição, sem identidade ou navegação da Wiki.</summary>
+/// <summary>Detalhes do cadastro original nesta edição, com link opcional para a Wiki vinculada.</summary>
 /// <param name="Edition">Edição consultada.</param>
-/// <param name="Team">Equipe do elenco consultado, inclusive em caso de transferência.</param>
+/// <param name="Team">Equipe do contexto consultado ou vínculo observado mais recente; null quando não há equipe conhecida.</param>
 /// <param name="Player">Cadastro original; ID da fonte, nome da edição e slug vazio.</param>
 /// <param name="ShirtNumber">Camisa informada pela fonte.</param>
 /// <param name="Position">Posição informada pela fonte.</param>
@@ -161,9 +161,10 @@ public sealed record RosterPlayerResponse(PlayerResponse Player, string Original
 /// <param name="ScoringPosition">Posição por gols da edição, com empates; null quando não há gols registrados.</param>
 /// <param name="FinalPosition">Colocação geral da equipe, somente em edição arquivada e quando conhecida.</param>
 /// <param name="Awards">Reconhecimentos editoriais confirmados e artilharia automática deste cadastro na edição encerrada.</param>
-public sealed record EditionPlayerResponse(EditionResponse Edition, TeamResponse Team, PlayerResponse Player,
+/// <param name="WikiSlug">Slug canônico do vínculo ativo, apenas para navegação opcional à carreira; null sem vínculo.</param>
+public sealed record EditionPlayerResponse(EditionResponse Edition, TeamResponse? Team, PlayerResponse Player,
     string? ShirtNumber, string? Position, PlayerTotalsResponse Statistics, PlayerResultsResponse Results,
-    int? ScoringPosition, int? FinalPosition, IReadOnlyList<AwardResponse> Awards);
+    int? ScoringPosition, int? FinalPosition, IReadOnlyList<AwardResponse> Awards, string? WikiSlug = null);
 
 /// <summary>Partida com participantes conhecidos, estado e placar registrado.</summary>
 /// <param name="Id">GUID interno da partida.</param>

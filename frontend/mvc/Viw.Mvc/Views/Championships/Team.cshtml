@@ -20,8 +20,8 @@ else
                 @foreach (var entry in Model.Players.Items)
                 {
                     <tr>
-                        <td><button type="button" class="person-link player-details-trigger" data-player-details-url="@(PortalRoutes.Team(Model.Edition.Edition.Slug, Model.Team.Team.Id) + "/jogadores/" + entry.Player.Id.ToString("D"))" aria-haspopup="dialog" aria-controls="edition-player-dialog"><viw-avatar kind="sourceplayers" entity-id="@(entry.Player.Id)" name="@(entry.Player.Name)" class="avatar small" edition-id="@(Model.Edition.Edition.Id)"></viw-avatar>@entry.Player.Name<span class="sr-only">: detalhes neste campeonato</span></button></td>
-                        <td>@entry.OriginalName</td>
+                        <td><partial name="_EditionPlayerTrigger" model="new EditionPlayerTrigger(Model.Edition.Edition, entry.Player.Id, entry.Player.Name, Model.Team.Team.Id)" /></td>
+                        <td><partial name="_EditionPlayerTrigger" model="new EditionPlayerTrigger(Model.Edition.Edition, entry.Player.Id, entry.OriginalName, Model.Team.Team.Id, ShowPhoto: false)" /></td>
                         <td>@(entry.ShirtNumber ?? "—")</td>
                         <td>@(entry.Position ?? "—")</td>
                         <td class="numeric goals-cell">@(entry.Statistics?.Goals.ToString() ?? "—")</td>
@@ -34,15 +34,4 @@ else
     </div>
 }
 </section>
-<dialog id="edition-player-dialog" class="player-dialog" aria-labelledby="edition-player-dialog-title">
-    <header class="player-dialog-header">
-        <div><p class="eyebrow">@Model.Edition.Edition.Name / DETALHES</p><h2 id="edition-player-dialog-title" class="sr-only">Detalhes do jogador no campeonato</h2></div>
-        <button type="button" class="player-dialog-close" data-player-dialog-close aria-label="Fechar detalhes" autofocus>×</button>
-    </header>
-    <div class="player-dialog-body">
-        <p data-player-dialog-status role="status">Carregando os detalhes...</p>
-        <button type="button" class="button button-secondary" data-player-dialog-retry hidden>Tentar novamente</button>
-        <div data-player-dialog-content aria-busy="false"></div>
-    </div>
-</dialog>
 <section class="shell section section-tight"><div class="section-heading"><h2>Jogos da equipe</h2><a class="text-link" href="@(PortalRoutes.Cup(Model.Edition.Edition.Slug) + "/jogos?equipe=" + Model.Team.Team.Id.ToString("D"))">Todos os jogos ↗</a></div><div class="match-grid">@foreach (var game in Model.Matches.Items) { <partial name="_MatchCard" model="new MatchCard(Model.Edition.Edition, game)" /> }</div>@if (Model.Matches.Items.Count == 0) { <p class="muted">Ainda não há partidas cadastradas para esta equipe.</p> }</section>

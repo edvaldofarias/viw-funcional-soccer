@@ -35,6 +35,14 @@ Accept: application/json
 GET {{baseUrl}}/api/v1/championships/{{edition}}/teams/{{teamId}}/players/00000000-0000-0000-0000-000000000000
 Accept: application/json
 
+### Detalhes da edição sem equipe no contexto (destaques, estatísticas e prêmios)
+GET {{baseUrl}}/api/v1/championships/{{edition}}/players/{{sourcePlayerId}}
+Accept: application/json
+
+### Cadastro ausente ou pertencente a outra edição: 404
+GET {{baseUrl}}/api/v1/championships/{{edition}}/players/00000000-0000-0000-0000-000000000000
+Accept: application/json
+
 ### Preparação do banco
 GET {{baseUrl}}/health/ready
 

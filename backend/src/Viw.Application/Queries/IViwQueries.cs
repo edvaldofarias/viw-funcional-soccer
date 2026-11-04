@@ -11,7 +11,7 @@ public interface IViwQueries
     Task<PageResponse<TeamResponse>?> TeamsAsync(string slug, PageRequest request, CancellationToken ct);
     Task<TeamDetailResponse?> TeamAsync(string slug, Guid teamId, CancellationToken ct);
     Task<PageResponse<RosterPlayerResponse>?> RosterAsync(string slug, Guid teamId, PageRequest request, CancellationToken ct);
-    Task<EditionPlayerResponse?> EditionPlayerAsync(string slug, Guid teamId, Guid sourcePlayerId, CancellationToken ct);
+    Task<EditionPlayerResponse?> EditionPlayerAsync(string slug, Guid? teamId, Guid sourcePlayerId, CancellationToken ct);
     Task<PageResponse<MatchResponse>?> MatchesAsync(string slug, MatchRequest request, CancellationToken ct);
     Task<MatchResponse?> MatchAsync(string slug, Guid matchId, CancellationToken ct);
     Task<PageResponse<MatchPlayerResponse>?> MatchPlayersAsync(string slug, Guid matchId, PageRequest request, CancellationToken ct);

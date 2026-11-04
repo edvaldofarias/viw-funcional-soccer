@@ -7,16 +7,37 @@ namespace Viw.Infrastructure.Queries;
 
 public sealed partial class ViwQueries
 {
-    public async Task<EditionPlayerResponse?> EditionPlayerAsync(string slug, Guid teamId, Guid sourcePlayerId, CancellationToken ct)
+    public async Task<EditionPlayerResponse?> EditionPlayerAsync(string slug, Guid? teamId, Guid sourcePlayerId, CancellationToken ct)
     {
         var edition = await FindEdition(slug, ct);
         if (edition is null) return null;
         var source = await db.SourcePlayerRecords.AsNoTracking().SingleOrDefaultAsync(x =>
-            x.Id == sourcePlayerId && x.EditionId == edition.Id && db.PlayerRegistrationRecords.Any(r =>
-                r.EditionId == edition.Id && r.TeamEntryId == teamId && r.SourcePlayerId == x.Id), ct);
+            x.Id == sourcePlayerId && x.EditionId == edition.Id, ct);
         if (source is null) return null;
-        var team = await db.TeamEntryRecords.AsNoTracking().SingleOrDefaultAsync(x => x.Id == teamId && x.EditionId == edition.Id, ct);
-        if (team is null) return null;
+        var registrations = db.PlayerRegistrationRecords.AsNoTracking().Where(x => x.EditionId == edition.Id && x.SourcePlayerId == source.Id);
+        var participation = db.PlayerMatchStatisticsRecords.AsNoTracking().Where(x => x.EditionId == edition.Id && x.SourcePlayerId == source.Id);
+        if (teamId is not null)
+        {
+            if (!await registrations.AnyAsync(x => x.TeamEntryId == teamId, ct) &&
+                !await participation.AnyAsync(x => x.TeamEntryId == teamId, ct)) return null;
+        }
+        else
+        {
+            teamId = await registrations.OrderByDescending(x => x.ValidFrom).ThenBy(x => x.Id)
+                .Select(x => (Guid?)x.TeamEntryId).FirstOrDefaultAsync(ct);
+            teamId ??= await (from fact in participation
+                join match in db.MatchRecords.AsNoTracking() on fact.MatchId equals match.Id
+                where match.EditionId == edition.Id
+                orderby match.ScheduledAt descending, match.Id, fact.Id
+                select (Guid?)fact.TeamEntryId).FirstOrDefaultAsync(ct);
+        }
+        var team = teamId is null ? null : await db.TeamEntryRecords.AsNoTracking()
+            .SingleOrDefaultAsync(x => x.Id == teamId && x.EditionId == edition.Id, ct);
+        if (teamId is not null && team is null) return null;
+        var wikiSlug = await (from link in db.PlayerIdentityLinkRecords.AsNoTracking()
+            join player in db.PlayerRecords.AsNoTracking() on link.PlayerId equals player.Id
+            where link.SourcePlayerId == source.Id && link.UnlinkedAt == null
+            select player.Slug).SingleOrDefaultAsync(ct);
 
         var finished = from fact in db.PlayerMatchStatisticsRecords.AsNoTracking()
             join match in db.MatchRecords.AsNoTracking() on fact.MatchId equals match.Id
@@ -47,9 +68,9 @@ public sealed partial class ViwQueries
                 grant.MatchId, grant.RoundId, source.Id, source.OriginalName, null, null, grant.Position, grant.ConfirmedAt, false))
             .ToArrayAsync(ct);
         var automatic = await AutomaticTopScorersAsync(db.ChampionshipEditionRecords.Where(x => x.Id == edition.Id), ct);
-        return new(editionDto, TeamDto(team), new(source.Id, "", source.OriginalName, source.SourceImageAssetId),
+        return new(editionDto, team is null ? null : TeamDto(team), new(source.Id, "", source.OriginalName, source.SourceImageAssetId),
             source.ShirtNumber, source.AssignedPosition, totals, results, scoringPosition,
-            placements.GetValueOrDefault((edition.Id, teamId))?.Position,
-            awards.Concat(automatic.Where(x => x.Award.SourcePlayerId == source.Id).Select(x => x.Award)).ToArray());
+            team is null ? null : placements.GetValueOrDefault((edition.Id, team.Id))?.Position,
+            awards.Concat(automatic.Where(x => x.Award.SourcePlayerId == source.Id).Select(x => x.Award)).ToArray(), wikiSlug);
     }
 }

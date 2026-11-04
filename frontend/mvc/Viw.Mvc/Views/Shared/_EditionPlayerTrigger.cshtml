@@ -1,0 +1,18 @@
+@model EditionPlayerTrigger
+@if (Model.SourcePlayerId is { } sourceId)
+{
+    <button type="button" class="person-link player-details-trigger"
+            data-player-details-url="@PortalRoutes.EditionPlayer(Model.Edition.Slug, sourceId, Model.TeamId)"
+            aria-haspopup="dialog" aria-controls="edition-player-dialog">@if (Model.ShowPhoto) {
+        <viw-avatar
+        kind="sourceplayers" entity-id="@sourceId" name="@Model.Name" class="avatar small"
+        edition-id="@Model.Edition.Id"></viw-avatar>
+    }
+    @Model.Name<span class="sr-only">: detalhes neste
+    campeonato</span></button>
+}
+else
+{
+    <span class="person-link"><viw-avatar kind="players" entity-id="@Model.FallbackPlayerId" name="@Model.Name"
+                                              class="avatar small" edition-id="@Model.Edition.Id"></viw-avatar>@Model.Name</span>
+    }

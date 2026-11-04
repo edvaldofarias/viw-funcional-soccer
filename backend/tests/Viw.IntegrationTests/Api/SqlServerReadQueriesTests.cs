@@ -12,6 +12,52 @@ namespace Viw.IntegrationTests.Api;
 public sealed class SqlServerReadQueriesTests
 {
     [SqlServerFact]
+    public async Task Edition_modal_works_without_registration_and_exposes_only_active_wiki_link()
+    {
+        await using var database = await SqlServerTestDatabase.CreateAsync();
+        var db = database.Context;
+        var data = database.Data;
+        var match = data.CreateMatch();
+        match.Status = MatchStatus.Finished;
+        match.HomeScore = 2; match.AwayScore = 0;
+        var withoutTeam = new SourcePlayer { EditionId = data.Edition.Id, Provider = "fixture",
+            ExternalId = "modal-no-team", OriginalName = "Sem equipe" };
+        db.AddRange(match, Statistic(data, match, 2), data.CreateIdentityLink(), withoutTeam);
+        await db.SaveChangesAsync();
+        db.ChangeTracker.Clear();
+        var queries = new ViwQueries(db);
+
+        var general = await queries.EditionPlayerAsync(data.Edition.Slug, null, data.SourcePlayer.Id, default);
+        general.ShouldNotBeNull();
+        general.Player.Id.ShouldBe(data.SourcePlayer.Id);
+        general.Player.Name.ShouldBe(data.SourcePlayer.OriginalName);
+        general.Team!.Id.ShouldBe(data.Home.Id);
+        general.WikiSlug.ShouldBe(data.Player.Slug);
+        general.Statistics.Goals.ShouldBe(2);
+        var scoped = await queries.EditionPlayerAsync(data.Edition.Slug, data.Home.Id, data.SourcePlayer.Id, default);
+        scoped.ShouldNotBeNull();
+        (await queries.EditionPlayerAsync(data.Edition.Slug, data.Away.Id, data.SourcePlayer.Id, default)).ShouldBeNull();
+        (await queries.EditionPlayerAsync(data.OtherEdition.Slug, null, data.SourcePlayer.Id, default)).ShouldBeNull();
+
+        var noTeam = await queries.EditionPlayerAsync(data.Edition.Slug, null, withoutTeam.Id, default);
+        noTeam.ShouldNotBeNull();
+        noTeam.Team.ShouldBeNull();
+        noTeam.WikiSlug.ShouldBeNull();
+        noTeam.FinalPosition.ShouldBeNull();
+        noTeam.Statistics.Goals.ShouldBe(0);
+
+        var link = await db.PlayerIdentityLinkRecords.SingleAsync(x => x.SourcePlayerId == data.SourcePlayer.Id);
+        link.UnlinkedAt = DateTimeOffset.UtcNow;
+        link.UnlinkedBy = "modal-test";
+        await db.SaveChangesAsync();
+        db.ChangeTracker.Clear();
+        var unlinked = await queries.EditionPlayerAsync(data.Edition.Slug, null, data.SourcePlayer.Id, default);
+        unlinked!.WikiSlug.ShouldBeNull();
+        unlinked.Statistics.Goals.ShouldBe(2);
+        db.ChangeTracker.Entries().ShouldBeEmpty();
+    }
+
+    [SqlServerFact]
     public async Task Match_sheet_includes_source_ids_and_fact_teams_without_requiring_canonical_identity()
     {
         await using var database = await SqlServerTestDatabase.CreateAsync();
@@ -176,6 +222,9 @@ public sealed class SqlServerReadQueriesTests
         details.ScoringPosition.ShouldBe(1);
         details.FinalPosition.ShouldBeNull();
         details.Player.Slug.ShouldBe("");
+        var generalDetails = await queries.EditionPlayerAsync(data.Edition.Slug, null, data.SourcePlayer.Id, default);
+        generalDetails!.Team!.Id.ShouldBe(data.Away.Id);
+        generalDetails.Statistics.Goals.ShouldBe(9);
         var emptyDetails = await queries.EditionPlayerAsync(data.Edition.Slug,data.Home.Id,noFacts.Id,default);
         emptyDetails!.Statistics.Goals.ShouldBe(0);
         emptyDetails.ScoringPosition.ShouldBeNull();

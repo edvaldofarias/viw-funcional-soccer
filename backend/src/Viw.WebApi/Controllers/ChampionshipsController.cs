@@ -78,7 +78,7 @@ public sealed class ChampionshipsController(IViwQueries queries) : ReadControlle
     public async Task<ActionResult<TeamDetailResponse>> Team(string slug, Guid teamId, CancellationToken ct) => Found(await queries.TeamAsync(slug, teamId, ct));
 
     /// <summary>Detalha um jogador exclusivamente nesta edição, sem depender de identidade na Wiki.</summary>
-    /// <remarks>Valida a inscrição na equipe. Totais e artilharia incluem todas as equipes da edição, apenas partidas encerradas; empates na artilharia são preservados. Em edição arquivada, todos os líderes em gols recebem reconhecimento de artilheiro. Colocação final só é retornada em edição arquivada. Não calcula MVP.</remarks>
+    /// <remarks>Valida inscrição ou participação registrada na equipe. Totais e artilharia incluem todas as equipes da edição, apenas partidas encerradas; empates na artilharia são preservados. Em edição arquivada, todos os líderes em gols recebem reconhecimento de artilheiro. Colocação final só é retornada em edição arquivada. Não calcula MVP.</remarks>
     /// <param name="slug">Slug da edição.</param>
     /// <param name="teamId">Equipe do elenco consultado.</param>
     /// <param name="sourcePlayerId">ID do cadastro original da edição, retornado pelo elenco.</param>
@@ -93,6 +93,22 @@ public sealed class ChampionshipsController(IViwQueries queries) : ReadControlle
     [ProducesResponseType<EditionPlayerResponse>(StatusCodes.Status200OK)]
     public async Task<ActionResult<EditionPlayerResponse>> EditionPlayer(string slug, Guid teamId, Guid sourcePlayerId, CancellationToken ct) =>
         Found(await queries.EditionPlayerAsync(slug, teamId, sourcePlayerId, ct));
+
+    /// <summary>Detalha um cadastro de jogador no contexto da edição, sem exigir equipe ou identidade Wiki.</summary>
+    /// <remarks>Usado pelos destaques, estatísticas e prêmios. A equipe vem da inscrição observada mais recente ou, sem inscrição, da participação mais recente. Sem equipe conhecida, Team é null. Totais, artilharia e reconhecimentos são restritos à edição; WikiSlug é opcional e vem somente do vínculo ativo.</remarks>
+    /// <param name="slug">Slug da edição.</param>
+    /// <param name="sourcePlayerId">ID do cadastro original da edição; não é o ID canônico.</param>
+    /// <param name="ct">Cancelamento da consulta.</param>
+    /// <returns>Detalhes do jogador nesta edição e link opcional para a carreira na Wiki.</returns>
+    /// <response code="200">Cadastro da edição encontrado.</response>
+    /// <response code="400">Identificadores inválidos; retorna ValidationProblemDetails.</response>
+    /// <response code="404">Edição ou cadastro inexistente, ou cadastro de outra edição.</response>
+    /// <response code="503">Banco indisponível; retorna ProblemDetails.</response>
+    /// <response code="500">Falha inesperada; retorna ProblemDetails sem detalhes internos.</response>
+    [HttpGet("{slug}/players/{sourcePlayerId:guid}")]
+    [ProducesResponseType<EditionPlayerResponse>(StatusCodes.Status200OK)]
+    public async Task<ActionResult<EditionPlayerResponse>> PlayerInEdition(string slug, Guid sourcePlayerId, CancellationToken ct) =>
+        Found(await queries.EditionPlayerAsync(slug, null, sourcePlayerId, ct));
 
     /// <summary>Lista as inscrições de jogadores observadas em uma equipe.</summary>
     /// <remarks>Inclui inscrições abertas e encerradas, nomes originais e identidade oficial. Os períodos são observações do importador, não datas históricas exatas de transferência.</remarks>

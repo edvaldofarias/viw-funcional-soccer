@@ -9,6 +9,56 @@ namespace Viw.Mvc.Tests;
 public sealed class PortalTests
 {
     [Theory]
+    [InlineData("")]
+    [InlineData("/estatisticas/jogadores")]
+    [InlineData("/premiacoes")]
+    [InlineData("/equipes/20000000-0000-0000-0000-000000000001")]
+    [InlineData("/jogos/40000000-0000-0000-0000-000000000001")]
+    public async Task Every_championship_player_name_and_photo_opens_one_shared_edition_dialog(string suffix)
+    {
+        await using var fixture = new PortalFixture();
+        fixture.Api.Archived = true;
+        fixture.Api.EditionPlayerStatistics = new(7, 1, 0, 3, 0, 0);
+        fixture.Api.MatchPlayers = [new(FixtureApi.PlayerId, "Léo Reis", FixtureApi.HomeId, 1, 0, 0, 1, true, FixtureApi.PlayerId)];
+        using var client = fixture.CreateClient();
+        var html = await client.GetStringAsync("/campeonatos/" + FixtureApi.Slug + suffix);
+        var buttons = Regex.Matches(html, """<button[^>]*data-player-details-url="[^"]+"[\s\S]*?</button>""");
+        buttons.Count.ShouldBeGreaterThan(0);
+        foreach (Match button in buttons)
+        {
+            button.Value.ShouldContain("aria-haspopup=\"dialog\"");
+            button.Value.ShouldContain("/campeonatos/" + FixtureApi.Slug);
+            button.Value.ShouldNotContain("/wiki");
+        }
+        buttons.Any(button => button.Value.Contains("/imagens/sourceplayers/", StringComparison.Ordinal)).ShouldBeTrue();
+        html.ShouldNotContain("/wiki/jogadores/leo-reis");
+        html.ShouldNotContain($"/wiki/jogadores/id/{FixtureApi.PlayerId:D}");
+        Regex.Matches(html, "<dialog id=\"edition-player-dialog\"").Count.ShouldBe(1);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("leo-reis")]
+    public async Task General_edition_modal_shows_optional_wiki_link_only_inside_details(string? wikiSlug)
+    {
+        await using var fixture = new PortalFixture();
+        fixture.Api.EditionPlayerWikiSlug = wikiSlug;
+        fixture.Api.EditionPlayerWithoutTeam = true;
+        using var client = fixture.CreateClient();
+        using var response = await client.GetAsync($"/campeonatos/{FixtureApi.Slug}/jogadores/{FixtureApi.PlayerId:D}");
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var html = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        html.ShouldContain("Números na competição");
+        html.ShouldContain("Equipe não informada nesta edição.");
+        html.ShouldNotContain("<html");
+        if (wikiSlug is null) html.ShouldNotContain("/wiki");
+        else html.ShouldContain("href=\"/wiki/jogadores/leo-reis\"");
+        response.Headers.GetValues("X-Robots-Tag").ShouldContain("noindex");
+        response.Headers.CacheControl!.NoStore.ShouldBeTrue();
+        fixture.Api.Requests.ShouldHaveSingleItem();
+    }
+
+    [Theory]
     [InlineData("2026-11-04T15:40:00Z", "04 nov 2026 · 12:40")]
     [InlineData("2026-11-04T01:15:00Z", "03 nov 2026 · 22:15")]
     [InlineData("2026-11-04T10:00:00+05:00", "04 nov 2026 · 02:00")]

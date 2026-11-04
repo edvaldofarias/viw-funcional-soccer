@@ -14,6 +14,7 @@ public sealed record CupPage(EditionDetailResponse Edition, CompetitionViewRespo
 public sealed record FirstPhasePage(EditionDetailResponse Edition, PhaseTableResponse? Phase);
 public sealed record StandingsTable(EditionResponse Edition, string Caption, IReadOnlyList<StandingRow> Rows, bool ShowPoints);
 public sealed record TeamHighlights(EditionResponse Edition, string Title, IReadOnlyList<StandingRow> Rows, string Metric);
+public sealed record EditionPlayerTrigger(EditionResponse Edition, Guid? SourcePlayerId, string Name, Guid? TeamId = null, Guid? FallbackPlayerId = null, bool ShowPhoto = true);
 public sealed record TeamsPage(EditionDetailResponse Edition, PageResponse<TeamResponse> Teams, Pager Pager);
 public sealed record TeamPage(EditionDetailResponse Edition, TeamDetailResponse Team, PageResponse<RosterPlayerResponse> Players, PageResponse<MatchResponse> Matches, Pager Pager);
 public sealed record MatchesPage(EditionDetailResponse Edition, PageResponse<MatchResponse> Matches, IReadOnlyList<TeamResponse> Teams, MatchFilters Filters, Pager Pager);

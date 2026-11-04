@@ -1,0 +1,12 @@
+@model EditionResponse
+<dialog id="edition-player-dialog" class="player-dialog" aria-labelledby="edition-player-dialog-title">
+    <header class="player-dialog-header">
+        <div><p class="eyebrow">@Model.Name / DETALHES</p><h2 id="edition-player-dialog-title" class="sr-only">Detalhes do jogador no campeonato</h2></div>
+        <button type="button" class="player-dialog-close" data-player-dialog-close aria-label="Fechar detalhes" autofocus>×</button>
+    </header>
+    <div class="player-dialog-body">
+        <p data-player-dialog-status role="status">Carregando os detalhes...</p>
+        <button type="button" class="button button-secondary" data-player-dialog-retry hidden>Tentar novamente</button>
+        <div data-player-dialog-content aria-busy="false"></div>
+    </div>
+</dialog>

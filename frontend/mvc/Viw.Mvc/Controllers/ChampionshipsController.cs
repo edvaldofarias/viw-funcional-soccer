@@ -79,7 +79,8 @@ public sealed class ChampionshipsController(ViwApiClient api, SeoService seo) : 
     }
 
     [HttpGet("/campeonatos/{slug}/equipes/{id:guid}/jogadores/{sourcePlayerId:guid}")]
-    public async Task<IActionResult> EditionPlayer(string slug, Guid id, Guid sourcePlayerId, CancellationToken ct)
+    [HttpGet("/campeonatos/{slug}/jogadores/{sourcePlayerId:guid}")]
+    public async Task<IActionResult> EditionPlayer(string slug, Guid? id, Guid sourcePlayerId, CancellationToken ct)
     {
         var player = await api.EditionPlayerAsync(slug, id, sourcePlayerId, ct);
         if (player is null) return Missing();

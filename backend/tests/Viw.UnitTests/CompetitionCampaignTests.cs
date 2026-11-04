@@ -79,6 +79,59 @@ public sealed class CompetitionCampaignTests
         rows.Single(x=>x.Team.Id==teams[4].Id).Position.ShouldBe(penalties?5:null);
     }
     [Fact]
+    public void Official_result_order_closes_tied_placement_games_without_fabricating_penalties()
+    {
+        var teams=Enumerable.Range(1,8).Select(n=>new TeamResponse(Guid.NewGuid(),"Equipe "+n,null)).ToArray();
+        var phase=Guid.NewGuid();
+        MatchResponse Game(int a,int b,int hs,int aws,string title)
+            =>new(Guid.NewGuid(),Guid.NewGuid(),phase,null,teams[a-1],teams[b-1],null,null,title,"Finished",hs,aws,1);
+        var games=new[]{Game(1,2,2,2,"GRANDE FINAL"),Game(3,4,6,3,"DISPUTA DE 3º e 4º"),
+            Game(5,6,5,5,"DISPUTA DE 5º e 6º"),Game(7,8,4,2,"DISPUTA DE 7º e 8º")};
+        var order=teams.Select((team,index)=>new {team.Id,Order=index==0?0:index+2})
+            .ToDictionary(x=>x.Id,x=>x.Order);
+
+        var rows=CompetitionCampaign.Rank([new(new(phase,"FINAIS",1),games,[],[])],teams,order);
+
+        rows.Select(x=>x.Team.Id).ShouldBe(teams.Select(x=>x.Id));
+        rows.Select(x=>x.Position).ShouldBe(Enumerable.Range(1,8).Select(x=>(int?)x));
+        rows[0].Draws.ShouldBe(1);
+        rows[0].GoalsFor.ShouldBe(2);
+        games.ShouldAllBe(x=>x.HomePenalties==null&&x.AwayPenalties==null);
+    }
+
+    [Fact]
+    public void Partial_official_podium_keeps_other_unknown_decisions_and_known_seventh_place()
+    {
+        var teams=Enumerable.Range(1,8).Select(n=>new TeamResponse(Guid.NewGuid(),"Equipe "+n,null)).ToArray();
+        var phase=Guid.NewGuid();
+        MatchResponse Game(int a,int b,int hs,int aws,string title)
+            =>new(Guid.NewGuid(),Guid.NewGuid(),phase,null,teams[a-1],teams[b-1],null,null,title,"Finished",hs,aws,1);
+        var rows=CompetitionCampaign.Rank([new(new(phase,"FINAIS",1),[
+            Game(1,2,2,2,"GRANDE FINAL"),Game(3,4,6,3,"DISPUTA DE 3º e 4º"),
+            Game(5,6,5,5,"DISPUTA DE 5º e 6º"),Game(7,8,4,2,"DISPUTA DE 7º e 8º")],[],[])],teams,
+            new Dictionary<Guid,int> {[teams[0].Id]=0,[teams[1].Id]=1,[teams[2].Id]=2});
+
+        rows.Take(4).Select(x=>x.Position).ShouldBe(new int?[]{1,2,3,4});
+        rows.Single(x=>x.Team.Id==teams[4].Id).Position.ShouldBeNull();
+        rows.Single(x=>x.Team.Id==teams[5].Id).Position.ShouldBeNull();
+        rows.Single(x=>x.Team.Id==teams[6].Id).Position.ShouldBe(7);
+        rows.Single(x=>x.Team.Id==teams[7].Id).Position.ShouldBe(8);
+    }
+
+    [Fact]
+    public void Official_order_preserves_ties_and_takes_priority_over_single_phase_ranking()
+    {
+        var teams=Enumerable.Range(1,4).Select(n=>new TeamResponse(Guid.NewGuid(),"Equipe "+n,null)).ToArray();
+        var standings=teams.Select((team,index)=>new StandingRow(team,index+1,null,0,0,0,0,0,0)).ToArray();
+        var rows=CompetitionCampaign.Rank([new(new(Guid.NewGuid(),"Fase única",1),[],standings,[])],teams,
+            new Dictionary<Guid,int> {[teams[0].Id]=3,[teams[1].Id]=0,[teams[2].Id]=0});
+
+        rows.Take(3).Select(x=>x.Position).ShouldBe(new int?[]{1,1,3});
+        rows.Select(x=>x.Team.Id).ShouldBe(new[]{teams[1].Id,teams[2].Id,teams[0].Id,teams[3].Id});
+        rows[3].Position.ShouldBe(4);
+    }
+
+    [Fact]
     public void Campaign_keeps_zero_draw_and_ignores_future_unknown_or_cancelled_scores()
     {
         // Arrange

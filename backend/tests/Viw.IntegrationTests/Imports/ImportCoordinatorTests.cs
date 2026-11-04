@@ -41,6 +41,33 @@ public sealed class ImportCoordinatorTests
     }
 
     [SqlServerFact]
+    public async Task Official_result_order_is_persisted_idempotently_and_tracks_source_corrections()
+    {
+        await using var database=await SqlServerTestDatabase.CreateAsync();
+        var source=new FixtureSource {HomeResultOrder=0,AwayResultOrder=3};
+        var coordinator=Create(database,source);
+
+        (await coordinator.RunAsync(default)).Failed.ShouldBe(0);
+        (await coordinator.RunAsync(default)).Failed.ShouldBe(0);
+        var db=database.Context;
+        var edition=await db.ChampionshipEditionRecords.SingleAsync(x=>x.Slug=="fixture-import");
+        var home=await db.TeamEntryRecords.AsNoTracking().SingleAsync(x=>x.EditionId==edition.Id&&x.ExternalId=="home");
+        var away=await db.TeamEntryRecords.AsNoTracking().SingleAsync(x=>x.EditionId==edition.Id&&x.ExternalId=="away");
+        home.SourceResultOrder.ShouldBe(0);away.SourceResultOrder.ShouldBe(3);
+
+        source.HomeResultOrder=3;source.AwayResultOrder=0;
+        (await coordinator.RunAsync(default)).Failed.ShouldBe(0);
+        db.ChangeTracker.Clear();
+        (await db.TeamEntryRecords.SingleAsync(x=>x.Id==home.Id)).SourceResultOrder.ShouldBe(3);
+        (await db.TeamEntryRecords.SingleAsync(x=>x.Id==away.Id)).SourceResultOrder.ShouldBe(0);
+
+        source.HomeResultOrder=-1;
+        (await coordinator.RunAsync(default)).Failed.ShouldBe(1);
+        db.ChangeTracker.Clear();
+        (await db.TeamEntryRecords.SingleAsync(x=>x.Id==home.Id)).SourceResultOrder.ShouldBe(3);
+    }
+
+    [SqlServerFact]
     public async Task Failed_sheet_is_retried_even_when_core_source_is_unchanged()
     {
         // Arrange
@@ -259,6 +286,8 @@ public sealed class ImportCoordinatorTests
         public bool CrossedGroups { get; set; }
         public bool RoundRobin { get; set; }
         public bool Knockout { get; set; }
+        public int? HomeResultOrder { get; set; }
+        public int? AwayResultOrder { get; set; }
 
         public Task<SourceDocument> GetAsync(string externalId, string resource, CancellationToken cancellationToken)
         {
@@ -273,7 +302,7 @@ public sealed class ImportCoordinatorTests
                 "info" => new { name = "Copa de teste" },
                 "teams" => CrossedGroups || RoundRobin
                     ? new { home = new { name = "Casa" }, away = new { name = "Fora" }, extra1 = new { name = "Extra Um" }, extra2 = new { name = "Extra Dois" } }
-                    : new { home = new { name = "Casa" }, away = new { name = "Fora" } },
+                    : new { home = new { name = "Casa", col = HomeResultOrder }, away = new { name = "Fora", col = AwayResultOrder } },
                 "player" => new Dictionary<string, object> { ["player-a"] = new { name = "Jogador teste", team = "home" } },
                 "matchs" => Matches(),
                 _ => new { list = events }

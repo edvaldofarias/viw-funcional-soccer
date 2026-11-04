@@ -158,7 +158,7 @@ public sealed record RosterPlayerResponse(PlayerResponse Player, string Original
 /// <param name="Position">Posição informada pela fonte.</param>
 /// <param name="Statistics">Totais da edição inteira, incluindo todas as equipes; somente partidas encerradas.</param>
 /// <param name="Results">Resultados nas partidas com presença confirmada na edição.</param>
-/// <param name="ScoringPosition">Posição por gols da edição, com empates; null quando não há gols registrados.</param>
+/// <param name="ScoringPosition">Posição entre totais distintos de gols da edição, sem saltos após empates (1, 1, 2); null sem gols registrados.</param>
 /// <param name="FinalPosition">Colocação geral da equipe, somente em edição arquivada e quando conhecida.</param>
 /// <param name="Awards">Reconhecimentos editoriais confirmados e artilharia automática deste cadastro na edição encerrada.</param>
 /// <param name="WikiSlug">Slug canônico do vínculo ativo, apenas para navegação opcional à carreira; null sem vínculo.</param>

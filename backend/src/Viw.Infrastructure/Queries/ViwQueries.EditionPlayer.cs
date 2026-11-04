@@ -56,7 +56,8 @@ public sealed partial class ViwQueries
             facts.Count(x => !x.Fact.IsComplete || x.Fact.Revision != x.Match.Revision));
         int? scoringPosition = totals.Goals > 0
             ? 1 + await finished.GroupBy(x => x.Fact.SourcePlayerId)
-                .CountAsync(group => group.Sum(x => (long)(x.Fact.Goals ?? 0)) > totals.Goals, ct)
+                .Select(group => group.Sum(x => (long)(x.Fact.Goals ?? 0)))
+                .Where(goals => goals > totals.Goals).Distinct().CountAsync(ct)
             : null;
         var placements = await FinalPlacementsAsync([editionDto], ct);
         var awards = await (from grant in PublicAwardGrants()

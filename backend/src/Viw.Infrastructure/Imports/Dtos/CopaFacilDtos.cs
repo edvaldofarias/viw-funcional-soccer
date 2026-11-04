@@ -18,6 +18,7 @@ public sealed class CopaFacilTeamDto
 {
     [JsonPropertyName("name")] public string? Name { get; init; }
     [JsonPropertyName("url")] public string? ImageUrl { get; init; }
+    [JsonPropertyName("col")] public int? ResultOrder { get; init; }
     // Agregados ainda não normalizados permanecem no formato original.
     [JsonPropertyName("dt")] public JsonElement? Statistics { get; init; }
 }

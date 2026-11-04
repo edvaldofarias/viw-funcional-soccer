@@ -1524,6 +1524,9 @@ namespace Viw.Infrastructure.Persistence.Migrations
                         .IsUnicode(true)
                         .HasColumnType("nvarchar(2048)");
 
+                    b.Property<int?>("SourceResultOrder")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("OfficialImageId");
@@ -1533,7 +1536,10 @@ namespace Viw.Infrastructure.Persistence.Migrations
                     b.HasIndex("EditionId", "Provider", "ExternalId")
                         .IsUnique();
 
-                    b.ToTable("TeamEntry", "viw");
+                    b.ToTable("TeamEntry", "viw", t =>
+                        {
+                            t.HasCheckConstraint("CK_TeamEntry_SourceResultOrder", "[SourceResultOrder] IS NULL OR [SourceResultOrder] >= 0");
+                        });
                 });
 
             modelBuilder.Entity("Viw.Domain.Competition.AwardGrant", b =>

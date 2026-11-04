@@ -30,6 +30,7 @@ Contagens representam o instante da consulta, não limites, asserções permanen
 | `info.d_i`, `info.d_f` | Datas brutas da edição; validar significado antes de usá-las como calendário oficial |
 | `info.url`, `info.url_c` | Referências de mídia; guardar origem, não presumir URL permanente |
 | `teams.*.name` | `TeamEntry.Name` |
+| `teams.*.col` | `TeamEntry.SourceResultOrder`: ordem editorial do resultado do campeonato, distinta de `teams.*.dt.{fase}.col`; opcional, zero válido |
 | `teams.*.url` | Referência de imagem original, separada da imagem oficial |
 | `teams.*.dt` | Estatísticas agrupadas por chave da fonte; não substituir o cálculo por partida sem validar o contrato |
 | `player.*.name`, `nickname` | Nome original e apelido; não unificar pessoas automaticamente |
@@ -52,6 +53,14 @@ Contagens representam o instante da consulta, não limites, asserções permanen
 | Evento `ac`, `pl_id1`, `team1`, `val1` | Código, cadastro do jogador, equipe e valor opcionais; preservar JSON original e referências não resolvidas |
 
 `qc`, `qm`, `pos_eli`, `clock` e campos desconhecidos permanecem nos snapshots. Não inventar uma semântica para preencher colunas obrigatórias.
+
+## Resultado oficial do campeonato
+
+O cliente público do Copa Fácil ordena o resultado pelas equipes com `teams.*.col` informado. Esse valor é uma **ordem**, não a posição final mais um: pode conter lacunas. A verificação da Copa do Nordeste 2023/1 encontrou ordens `0, 3, 4, 5, 6, 7, 8, 9`, exibidas como posições de 1 a 8; a final continua 2 × 2, sem pênaltis informados. Não usar os agregados da última fase para deduzir o campeão.
+
+O Worker persiste essa ordem em coluna própria, validada como não negativa. `copafacil-v10` reprocessa os recursos mesmo com hashes inalterados. Nas edições arquivadas, a leitura prioriza a ordem oficial e normaliza as posições somente entre as equipes explicitamente ordenadas. Ordens iguais preservam empate; campo ausente não vira zero nem título. Quando apenas o pódio está informado, as outras equipes mantêm as decisões conhecidas e lacunas de colocação; uma posição calculada que conflite com o bloco oficial fica desconhecida. Edições em andamento ignoram essa ordem para a classificação final.
+
+Isso corrige pódio, classificação geral, detalhes do jogador na edição e conquistas da Wiki pela mesma consulta compartilhada, sem fabricar placar dos pênaltis, modificar gols ou gravar vencedores fixos por nome. Reimportações acompanham correções do campo na origem; não representam confirmações manuais.
 
 ## Regra de placar confirmada pelo responsável
 

@@ -7,7 +7,11 @@ public static class CopaFacilValidation
 {
     public static void Core(CopaFacilCoreDto core)
     {
-        foreach (var team in core.Teams.Values) RequiredText(team.Name);
+        foreach (var team in core.Teams.Values)
+        {
+            RequiredText(team.Name);
+            if (team.ResultOrder < 0) throw new InvalidDataException("Ordem do resultado do campeonato inválida.");
+        }
         foreach (var player in core.Players.Values)
         { RequiredText(player.Name); SourceStatisticsParser.Aggregate(player.Statistics); }
         foreach (var match in core.Matches.Values)

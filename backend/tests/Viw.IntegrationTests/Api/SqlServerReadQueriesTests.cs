@@ -237,6 +237,42 @@ public sealed class SqlServerReadQueriesTests
     }
 
     [SqlServerFact]
+    public async Task Edition_player_scoring_position_counts_distinct_goal_totals_not_players_ahead()
+    {
+        await using var database = await SqlServerTestDatabase.CreateAsync();
+        var db = database.Context; var data = database.Data;
+        var first = data.CreateMatch();first.Status=MatchStatus.Finished;first.HomeScore=7;first.AwayScore=6;
+        var second = data.CreateMatch();second.ExternalId="second-scoring";second.Status=MatchStatus.Finished;second.HomeScore=5;second.AwayScore=4;
+        var live = data.CreateMatch();live.ExternalId="live-scoring";live.Status=MatchStatus.Live;
+        db.AddRange(first,second,live);
+        var goalTotals = new[]{7,7,7,7,6,6,6,6,6,5,5,0};
+        var players = goalTotals.Select((goals,index)=>new SourcePlayer {
+            EditionId=data.Edition.Id,Provider="fixture",ExternalId="scorer-"+index,OriginalName="Jogador "+index}).ToArray();
+        db.AddRange(players);
+        for(var i=0;i<players.Length;i++)
+        {
+            db.AddRange(
+                new PlayerMatchStatistics {EditionId=data.Edition.Id,MatchId=first.Id,SourcePlayerId=players[i].Id,
+                    TeamEntryId=data.Home.Id,Goals=goalTotals[i]/2,Appearances=1,Revision=1,IsComplete=true},
+                new PlayerMatchStatistics {EditionId=data.Edition.Id,MatchId=second.Id,SourcePlayerId=players[i].Id,
+                    TeamEntryId=data.Away.Id,Goals=goalTotals[i]-goalTotals[i]/2,Appearances=1,Revision=1,IsComplete=true});
+        }
+        db.Add(new PlayerMatchStatistics {EditionId=data.Edition.Id,MatchId=live.Id,SourcePlayerId=players[^1].Id,
+            TeamEntryId=data.Home.Id,Goals=100,Appearances=1,Revision=1,IsComplete=true});
+        await db.SaveChangesAsync();db.ChangeTracker.Clear();
+        var queries = new ViwQueries(db);
+
+        for(var i=0;i<players.Length;i++)
+        {
+            var modal = await queries.EditionPlayerAsync(data.Edition.Slug,null,players[i].Id,default);
+            modal.ShouldNotBeNull().Statistics.Goals.ShouldBe(goalTotals[i]);
+            modal.ScoringPosition.ShouldBe(goalTotals[i] switch {7=>1,6=>2,5=>3,_=>(int?)null});
+        }
+        var scoped = await queries.EditionPlayerAsync(data.Edition.Slug,data.Home.Id,players[4].Id,default);
+        scoped.ShouldNotBeNull().ScoringPosition.ShouldBe(2);
+    }
+
+    [SqlServerFact]
     public async Task Edition_player_preserves_scoring_ties_confirmed_awards_and_final_position_only_when_archived()
     {
         await using var database = await SqlServerTestDatabase.CreateAsync();

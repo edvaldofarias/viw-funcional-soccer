@@ -2,6 +2,8 @@
 
 A solução usa EF Core 10 com SQL Server e migrations versionadas em `backend/src/Viw.Infrastructure/Persistence/Migrations`. Não usar `EnsureCreated`, SQL manual para modelar tabelas ou migrations automáticas no startup dos hosts.
 
+`ImportOfficialResultOrder` adiciona `TeamEntry.SourceResultOrder` opcional e não negativo, sem alterar partidas ou dados existentes. Aplicar a migration antes de atualizar API/Worker e executar uma importação com o mapper `copafacil-v10` para preencher a ordem oficial a partir de `teams.*.col`; não requer recriar o banco nem apagar volumes.
+
 A migration `InitialCreate` é a baseline; `CreateCompetitionModel` cria as 25 tabelas iniciais de competição, identidade, premiações e controle de importação. A migration `ApplyDefaultColumnConventions` define o padrão de campos curtos e suas exceções. Consulte [o modelo](../architecture/database-model.md). Nenhum banco é criado ao apenas iniciar API, MVC ou Worker.
 
 ## Comandos dentro de `backend`

@@ -39,7 +39,10 @@ public sealed partial class ViwQueries
             }).ToArray();
             sections.Add(new(new PhaseResponse(phase.Id,phase.Name,phase.SortOrder),matches,standings,groupTables));
         }
-        var ranked=CompetitionCampaign.Rank(sections,teams.Select(TeamDto).ToArray());
+        var resultOrder=edition.Status==EditionStatus.Archived
+            ?teams.Where(x=>x.SourceResultOrder!=null).ToDictionary(x=>x.Id,x=>x.SourceResultOrder!.Value)
+            :null;
+        var ranked=CompetitionCampaign.Rank(sections,teams.Select(TeamDto).ToArray(),resultOrder);
         return new(sections,ranked);
     }
     private sealed record PhaseStatistics(int? Col,Dictionary<string,decimal> Values);
@@ -58,8 +61,9 @@ public sealed partial class ViwQueries
 /// <summary>Campanha de resultados válidos; não atribui regras de pontos.</summary>
 public static class CompetitionCampaign
 {
-    /// <summary>Ordena por avanço na copa, decisão da final e campanha acumulada (3 pontos por vitória e 1 por empate).</summary>
-    public static IReadOnlyList<StandingRow> Rank(IReadOnlyList<PhaseTableResponse> phases,IReadOnlyList<TeamResponse> teams)
+    /// <summary>Prioriza o resultado oficial; sem ele, usa avanço na copa, decisões e campanha acumulada.</summary>
+    public static IReadOnlyList<StandingRow> Rank(IReadOnlyList<PhaseTableResponse> phases,IReadOnlyList<TeamResponse> teams,
+        IReadOnlyDictionary<Guid,int>? officialOrder=null)
     {
         var ordered=phases.OrderBy(x=>x.Phase.SortOrder).ToArray();
         var matches=ordered.SelectMany(x=>x.Matches).ToArray();
@@ -84,7 +88,7 @@ public static class CompetitionCampaign
             placements[game.Home.Id]=(start,decided?(home>away?start:start+1):null);
             placements[game.Away.Id]=(start,decided?(away>home?start:start+1):null);
         }
-        if(phases.Count==1&&placements.Count==0)return phases[0].Standings;
+        if(phases.Count==1&&placements.Count==0)return ApplyOfficialOrder(phases[0].Standings,officialOrder);
         var rows=teams.Select(team=> {
             var row=Calculate(team,matches);
             var placement=placements.GetValueOrDefault(team.Id,(int.MaxValue,(int?)null));
@@ -101,7 +105,21 @@ public static class CompetitionCampaign
                 != (rows[i-1].Stage,rows[i-1].Start,rows[i-1].Row.Wins,rows[i-1].Row.Draws,rows[i-1].Row.GoalsFor,rows[i-1].Row.GoalsAgainst))rank=i+1;
             result.Add(x.Row with {Position=x.HasPlacement?x.Place:x.Stage<0?null:rank});
         }
-        return result;
+        return ApplyOfficialOrder(result,officialOrder);
+    }
+    private static IReadOnlyList<StandingRow> ApplyOfficialOrder(IReadOnlyList<StandingRow> rows,IReadOnlyDictionary<Guid,int>? order)
+    {
+        if(order==null||order.Count==0)return rows;
+        // col é uma ordem editorial, não uma posição: pode ter lacunas.
+        var official=rows.Where(x=>order.ContainsKey(x.Team.Id)).OrderBy(x=>order[x.Team.Id]).ToArray();
+        var positions=new Dictionary<Guid,int>();var position=0;
+        for(var i=0;i<official.Length;i++) {
+            if(i==0||order[official[i].Team.Id]!=order[official[i-1].Team.Id])position=i+1;
+            positions.Add(official[i].Team.Id,position);
+        }
+        return rows.Select(row=>row with {Position=positions.TryGetValue(row.Team.Id,out var value)
+                ?value:row.Position<=official.Length?null:row.Position})
+            .OrderBy(x=>x.Position??int.MaxValue).ToArray();
     }
     public static StandingRow Calculate(TeamResponse team,IEnumerable<MatchResponse> matches)
     {

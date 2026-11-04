@@ -88,7 +88,7 @@ public sealed class CupOverviewTests
             ("Vitórias mandantes", "1"), ("Vitórias visitantes", "0"), ("Jogos sem gols", "1"),
             ("Jogadores que marcaram", "2")
         })
-            html.ShouldContain($"<dt>{label}</dt><dd>{value}</dd>");
+            Regex.IsMatch(html, $@"<dt>{Regex.Escape(label)}</dt>\s*<dd>{Regex.Escape(value)}</dd>").ShouldBeTrue();
         html.ShouldContain("usam 2 jogos encerrados");
         html.ShouldNotContain("Resultado do campeonato");
         html.ShouldNotContain("data-scorer-rank");
@@ -128,7 +128,7 @@ public sealed class CupOverviewTests
         Regex.Matches(html, ">Não definido</p>").Count.ShouldBe(3);
         Regex.Matches(html, "Sem gols registrados para esta colocação.").Count.ShouldBe(3);
         html.ShouldContain("Prêmio ainda não confirmado.");
-        html.ShouldContain("<dt>Gols por jogo</dt><dd>—</dd>");
+        Regex.IsMatch(html, @"<dt>Gols por jogo</dt>\s*<dd>—</dd>").ShouldBeTrue();
         html.ShouldContain(">—</td>");
     }
 

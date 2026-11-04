@@ -28,6 +28,8 @@ public sealed class TeamEntryConfiguration : IEntityTypeConfiguration<TeamEntry>
         builder.Property(entity => entity.Name).HasMaxLength(200);
         builder.Property(entity => entity.SourceImageUrl).HasMaxLength(2048);
         builder.Property(entity => entity.AggregateStatisticsJson).HasColumnType("nvarchar(max)").Metadata.SetMaxLength(null);
+        builder.ToTable(table => table.HasCheckConstraint("CK_TeamEntry_SourceResultOrder",
+            "[SourceResultOrder] IS NULL OR [SourceResultOrder] >= 0"));
         builder.HasOne<MediaAsset>().WithMany().HasForeignKey(entity => entity.SourceImageAssetId).OnDelete(DeleteBehavior.Restrict);
     }
 }

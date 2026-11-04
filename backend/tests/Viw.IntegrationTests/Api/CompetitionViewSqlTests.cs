@@ -34,6 +34,41 @@ public sealed class CompetitionViewSqlTests
       }
     }
     [SqlServerFact]
+    public async Task Archived_official_result_reaches_overview_player_modal_and_career_without_penalty_scores()
+    {
+        await using var database=await SqlServerTestDatabase.CreateAsync();var db=database.Context;var d=database.Data;
+        var phase=new CompetitionPhase {EditionId=d.Edition.Id,ExternalId="final",Name="Grande Final",SortOrder=1};
+        var home=await db.TeamEntryRecords.SingleAsync(x=>x.Id==d.Home.Id);
+        var away=await db.TeamEntryRecords.SingleAsync(x=>x.Id==d.Away.Id);
+        home.SourceResultOrder=0;away.SourceResultOrder=3;
+        home.AggregateStatisticsJson="{\"final\":{\"col\":4,\"dt\":\"0=1#\"}}";
+        away.AggregateStatisticsJson="{\"final\":{\"col\":5,\"dt\":\"0=1#\"}}";
+        var game=d.CreateMatch();game.PhaseId=phase.Id;game.Status=MatchStatus.Finished;game.HomeScore=2;game.AwayScore=2;
+        db.AddRange(phase,game,d.CreateIdentityLink(),new PlayerRegistration {
+            EditionId=d.Edition.Id,SourcePlayerId=d.SourcePlayer.Id,TeamEntryId=d.Home.Id,ValidFrom=DateTimeOffset.UtcNow});
+        var edition=await db.ChampionshipEditionRecords.SingleAsync(x=>x.Id==d.Edition.Id);
+        edition.Status=EditionStatus.Active;
+        await db.SaveChangesAsync();var queries=new ViwQueries(db);
+
+        var active=await queries.CompetitionViewAsync(d.Edition.Slug,default);
+        active.ShouldNotBeNull().Overall.ShouldAllBe(x=>x.Position==null);
+        edition.Status=EditionStatus.Archived;await db.SaveChangesAsync();
+        var overview=await queries.CompetitionViewAsync(d.Edition.Slug,default);
+        var modal=await queries.EditionPlayerAsync(d.Edition.Slug,d.Home.Id,d.SourcePlayer.Id,default);
+        var career=await queries.PlayerAsync(d.Player.Slug,default);
+
+        overview.ShouldNotBeNull().Overall.Select(x=>x.Team.Id).ShouldBe(new[]{d.Home.Id,d.Away.Id});
+        overview.Overall.Select(x=>x.Position).ShouldBe(new int?[]{1,2});
+        overview.Phases[0].Standings.Select(x=>x.Position).ShouldBe(new int?[]{5,6});
+        overview.Phases[0].Matches.Single().HomePenalties.ShouldBeNull();
+        overview.Phases[0].Matches.Single().AwayPenalties.ShouldBeNull();
+        overview.Overall[0].GoalsFor.ShouldBe(2);
+        overview.Overall[0].Draws.ShouldBe(1);
+        modal.ShouldNotBeNull().FinalPosition.ShouldBe(1);
+        career.ShouldNotBeNull().Podium.ShouldNotBeNull().Titles.ShouldBe(1);
+    }
+
+    [SqlServerFact]
     public async Task Phase_with_editorial_groups_ranks_each_group_by_official_points()
     {
         // Arrange

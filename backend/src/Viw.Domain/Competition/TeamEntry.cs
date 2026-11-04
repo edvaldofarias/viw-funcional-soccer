@@ -14,5 +14,6 @@ public sealed class TeamEntry : Entity
     public string? SourceImageUrl { get; set; }
     public Guid? OfficialImageId { get; set; }
     public string? AggregateStatisticsJson { get; set; }
+    public int? SourceResultOrder { get; set; }
     public Guid? SourceImageAssetId { get; set; }
 }

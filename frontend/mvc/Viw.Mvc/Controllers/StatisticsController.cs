@@ -14,9 +14,9 @@ public sealed class StatisticsController(ViwApiClient api, SeoService seo) : Por
     {
         var edition = await api.EditionAsync(slug, ct);
         if (edition is null) return Missing();
-        var players = ViwApiClient.Required(await api.PlayerStatsAsync(slug, page, ct));
-        if (BeyondPage(players)) return Missing();
-        var pager = new Pager(PortalRoutes.Cup(edition.Edition.Slug) + "/estatisticas/jogadores", page, players.PageSize, players.TotalCount);
+        var players = await ViwApiClient.CollectTableAsync(p => api.PlayerStatsAsync(slug, p, ct));
+        var pager = new Pager(PortalRoutes.Cup(edition.Edition.Slug) + "/estatisticas/jogadores", page, 20, players.TotalCount);
+        if (page > pager.Pages) return Missing();
         return Page("Players", new PlayerStatsPage(edition, players, pager), $"Estatísticas dos jogadores · {edition.Edition.Name}", $"Gols, cartões e jogos registrados dos jogadores em {edition.Edition.Name}.", pager.Url(page), players.TotalCount == 0);
     }
     [HttpGet("/campeonatos/{slug}/estatisticas/equipes")]
@@ -24,9 +24,9 @@ public sealed class StatisticsController(ViwApiClient api, SeoService seo) : Por
     {
         var edition = await api.EditionAsync(slug, ct);
         if (edition is null) return Missing();
-        var teams = ViwApiClient.Required(await api.TeamStatsAsync(slug, page, ct));
-        if (BeyondPage(teams)) return Missing();
-        var pager = new Pager(PortalRoutes.Cup(edition.Edition.Slug) + "/estatisticas/equipes", page, teams.PageSize, teams.TotalCount);
+        var teams = await ViwApiClient.CollectTableAsync(p => api.TeamStatsAsync(slug, p, ct));
+        var pager = new Pager(PortalRoutes.Cup(edition.Edition.Slug) + "/estatisticas/equipes", page, 20, teams.TotalCount);
+        if (page > pager.Pages) return Missing();
         return Page("Teams", new TeamStatsPage(edition, teams, pager), $"Estatísticas das equipes · {edition.Edition.Name}", $"Jogos, vitórias, empates, derrotas e gols das equipes em {edition.Edition.Name}.", pager.Url(page), teams.TotalCount == 0);
     }
 }

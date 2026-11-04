@@ -48,12 +48,12 @@ public sealed class ChampionshipsController(ViwApiClient api, SeoService seo) : 
         if (edition is null) return Missing();
         var team = await api.TeamAsync(slug, id, ct);
         if (team is null) return Missing();
-        var players = api.RosterAsync(slug, id, page, ct);
+        var players = ViwApiClient.CollectTableAsync(p => api.RosterAsync(slug, id, p, ct));
         var matches = api.MatchesAsync(slug, 1, ct, team: id, size: 6);
         await Task.WhenAll(players, matches);
         var roster = ViwApiClient.Required(await players);
-        if (BeyondPage(roster)) return Missing();
-        var pager = new Pager(PortalRoutes.Team(edition.Edition.Slug, id), page, roster.PageSize, roster.TotalCount);
+        var pager = new Pager(PortalRoutes.Team(edition.Edition.Slug, id), page, 20, roster.TotalCount);
+        if (page > pager.Pages) return Missing();
         return Page("Team", new TeamPage(edition, team, roster, ViwApiClient.Required(await matches), pager), $"{team.Team.Name} · {edition.Edition.Name}", $"Jogadores, técnicos e partidas de {team.Team.Name} em {edition.Edition.Name}.", pager.Url(page));
     }
     [HttpGet("/campeonatos/{slug}/premiacoes")]

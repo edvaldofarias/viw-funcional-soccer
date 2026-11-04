@@ -1,14 +1,15 @@
 FROM node:24.12.0-alpine AS admin
-WORKDIR /admin
+WORKDIR /frontend/viw-admin
 COPY frontend/viw-admin/package*.json ./
 RUN npm ci --no-audit --no-fund
 COPY frontend/viw-admin/ ./
+COPY frontend/shared/ ../shared/
 RUN npm run build
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src/backend
 COPY backend/ ./
-COPY --from=admin /admin/dist/viw-admin/browser/ src/Viw.WebApi/wwwroot/admin/
+COPY --from=admin /frontend/viw-admin/dist/viw-admin/browser/ src/Viw.WebApi/wwwroot/admin/
 RUN dotnet publish src/Viw.WebApi/Viw.WebApi.csproj -c Release -o /app/publish /p:UseAppHost=false
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final

@@ -48,13 +48,23 @@ O comando encerra após criar a conta e recusa executar se qualquer conta já ex
 
 **Posições e goleiros:** filtre por copa e equipe, escolha Goleiro, Zagueiro, Meio-campo, Ala ou Atacante e salve. Sem posição definida, o cadastro é tratado como Jogador de linha. O filtro Só goleiros mostra os goleiros confirmados. A posição vale apenas para a copa selecionada e não é sobrescrita pelo Worker.
 
-**Prêmios:** artilheiro oficial, Ballon d’Or, craque da partida, melhor técnico e seleções por posição da rodada/campeonato. Cada concessão pode ser rascunho, confirmada ou revogada. Apenas confirmadas aparecem na API pública. A migração adiciona categorias sem conceder nenhum prêmio e preserva categorias já cadastradas. É permitido mais de um artilheiro quando a decisão oficial assim determinar. Partidas e rodadas precisam ser da edição; jogador precisa ser um SourcePlayer dessa copa, técnico precisa ter designação. Seleções exigem posição.
+**Prêmios:** artilheiro oficial, Ballon d’Or, craque da partida, melhor técnico e seleções por posição da rodada/campeonato. Cada concessão editorial pode ser rascunho, confirmada ou revogada; somente as confirmadas aparecem na API pública. Além desses registros, o portal reconhece automaticamente todos os líderes empatados com gols em uma edição encerrada, sem criar concessões no Admin. Sem gols registrados, não há artilharia automática. A migração adiciona categorias sem conceder nenhum prêmio e preserva categorias já cadastradas. Partidas e rodadas precisam ser da edição; jogador precisa ser um SourcePlayer dessa copa, técnico precisa ter designação. Seleções exigem posição.
 
 **Técnicos:** cadastro oficial e designação à equipe por período, opcionalmente por rodada. Corrigir ou encerrar com justificativa. O formulário usa horário do dispositivo e envia offset UTC; isso não altera o fuso do campeonato.
 
 **Auditoria:** responsável autenticado, data, motivo e antes/depois. Alteração esportiva e auditoria são gravadas na mesma unidade transacional. Registros de gestão de contas ficam nos eventos de segurança, sem senhas, tokens ou hashes. O histórico é somente leitura no painel.
 
 Concorrência usa RowVersion em cadastros/prêmios/designações e identidades. Alterações desatualizadas retornam 409 em vez de sobrescrever outra decisão. As alterações manuais não modificam snapshots ou o método estatístico.
+
+## Tabelas ordenáveis
+
+Todos os grids HTML usam DataTables 3 / Bootstrap 5, sem jQuery ou serviços externos. As listagens de jogadores, técnicos, cadastros para unir, posições, prêmios editoriais, designações e contas usam `Api.all` para obter **todas as páginas do conjunto filtrado** antes da ordenação local. Preservar os filtros de nome, copa, equipe, vínculo e goleiros. Não substituir por uma única chamada paginada, pois isso limitaria a ordenação aos registros daquela página. Busca, tamanho de página e ordenação são locais; ações editoriais continuam na API, com CSRF e RowVersion.
+
+`ViwDataTable` centraliza o ciclo de vida: destrói a instância e restaura os nós originais do `tbody`, **inclusive as âncoras de comentário do `@for`**, antes de o Angular reconciliar outra coleção. Inicializa após renderizar e destrói ao sair da tela. Restaurar apenas as linhas não basta: a transição vazio → registros perde a âncora do Angular. Alterações dos selects invalidam o cache de ordenação/busca; `data-order`/`data-search` usam o nome sem monograma e a posição selecionada, nunca todas as opções do select. Datas de designação ordenam por instante absoluto.
+
+Os testes reais da diretiva cobrem mais de uma página, números 2/10, busca sem acentos, botões após ordenar/paginar, atualização de linhas rastreadas, selects, vazio → registros e destruição. Ordens, busca e tamanho de página são preservados nas recargas da mesma tabela; a página é limitada ao novo tamanho. Auditoria em cartões e candidatos do assistente **não** são tabelas e mantêm paginação no servidor.
+
+As configurações pt-BR e os tamanhos de página são compartilhados com o MVC em `frontend/shared/table-options.json`. O CSS comum `frontend/shared/table-theme.css` é carregado depois dos estilos do Admin, com as cores administrativas, paginação compacta acessível e controles responsivos fora da rolagem horizontal dos dados. O paginador inferior só aparece com mais de uma página do resultado filtrado; a contagem permanece visível, inclusive após buscas, mudanças no tamanho de página ou recargas. Alterações nesse tema também exigem `npm run vendor` em `frontend/mvc`. As rotas Angular carregam componentes sob demanda para manter o bundle inicial dentro do orçamento existente. O Docker copia também a pasta compartilhada antes do build.
 
 ## Publicação e Docker
 

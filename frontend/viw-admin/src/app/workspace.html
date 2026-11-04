@@ -21,20 +21,18 @@
 }
 @if(section()==='players'||section()==='coaches'){
 <div class="panel table-wrap table-responsive">
-    <table class="table table-hover align-middle">
+    <table class="table table-hover align-middle" [viwDataTable]="people()">
         <thead>
             <tr>
                 <th>Nome oficial</th>
                 <th>Endereço</th>
-                <th></th>
+                <th data-dt-order="disable">Ações</th>
             </tr>
         </thead>
         <tbody>@for(p of people();track p.id){<tr>
-                <td><div class="person-with-photo">@if(section()==='players'){<viw-player-photo [playerId]="p.id" [name]="p.name" />}<span>{{p.name}}</span></div></td>
+                <td [attr.data-order]="p.name" [attr.data-search]="p.name"><div class="person-with-photo">@if(section()==='players'){<viw-player-photo [playerId]="p.id" [name]="p.name" />}<span>{{p.name}}</span></div></td>
                 <td>{{p.slug}}</td>
                 <td><button class="btn btn-link quiet" [disabled]="busy()" (click)="editPerson(p)">Editar</button></td>
-            </tr>}@empty{<tr>
-                <td colspan="3">Nenhum cadastro encontrado.</td>
             </tr>}</tbody>
     </table>
 </div>
@@ -59,23 +57,21 @@
 <p class="intro">Escolha um cadastro de campeonato e atribua-o à identidade correta. Os registros originais não são
     apagados. Para desfazer, reatribua o cadastro à identidade anterior indicada no histórico.</p>
 <div class="panel table-wrap table-responsive">
-    <table class="table table-hover align-middle">
+    <table class="table table-hover align-middle" [viwDataTable]="sources()">
         <thead>
             <tr>
                 <th>Nome na origem</th>
                 <th>Campeonato</th>
                 <th>Identidade atual</th>
-                <th></th>
+                <th data-dt-order="disable">Ações</th>
             </tr>
         </thead>
         <tbody>@for(s of sources();track s.id){<tr>
-                <td><div class="person-with-photo"><viw-player-photo [playerId]="s.playerId" [editionId]="s.editionId" [name]="s.name" /><span>{{s.name}}</span></div></td>
+                <td [attr.data-order]="s.name" [attr.data-search]="s.name"><div class="person-with-photo"><viw-player-photo [playerId]="s.playerId" [editionId]="s.editionId" [name]="s.name" /><span>{{s.name}}</span></div></td>
                 <td>{{editionName(s.editionId)}}</td>
                 <td>{{s.playerName||'Sem vínculo'}}</td>
                 <td><button class="btn btn-link quiet" (click)="chooseSource(s)" [disabled]="busy()">Revisar
                         vínculo</button></td>
-            </tr>}@empty{<tr>
-                <td colspan="4">Nenhum cadastro encontrado.</td>
             </tr>}</tbody>
     </table>
 </div>
@@ -103,17 +99,16 @@
 </section>}
 }
 @if(section()==='awards'&&editionId){
-<p class="intro">Artilheiro, Ballon d’Or, craque e seleções são decisões oficiais. Os números do campeonato não concedem
-    prêmios automaticamente.</p>
+<p class="intro">Estes são os registros editoriais de premiações. No portal, uma copa encerrada também reconhece como artilheiros todos os líderes empatados em gols; esse reconhecimento não cria registros nesta lista. Os demais prêmios dependem de confirmação editorial.</p>
 <div class="panel table-wrap table-responsive">
-    <table class="table table-hover align-middle">
+    <table class="table table-hover align-middle" [viwDataTable]="awards()">
         <thead>
             <tr>
                 <th>Prêmio</th>
                 <th>Destinatário</th>
                 <th>Posição</th>
                 <th>Situação</th>
-                <th></th>
+                <th data-dt-order="disable">Ações</th>
             </tr>
         </thead>
         <tbody>@for(a of awards();track a.id){<tr>
@@ -123,8 +118,6 @@
                 <td>{{a.status==='Confirmed'?'Confirmado':a.status==='Revoked'?'Revogado':'Rascunho'}}</td>
                 <td><button class="btn btn-link quiet" (click)="editAward(a)" [disabled]="busy()">Editar /
                         revogar</button></td>
-            </tr>}@empty{<tr>
-                <td colspan="5">Nenhuma premiação nesta edição.</td>
             </tr>}</tbody>
     </table>
 </div>
@@ -173,24 +166,22 @@
 }
 @if(section()==='assignments'&&editionId){
 <div class="panel table-wrap table-responsive">
-    <table class="table table-hover align-middle">
+    <table class="table table-hover align-middle" [viwDataTable]="assignments()">
         <thead>
             <tr>
                 <th>Equipe</th>
                 <th>Técnico</th>
                 <th>Período</th>
-                <th></th>
+                <th data-dt-order="disable">Ações</th>
             </tr>
         </thead>
         <tbody>@for(a of assignments();track a.id){<tr>
                 <td>{{teamName(a.teamId)}}</td>
                 <td>{{a.coachName||'Técnico indisponível'}}</td>
-                <td>{{a.startsAt|date:'dd/MM/yyyy HH:mm'}} → {{a.endsAt?(a.endsAt|date:'dd/MM/yyyy HH:mm'):'Em aberto'}}
+                <td [attr.data-order]="timestamp(a.startsAt)">{{a.startsAt|date:'dd/MM/yyyy HH:mm'}} → {{a.endsAt?(a.endsAt|date:'dd/MM/yyyy HH:mm'):'Em aberto'}}
                 </td>
                 <td><button class="btn btn-link quiet" (click)="editAssignment(a)" [disabled]="busy()">Editar /
                         encerrar</button></td>
-            </tr>}@empty{<tr>
-                <td colspan="4">Nenhuma designação nesta edição.</td>
             </tr>}</tbody>
     </table>
 </div>
@@ -248,13 +239,13 @@
 }
 @if(section()==='accounts'&&api.session()?.roles?.includes('Administrator')){
 <div class="panel table-wrap table-responsive">
-    <table class="table table-hover align-middle">
+    <table class="table table-hover align-middle" [viwDataTable]="accounts()">
         <thead>
             <tr>
                 <th>E-mail</th>
                 <th>Perfil</th>
                 <th>Acesso</th>
-                <th></th>
+                <th data-dt-order="disable">Ações</th>
             </tr>
         </thead>
         <tbody>@for(a of accounts();track a.id){<tr>
@@ -300,7 +291,7 @@
             senha</button></form>
 </section>
 }
-@if(['players','coaches','identities','awards','assignments','audit','accounts'].includes(section())){
+@if(section()==='audit'){
 <footer class="pagination"><button class="btn btn-outline-primary secondary" [disabled]="busy()||page()===1"
         (click)="paginate(-1)">← Anterior</button><span>Página {{page()}} · {{total()}} registros</span><button
         class="btn btn-outline-primary secondary" [disabled]="busy()||page()*30>=total()" (click)="paginate(1)">Próxima

@@ -19,7 +19,7 @@ describe('Identidades e posições por copa', () => {
     });
     it('filtra cadastros sem Player por equipe e copa mesmo sem nome', async () => {
         const { wizard, api } = setup(); wizard.cup = 'copa'; wizard.team = 'equipe'; wizard.unlinkedOnly = true; await wizard.load();
-        expect(api.get).toHaveBeenCalledWith('admin/sources?page=1&search=&editionId=copa&teamId=equipe&unlinkedOnly=true');
+        expect(api.all).toHaveBeenCalledWith('admin/sources?search=&editionId=copa&teamId=equipe&unlinkedOnly=true');
     });
     it('filtra candidatos pelo time e limpa o time ao mudar de copa', async () => {
         const { wizard, api } = setup(); wizard.steps = [{ id: 'a' }, { id: 'b' }] as Edition[]; wizard.candidateTeam = 'equipe'; await wizard.candidates();
@@ -29,7 +29,7 @@ describe('Identidades e posições por copa', () => {
     });
     it('filtra goleiros pela copa e equipe', async () => {
         const { api } = setup(); const positions = TestBed.runInInjectionContext(() => new Positions()); positions.cup = 'copa'; positions.team = 'equipe'; positions.goalkeepers = true; await positions.load();
-        expect(api.get).toHaveBeenCalledWith('admin/sources?editionId=copa&page=1&goalkeepers=true&search=&teamId=equipe');
+        expect(api.all).toHaveBeenCalledWith('admin/sources?editionId=copa&goalkeepers=true&search=&teamId=equipe');
     });
     it('preserva a busca composta na API e não une candidatos automaticamente', async () => {
         const { wizard, api } = setup(); wizard.steps = [{ id: 'a' }] as Edition[]; wizard.candidateSearch = 'Edvaldo Farias';

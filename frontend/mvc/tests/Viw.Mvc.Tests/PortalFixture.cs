@@ -50,6 +50,10 @@ internal sealed class FixtureApi : HttpMessageHandler
     public string PlayerName { get; set; } = "Léo Reis";
     public PlayerTotalsResponse PlayerStats { get; set; } = new(0, 1, 0, 0, 1, 1);
     public PlayerTotalsResponse EditionPlayerStatistics { get; set; } = new(0, 1, 0, 0, 1, 1);
+    public RosterPlayerResponse[]? RosterPlayers { get; set; }
+    public MatchPlayerResponse[]? MatchPlayers { get; set; }
+    public PlayerStatisticsResponse[]? PlayerStatisticsRows { get; set; }
+    public TeamStatisticsResponse[]? TeamStatisticsRows { get; set; }
     public PlayerHistoryResponse[]? PlayerHistory { get; set; }
     public PlayerResponse[]? PlayerList { get; set; }
     public PlayerRecordsResponse? PlayerRecords { get; set; }
@@ -90,17 +94,17 @@ internal sealed class FixtureApi : HttpMessageHandler
         else if (path == root + "/overview") response = Json(Overview ?? new CompetitionViewResponse([new PhaseTableResponse(new PhaseResponse(PhaseId, "Primeira fase", 1), [Game, Future], [new StandingRow(Home, 1, 1, 1, 0, 1, 0, 0, 0), new StandingRow(Away, 1, 1, 1, 0, 1, 0, 0, 0)], [])], [new StandingRow(Home, 1, null, 1, 0, 1, 0, 0, 0), new StandingRow(Away, 1, null, 1, 0, 1, 0, 0, 0)]));
         else if (path == root + "/teams") response = Paged(new[] { Home, Away });
         else if (path == root + "/teams/" + HomeId.ToString("D")) response = Json(new TeamDetailResponse(Home, [new CoachResponse(Guid.NewGuid(), "tecnico", "Técnico da Equipe", null, DateTimeOffset.UtcNow, null)]));
-        else if (path == root + "/teams/" + HomeId.ToString("D") + "/players") response = Paged(new[] { new RosterPlayerResponse(Player, "Reis", "9", "Atacante", DateTimeOffset.UtcNow, RosterObservedUntil, RosterStatistics, RosterDiscipline) });
+        else if (path == root + "/teams/" + HomeId.ToString("D") + "/players") response = Paged(RosterPlayers ?? new[] { new RosterPlayerResponse(Player, "Reis", "9", "Atacante", DateTimeOffset.UtcNow, RosterObservedUntil, RosterStatistics, RosterDiscipline) });
         else if (path == root + "/teams/" + HomeId.ToString("D") + "/players/" + PlayerId.ToString("D") && !MissingEditionPlayer)
             response = Json(new EditionPlayerResponse(Edition,Home,Player with {Slug=""},"9","Atacante",
                 new(4,5,2,3,1,1),new(3,2,1,0),2,Archived?1:null,EditionPlayerAwards));
         else if (path == root + "/matches") response = Paged(query.TryGetValue("status", out var status) && status == "Finished" ? new[] { Game } : new[] { Game, Future });
         else if (path == root + "/matches/" + MatchId.ToString("D")) response = Json(Game);
         else if (path == root + "/matches/" + FutureId.ToString("D")) response = Json(Future);
-        else if (path == root + "/matches/" + MatchId.ToString("D") + "/players") response = Paged(new[] { new MatchPlayerResponse(PlayerId, PlayerName, HomeId, 0, 1, 0, null, false) });
+        else if (path == root + "/matches/" + MatchId.ToString("D") + "/players") response = Paged(MatchPlayers ?? new[] { new MatchPlayerResponse(PlayerId, PlayerName, HomeId, 0, 1, 0, null, false) });
         else if (path == root + "/matches/" + FutureId.ToString("D") + "/players") response = Paged(Array.Empty<MatchPlayerResponse>());
-        else if (path == root + "/statistics/players") response = Paged(new[] { new PlayerStatisticsResponse(Player, EditionPlayerStatistics) });
-        else if (path == root + "/statistics/teams") response = Paged(new[] { new TeamStatisticsResponse(Home, 1, 0, 1, 0, 0, 0), new TeamStatisticsResponse(Away, 1, 0, 1, 0, 0, 0) });
+        else if (path == root + "/statistics/players") response = Paged(PlayerStatisticsRows ?? new[] { new PlayerStatisticsResponse(Player, EditionPlayerStatistics) });
+        else if (path == root + "/statistics/teams") response = Paged(TeamStatisticsRows ?? new[] { new TeamStatisticsResponse(Home, 1, 0, 1, 0, 0, 0), new TeamStatisticsResponse(Away, 1, 0, 1, 0, 0, 0) });
         else if (path == root + "/awards" && MissingAward) response = Paged(Array.Empty<AwardResponse>());
         else if (path == root + "/awards") response = Paged(EditionAwards ?? new[] { new AwardResponse(Guid.NewGuid(), "ballon-dor", "Ballon d’Or", "Championship", null, null, PlayerId, PlayerName, null, null, null, DateTimeOffset.UtcNow) });
         else if (path == "/api/v1/players") response = Paged(PlayerList ?? new[] { Player });

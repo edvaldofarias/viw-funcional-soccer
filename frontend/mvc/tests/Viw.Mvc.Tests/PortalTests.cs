@@ -9,6 +9,48 @@ namespace Viw.Mvc.Tests;
 public sealed class PortalTests
 {
     [Theory]
+    [InlineData("players")]
+    [InlineData("teams")]
+    [InlineData("roster")]
+    [InlineData("match")]
+    [InlineData("history")]
+    public async Task Sortable_tables_include_all_api_pages_without_a_second_server_pager(string grid)
+    {
+        await using var fixture = new PortalFixture();
+        var players = Enumerable.Range(1, 45).Select(i =>
+            new PlayerResponse(Guid.NewGuid(), "grid-" + i, "Grid " + i, null)).ToArray();
+        var teams = players.Select(p => new TeamResponse(p.Id, p.Name, null)).ToArray();
+        fixture.Api.PlayerStatisticsRows = players.Select(p => new PlayerStatisticsResponse(p, new(10, 2, 1, 3, 0, 0))).ToArray();
+        fixture.Api.TeamStatisticsRows = teams.Select(t => new TeamStatisticsResponse(t, 3, 1, 1, 1, 10, 2)).ToArray();
+        fixture.Api.RosterPlayers = players.Select(p => new RosterPlayerResponse(p, p.Name, "10", "Atacante", DateTimeOffset.UtcNow, null)).ToArray();
+        fixture.Api.MatchPlayers = players.Select(p => new MatchPlayerResponse(p.Id, p.Name, FixtureApi.HomeId, 10, 2, 1, 1, true)).ToArray();
+        var edition = new EditionResponse(FixtureApi.EditionId, Guid.Empty, FixtureApi.Slug, "Copa de Teste", 2026, 2, "Active", "UTC", null, null);
+        fixture.Api.PlayerHistory = teams.Select(t => new PlayerHistoryResponse(edition, t, t.Name, DateTimeOffset.UtcNow, null)).ToArray();
+        var root = "/campeonatos/" + FixtureApi.Slug;
+        var path = grid switch
+        {
+            "players" => root + "/estatisticas/jogadores",
+            "teams" => root + "/estatisticas/equipes",
+            "roster" => root + "/equipes/" + FixtureApi.HomeId.ToString("D"),
+            "match" => root + "/jogos/" + FixtureApi.MatchId.ToString("D"),
+            _ => "/wiki/jogadores/leo-reis"
+        };
+        using var client = fixture.CreateClient();
+        var html = await client.GetStringAsync(path + "?page=2");
+        var body = Regex.Match(html, @"<tbody>[\s\S]*?</tbody>").Value;
+        Regex.Matches(body, "<tr>").Count.ShouldBe(45);
+        body.ShouldContain("Grid 45");
+        html.ShouldContain("data-table-page=\"2\"");
+        html.ShouldMatch(@"/lib/datatables/dataTables\.min(?:\.[a-z0-9]+)?\.js");
+        html.ShouldMatch(@"/lib/datatables/dataTables\.bootstrap5\.min(?:\.[a-z0-9]+)?\.css");
+        html.ShouldMatch(@"/lib/datatables/viw-theme(?:\.[a-z0-9]+)?\.css");
+        html.ShouldNotContain("class=\"pagination-wrap\"");
+        fixture.Api.Requests.Any(request => request.Contains("page=3", StringComparison.Ordinal)).ShouldBeTrue();
+        using var missing = await client.GetAsync(path + "?page=4");
+        missing.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+    }
+
+    [Theory]
     [InlineData(0, 0, 0)]
     [InlineData(7, 2, 2)]
     public async Task Player_statistics_show_only_game_total_without_records_column(int games, int unknown, int incomplete)

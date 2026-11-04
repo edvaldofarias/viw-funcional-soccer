@@ -7,6 +7,17 @@ import { Api, message } from './api';
 describe('Sessão do Admin',()=>{
  afterEach(()=>{try{TestBed.inject(HttpTestingController).verify();}finally{TestBed.resetTestingModule();}});
  function setup(){TestBed.configureTestingModule({providers:[provideHttpClient(),provideHttpClientTesting()]});return {api:TestBed.inject(Api),http:TestBed.inject(HttpTestingController)};}
+ it('coleta todas as páginas do grid mantendo os filtros antes da ordenação local',async()=>{
+  const {api,http}=setup();
+  const result=api.all<{id:number}>('admin/sources?editionId=copa&search=Nome');
+  http.expectOne('/api/admin/sources?editionId=copa&search=Nome&page=1&pageSize=100')
+   .flush({items:Array.from({length:100},(_,id)=>({id})),page:1,totalCount:101});
+  await vi.waitFor(()=>{
+   http.expectOne('/api/admin/sources?editionId=copa&search=Nome&page=2&pageSize=100')
+    .flush({items:[{id:100}],page:2,totalCount:101});
+  });
+  expect((await result).map(row=>row.id)).toEqual(Array.from({length:101},(_,id)=>id));
+ });
  it('obtém token CSRF antes de enviar alteração, sem expor credencial em URL',async()=>{
   // Arrange
   const {api,http}=setup();

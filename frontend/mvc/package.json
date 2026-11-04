@@ -1,0 +1,10 @@
+{
+  "name": "viw-mvc-assets",
+  "private": true,
+  "scripts": {
+    "vendor": "node scripts/copy-table-assets.mjs"
+  },
+  "dependencies": {
+    "datatables.net-bs5": "3.1.5"
+  }
+}

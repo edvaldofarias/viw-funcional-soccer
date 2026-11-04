@@ -48,6 +48,12 @@ public sealed class ViwApiClient(HttpClient http)
 
     public static T Required<T>(T? result) where T : class => result ?? throw new InvalidDataException("Recurso da API indisponível.");
 
+    public static async Task<PageResponse<T>> CollectTableAsync<T>(Func<int, Task<PageResponse<T>?>> load)
+    {
+        var items = await CollectAsync(load);
+        return new(items, 1, Math.Max(1, items.Count), items.Count);
+    }
+
     public static async Task<IReadOnlyList<T>> CollectAsync<T>(Func<int, Task<PageResponse<T>?>> load)
     {
         var items = new List<T>();

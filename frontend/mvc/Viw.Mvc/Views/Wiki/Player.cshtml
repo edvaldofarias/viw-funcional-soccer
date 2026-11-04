@@ -111,7 +111,7 @@
                         <p>Resultados das equipes nos jogos com participação confirmada do jogador. Pontos abaixo usam a referência de 3
                             por vitória e 1 por empate; não substituem a classificação oficial da copa.</p>
                             <div class="table-responsive" tabindex="0" role="region" aria-label="Estatísticas por campeonato, com rolagem horizontal">
-                                <table class="table table-bordered wiki-stats">
+                                <table class="table table-bordered wiki-stats" data-table-page="@Model.Pager.Page">
                                     <thead>
                                         <tr>
                                             <th>Equipe / campeonato</th>
@@ -229,7 +229,6 @@
                                                             <li>Títulos, vices e terceiros seguem essas classificações finais, sem depender de premiações individuais. O lateral é dourado se houver título, senão prateado se houver vice, senão bronze se houver terceiro lugar.</li>
                                                             </ol>
                                                         </section>
-                                                        <partial name="_Pagination" model="Model.Pager" />
                                                     </article>
                                                     </div>
                                                 </section>

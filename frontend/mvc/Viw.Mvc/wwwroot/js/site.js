@@ -109,3 +109,34 @@ if (playerDialog) {
         trigger?.focus();
     });
 }
+
+document.querySelectorAll("main table").forEach(table => {
+    try {
+        if (typeof DataTable === "undefined" || !globalThis.viwTableOptions) {
+            throw new Error("Os arquivos locais do DataTables não foram carregados.");
+        }
+        DataTable.ext.errMode = "throw";
+        table.querySelectorAll("tbody tr").forEach(row => {
+            Array.from(row.cells).forEach(cell => {
+                const text = cell.cloneNode(true);
+                text.querySelectorAll(".avatar, .team-avatar, [aria-hidden=true], .sr-only, .visually-hidden").forEach(node => node.remove());
+                const value = text.textContent.trim().replace(/\s+/g, " ");
+                if (!cell.hasAttribute("data-order")) {
+                    cell.dataset.order = /^[+-]?\d+(?:[.,]\d+)?$/.test(value) ? value.replace(",", ".") : value === "—" ? "" : value;
+                }
+                if (!cell.hasAttribute("data-search")) cell.dataset.search = value;
+            });
+        });
+        new DataTable(table, {
+            ...globalThis.viwTableOptions,
+            displayStart: (Number(table.dataset.tablePage || 1) - 1) * globalThis.viwTableOptions.pageLength
+        });
+    } catch (error) {
+        console.error("Falha ao ativar a tabela.", error);
+        const notice = document.createElement("p");
+        notice.className = "notice";
+        notice.setAttribute("role", "alert");
+        notice.textContent = "Não foi possível ativar a ordenação, busca e paginação desta tabela. Recarregue a página.";
+        table.before(notice);
+    }
+});

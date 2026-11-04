@@ -28,9 +28,9 @@ public sealed class MatchesController(ViwApiClient api, SeoService seo) : Portal
         if (edition is null) return Missing();
         var match = await api.MatchAsync(slug, id, ct);
         if (match is null) return Missing();
-        var players = ViwApiClient.Required(await api.MatchPlayersAsync(slug, id, page, ct));
-        if (BeyondPage(players)) return Missing();
-        var pager = new Pager(PortalRoutes.Match(edition.Edition.Slug, id), page, players.PageSize, players.TotalCount);
+        var players = await ViwApiClient.CollectTableAsync(p => api.MatchPlayersAsync(slug, id, p, ct));
+        var pager = new Pager(PortalRoutes.Match(edition.Edition.Slug, id), page, 20, players.TotalCount);
+        if (page > pager.Pages) return Missing();
         var title = $"{match.Home?.Name ?? "A definir"} × {match.Away?.Name ?? "A definir"}";
         return Page("Detail", new MatchPage(edition, match, players, pager), $"{title} · {edition.Edition.Name}", $"{title}: {PortalFormat.Status(match.Status).ToLowerInvariant()}. Confira o placar e as estatísticas em {edition.Edition.Name}.", pager.Url(page));
     }

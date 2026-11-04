@@ -42,6 +42,28 @@ As rotas abreviadas da tabela continuam sob a copa correspondente. Slugs vêm do
 - Imagens usam monogramas enquanto não houver URL pública de mídia no contrato. IDs de assets não são convertidos em URLs privadas ou links com token do Firebase.
 - Recursos ausentes retornam 404; filtros inválidos, 400; indisponibilidade ou resposta inválida da API, 503 com tentativa posterior. A API continua responsável pela preservação dos dados importados.
 
+### Tabelas ordenáveis (DataTables)
+
+Todas as tabelas HTML do portal usam DataTables 3 com integração Bootstrap 5, sem jQuery ou CDN: classificações gerais e por grupo, elenco, súmula, estatísticas de jogadores/equipes e histórico da Wiki. Cabeçalhos permitem ordenar; Shift + clique combina colunas. Há busca local e páginas de 20 linhas inicialmente, com opções de 10, 20, 50 ou 100. A ordenação inicial da API é preservada, especialmente nas classificações; reordenar não recalcula posições oficiais.
+
+`CollectTableAsync` reúne **todas** as páginas da API antes de renderizar os grids. Nunca inicializar a biblioteca sobre apenas uma página do servidor: isso ordenaria só uma parte do campeonato. As antigas URLs `?page=N` continuam válidas e escolhem a página inicial do DataTables; páginas fora do intervalo retornam 404. Os grids não exibem o paginador Razor. Sem JavaScript, todo o conjunto permanece legível no HTML; navegação por cartões continua paginada no servidor.
+
+`site.js` prepara dados ortogonais: nomes sem monogramas/textos de acessibilidade, números com sinais e decimais em formato canônico e travessões como valores ausentes. Não alterar o texto exibido para conseguir ordená-lo. O modal do elenco continua associado aos botões, inclusive depois de ordenar ou mudar de página. Totais do rodapé da Wiki permanecem totais da carreira, não apenas da página visível.
+
+As opções e os textos pt-BR ficam em `frontend/shared/table-options.json`, também consumido pelo Angular. O tema comum está em `frontend/shared/table-theme.css`: herda as cores do portal, alinha busca/seletor/paginador, usa setas compactas com nomes acessíveis em português e empilha os controles no celular. O paginador inferior fica oculto quando o resultado filtrado tem zero ou uma página, mantendo a contagem visível; reaparece automaticamente se busca ou tamanho de página voltarem a produzir mais páginas. O tema identifica esse estado pelos controles anterior e próxima simultaneamente desabilitados, conforme o markup acessível do DataTables.
+
+A rolagem horizontal pertence somente à linha de dados (`.dt-layout-full`), nunca ao contêiner externo com os controles. Não reintroduzir os gutters e as margens padrão do Bootstrap no wrapper.
+
+Os assets e a licença MIT são versionados em `wwwroot/lib/datatables`; o publish .NET não exige Node. Para atualizar a dependência ou regenerar as opções e o tema locais:
+
+```sh
+cd frontend/mvc
+npm ci
+npm run vendor
+```
+
+Versionar o lockfile e os arquivos regenerados. Depois de alterar opções compartilhadas, regenerar os assets MVC e recompilar o Angular. Falhas de inicialização são registradas no console e exibem aviso na tabela, sem ocultar os dados.
+
 ### Elenco da equipe
 
 A tabela do elenco mostra gols, cartões amarelos (CA) e vermelhos (CV). Gols são os fatos das partidas encerradas da equipe e edição consultadas; cartões são da edição inteira, pela mesma regra da Wiki: agregados históricos disponíveis em edições arquivadas, senão súmulas encerradas. Em transferências, os cartões incluem todas as equipes da edição, conforme a observação exibida na página. Consultas são em lote, restritas aos cadastros da página, e não exigem identidade na Wiki.
@@ -70,7 +92,7 @@ Também podem rodar com `docker compose --profile tests run --build --rm mvc-tes
 
 Os testes HTTP usam a aplicação MVC real com API simulada, AAA e Shouldly: HTML renderizado, metadados, navegação, erros, filtros, sitemaps e segurança dos nomes. Não exigem SQL Server. Os testes de integração do backend continuam necessários para validar as consultas reais.
 
-Listagens em grades de cartões (jogadores, campeonatos, equipes e jogos) usam 24 registros por página, completando linhas de duas ou três colunas. A prévia de jogos da equipe usa seis cartões. A última página pode ter uma linha incompleta quando restarem menos registros; nenhum item é duplicado ou omitido para preencher espaços. Listagens tabulares mantêm 20 registros, e limites explícitos de prévias e consultas completas são preservados.
+Listagens em grades de cartões (jogadores, campeonatos, equipes e jogos) usam 24 registros por página, completando linhas de duas ou três colunas. A prévia de jogos da equipe usa seis cartões. A última página pode ter uma linha incompleta quando restarem menos registros; nenhum item é duplicado ou omitido para preencher espaços. Listagens tabulares carregam o conjunto completo e usam paginação local do DataTables, inicialmente com 20 registros. Limites explícitos de prévias e consultas completas são preservados.
 
 Não publica, não aplica migrations e não altera prêmios ou identidades ao abrir uma página. Autenticação administrativa, acompanhamento restrito do Worker, entrega de mídia e publicação no SmarterASP.NET são trabalhos separados.
 

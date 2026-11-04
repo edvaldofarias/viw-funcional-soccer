@@ -4,9 +4,11 @@ import { DatePipe, JsonPipe } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { PlayerPhoto } from './player-photo';
+import { ViwDataTable } from './data-table';
 import { Api, message, Page, Person, Source, Definition, Edition, Award, Assignment, Audit, Account, Choice } from './api';
-@Component({ selector: 'viw-workspace', standalone: true, imports: [FormsModule, DatePipe, JsonPipe, PlayerPhoto], templateUrl: './workspace.html' })
+@Component({ selector: 'viw-workspace', standalone: true, imports: [FormsModule, DatePipe, JsonPipe, PlayerPhoto, ViwDataTable], templateUrl: './workspace.html' })
 export class Workspace implements OnInit, OnDestroy {
+    readonly timestamp = Date.parse;
     api = inject(Api); route = inject(ActivatedRoute); private subscription?: Subscription; private generation = 0; private targetGeneration = 0;
     section = signal('players'); busy = signal(false); error = signal(''); notice = signal(''); page = signal(1); total = signal(0);
     people = signal<Person[]>([]); sources = signal<Source[]>([]); awards = signal<Award[]>([]); assignments = signal<Assignment[]>([]); audit = signal<Audit[]>([]); accounts = signal<Account[]>([]);
@@ -24,14 +26,19 @@ export class Workspace implements OnInit, OnDestroy {
     ngOnDestroy() { this.subscription?.unsubscribe(); this.generation++; }
     clear() { this.targetGeneration++; this.targetSearch = ''; this.person = null; this.source = null; this.target = null; this.targets.set([]); this.editingId = null; this.version = ''; this.reason = ''; this.error.set(''); this.notice.set(''); this.awardForm = { definitionId: '', matchId: '', roundId: '', position: '', status: 'Draft', reason: '' }; this.assignmentForm = { teamId: '', coachId: '', roundId: '', startsAt: '', endsAt: '', reason: '' }; }
     async load() {
-        const generation = this.generation; const section = this.section(); this.busy.set(true); this.error.set('');
+        const generation = ++this.generation; const section = this.section(); this.busy.set(true); this.error.set('');
         try {
-            const q = '?page=' + this.page() + '&search=' + encodeURIComponent(this.search);
-            if (section === 'players' || section === 'coaches') { const p = await this.api.get<Page<Person>>('admin/' + section + q); if (generation !== this.generation) return; this.people.set(p.items); this.total.set(p.totalCount); }
-            if (section === 'identities') { const p = await this.api.get<Page<Source>>('admin/sources' + q + (this.editionId ? '&editionId=' + this.editionId : '')); if (generation !== this.generation) return; this.sources.set(p.items); this.total.set(p.totalCount); }
-            if (section === 'awards' || section === 'assignments') { if (!this.editionId) { this.total.set(0); this.awards.set([]); this.assignments.set([]); return; } const p = await this.api.get<Page<Award | Assignment>>('admin/' + section + '?editionId=' + this.editionId + '&page=' + this.page()); if (generation !== this.generation) return; if (section === 'awards') this.awards.set(p.items as Award[]); else this.assignments.set(p.items as Assignment[]); this.total.set(p.totalCount); }
+            const q = '?search=' + encodeURIComponent(this.search);
+            if (section === 'players' || section === 'coaches') { const rows = await this.api.all<Person>('admin/' + section + q); if (generation !== this.generation) return; this.people.set(rows); }
+            if (section === 'identities') { const rows = await this.api.all<Source>('admin/sources' + q + (this.editionId ? '&editionId=' + this.editionId : '')); if (generation !== this.generation) return; this.sources.set(rows); }
+            if (section === 'awards' || section === 'assignments') {
+                if (!this.editionId) { this.awards.set([]); this.assignments.set([]); return; }
+                const path = 'admin/' + section + '?editionId=' + this.editionId;
+                if (section === 'awards') { const rows = await this.api.all<Award>(path); if (generation !== this.generation) return; this.awards.set(rows); }
+                else { const rows = await this.api.all<Assignment>(path); if (generation !== this.generation) return; this.assignments.set(rows); }
+            }
             if (section === 'audit') { const p = await this.api.get<Page<Audit>>('admin/audit?page=' + this.page()); if (generation !== this.generation) return; this.audit.set(p.items); this.total.set(p.totalCount); }
-            if (section === 'accounts') { const p = await this.api.get<Page<Account>>('admin/users?page=' + this.page()); if (generation !== this.generation) return; this.accounts.set(p.items); this.total.set(p.totalCount); const events = await this.api.get<Page<unknown>>('admin/users/events'); this.securityEvents.set(events.items); }
+            if (section === 'accounts') { const rows = await this.api.all<Account>('admin/users'); if (generation !== this.generation) return; this.accounts.set(rows); const events = await this.api.get<Page<unknown>>('admin/users/events'); if (generation === this.generation) this.securityEvents.set(events.items); }
         } catch (e) { if (generation === this.generation) this.error.set(message(e)); } finally { if (generation === this.generation) this.busy.set(false); }
     }
     async filter() { this.page.set(1); this.clear(); await this.load(); }

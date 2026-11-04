@@ -30,8 +30,13 @@
     <meta name="twitter:image" content="@meta.ImageUrl" />
     <link rel="icon" href="~/images/viw-mark.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="~/lib/bootstrap/bootstrap.min.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/lib/datatables/dataTables.bootstrap5.min.css" asp-append-version="true" />
     <script src="~/lib/bootstrap/bootstrap.bundle.min.js" asp-append-version="true" defer></script>
+    <script src="~/lib/datatables/dataTables.min.js" asp-append-version="true" defer></script>
+    <script src="~/lib/datatables/dataTables.bootstrap5.min.js" asp-append-version="true" defer></script>
+    <script src="~/lib/datatables/viw-options.js" asp-append-version="true" defer></script>
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/lib/datatables/viw-theme.css" asp-append-version="true" />
     @if (meta.JsonLd is not null) { <script type="application/ld+json">@Html.Raw(meta.JsonLd)</script> }
     <script src="~/js/site.js" asp-append-version="true" defer></script>
 </head>

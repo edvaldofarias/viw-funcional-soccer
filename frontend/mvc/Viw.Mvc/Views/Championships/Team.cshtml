@@ -11,7 +11,7 @@ else
 {
     <p class="muted">Gols nas partidas encerradas desta equipe. Cartões amarelos e vermelhos da edição inteira; em caso de transferência, os cartões incluem todas as equipes. “—” indica informação indisponível.</p>
     <div class="table-wrap">
-        <table>
+        <table data-table-page="@Model.Pager.Page">
             <caption class="sr-only">Elenco e estatísticas de @Model.Team.Team.Name</caption>
             <thead>
                 <tr><th scope="col">Jogador</th><th scope="col">Nome na edição</th><th scope="col">Camisa</th><th scope="col">Posição</th><th scope="col" class="numeric">Gols</th><th scope="col" class="numeric"><abbr title="Cartões amarelos na edição">CA</abbr></th><th scope="col" class="numeric"><abbr title="Cartões vermelhos na edição">CV</abbr></th></tr>
@@ -33,7 +33,7 @@ else
         </table>
     </div>
 }
-<partial name="_Pagination" model="Model.Pager" /></section>
+</section>
 <dialog id="edition-player-dialog" class="player-dialog" aria-labelledby="edition-player-dialog-title">
     <header class="player-dialog-header">
         <div><p class="eyebrow">@Model.Edition.Edition.Name / DETALHES</p><h2 id="edition-player-dialog-title" class="sr-only">Detalhes do jogador no campeonato</h2></div>

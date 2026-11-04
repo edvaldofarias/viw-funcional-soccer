@@ -1,0 +1,233 @@
+.dt-container {
+  --table-ink: var(--ink, #162d40);
+  --table-muted: var(--muted, #687f90);
+  --table-line: var(--line, #dbe4eb);
+  --table-surface: var(--white, #fff);
+  --table-soft: var(--paper, #f3f6f9);
+  --table-accent: var(--green, #1479b0);
+  --table-active: var(--ink, #1479b0);
+  width: 100%;
+  min-width: 0;
+  border-radius: inherit;
+  color: var(--table-ink);
+}
+
+.table-wrap:has(> .dt-container),
+.table-responsive:has(> .dt-container) {
+  overflow: visible;
+}
+
+.panel.table-responsive:has(> .dt-container) {
+  padding: 0;
+}
+
+.dt-container.dt-bootstrap5 > .row {
+  --bs-gutter-x: 0;
+  --bs-gutter-y: 0;
+  margin: 0 !important;
+}
+
+.dt-container > .row:not(.dt-layout-table) {
+  align-items: center;
+  gap: 12px 20px;
+  padding: 16px 18px;
+  background: var(--table-surface);
+}
+
+.dt-container > .row:first-child {
+  border-bottom: 1px solid var(--table-line);
+  border-top-left-radius: inherit;
+  border-top-right-radius: inherit;
+}
+
+.dt-container > .row:last-child {
+  border-top: 1px solid var(--table-line);
+  border-bottom-left-radius: inherit;
+  border-bottom-right-radius: inherit;
+}
+
+.dt-container > .row > .dt-layout-start,
+.dt-container > .row > .dt-layout-end {
+  flex: 0 1 auto;
+  width: auto;
+  max-width: 100%;
+  min-width: 0;
+  padding: 0;
+  margin: 0 !important;
+}
+
+.dt-container > .row > .dt-layout-end {
+  margin-inline-start: auto !important;
+}
+
+/* Keep horizontal scrolling on the data, not on the search and paging controls. */
+.dt-container .dt-layout-table > .dt-layout-full {
+  display: block !important;
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+
+.dt-container .dt-layout-full > table {
+  width: 100%;
+  margin: 0 !important;
+}
+
+.dt-container.dt-bootstrap5 .dt-length,
+.dt-container.dt-bootstrap5 .dt-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 100%;
+  margin: 0;
+  text-align: left;
+}
+
+.dt-container.dt-bootstrap5 .dt-length label,
+.dt-container.dt-bootstrap5 .dt-search label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--table-muted);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.dt-container.dt-bootstrap5 .dt-length select,
+.dt-container.dt-bootstrap5 .dt-search input {
+  height: 40px;
+  margin: 0;
+  border: 1px solid var(--table-line);
+  border-radius: 8px;
+  background-color: var(--table-surface);
+  color: var(--table-ink);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.dt-container.dt-bootstrap5 .dt-length select {
+  display: inline-block;
+  width: auto;
+  min-width: 76px;
+  padding: 8px 30px 8px 12px;
+}
+
+.dt-container.dt-bootstrap5 .dt-search input {
+  width: clamp(150px, 20vw, 260px);
+  min-width: 0;
+  max-width: 100%;
+  padding: 8px 12px;
+}
+
+.dt-container.dt-bootstrap5 .dt-length select:focus,
+.dt-container.dt-bootstrap5 .dt-search input:focus {
+  border-color: var(--table-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--table-accent) 15%, transparent);
+}
+
+.dt-container.dt-bootstrap5 .dt-info {
+  padding: 0 !important;
+  color: var(--table-muted);
+  font-size: 12px;
+  line-height: 1.6;
+  text-align: left;
+}
+
+/* Both directions are disabled only when the filtered result has at most one page. */
+.dt-container .dt-layout-end:has(.dt-paging .previous[aria-disabled="true"]):has(.dt-paging .next[aria-disabled="true"]) {
+  display: none !important;
+}
+
+.dt-container .dt-paging .pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dt-container .pagination .page-item .page-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  min-height: 36px;
+  margin: 0;
+  padding: 6px 10px;
+  border: 1px solid var(--table-line);
+  border-radius: 8px;
+  background: var(--table-surface);
+  color: var(--table-ink);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1;
+  text-decoration: none;
+}
+
+.dt-container .pagination .page-link:is(.first, .previous, .next, .last) {
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.dt-container .pagination .page-item.active .page-link {
+  border-color: var(--table-active);
+  background: var(--table-active);
+  color: #fff;
+}
+
+.dt-container .pagination .page-item.disabled .page-link {
+  background: var(--table-soft);
+  color: var(--table-muted);
+  opacity: .55;
+}
+
+.dt-container .pagination .page-item:not(.active):not(.disabled) .page-link:hover {
+  border-color: var(--table-accent);
+  background: var(--table-soft);
+}
+
+.dt-container .pagination .page-link:focus-visible {
+  outline: 3px solid var(--table-accent);
+  outline-offset: 3px;
+  box-shadow: none;
+}
+
+@media (max-width: 640px) {
+  .dt-container > .row:not(.dt-layout-table) {
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .dt-container > .row > .dt-layout-start,
+  .dt-container > .row > .dt-layout-end {
+    flex-basis: 100%;
+    width: 100%;
+    margin-inline: 0 !important;
+  }
+
+  .dt-container.dt-bootstrap5 .dt-search {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .dt-container.dt-bootstrap5 .dt-search input {
+    width: 100%;
+  }
+
+  .dt-container .dt-paging .pagination {
+    justify-content: center;
+  }
+
+  .dt-container .pagination .page-item .page-link {
+    min-height: 40px;
+  }
+}

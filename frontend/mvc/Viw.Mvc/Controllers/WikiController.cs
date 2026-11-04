@@ -37,9 +37,9 @@ public sealed class WikiController(ViwApiClient api, SeoService seo) : PortalCon
         var player = await api.PlayerAsync(slug, ct);
         if (player is null) return Missing();
         if (slug != player.Player.Slug) return RedirectPermanent(PortalRoutes.Player(player.Player.Slug));
-        var history = ViwApiClient.Required(await api.HistoryAsync(slug, page, ct));
-        if (BeyondPage(history)) return Missing();
-        var pager = new Pager(PortalRoutes.Player(player.Player.Slug), page, history.PageSize, history.TotalCount);
+        var history = await ViwApiClient.CollectTableAsync(p => api.HistoryAsync(slug, p, ct));
+        var pager = new Pager(PortalRoutes.Player(player.Player.Slug), page, 20, history.TotalCount);
+        if (page > pager.Pages) return Missing();
         return Page("Player", new WikiPlayerPage(player, history, pager), $"{player.Player.Name} · Wiki VIW", $"A trajetória de {player.Player.Name} na VIW: equipes, participações e estatísticas registradas entre as copas.", pager.Url(page), entityType: "ProfilePage");
     }
     [HttpGet("/wiki/campeonatos/{slug}")]

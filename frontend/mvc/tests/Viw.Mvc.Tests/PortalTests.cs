@@ -308,7 +308,7 @@ public sealed class PortalTests
                 new(new(Guid.NewGuid(),FixtureApi.PhaseId,"Grupo A",1),[home]),
                 new(new(Guid.NewGuid(),FixtureApi.PhaseId,"Grupo B",2),[away])])],[]);
         using var client = fixture.CreateClient();
-        var html = await client.GetStringAsync("/campeonatos/"+FixtureApi.Slug);
+        var html = await client.GetStringAsync("/campeonatos/"+FixtureApi.Slug+"/primeira-fase");
         var tables = Regex.Matches(html, @"<table\b[\s\S]*?</table>");
         tables.Count.ShouldBeGreaterThanOrEqualTo(2);
         foreach (var (index, team) in new[] { (0,"Aurora"), (1,"Estrela") })
@@ -730,15 +730,24 @@ public sealed class PortalTests
         fixture.Api.Requests.ShouldBeEmpty();
     }
     [Fact]
-    public async Task Finished_cup_displays_general_option_and_pending_best_player_without_guessing_winner()
+    public async Task Finished_cup_displays_final_results_and_pending_best_player_without_redundant_sections()
     {
         // Arrange
         await using var fixture=new PortalFixture();fixture.Api.Archived=true;fixture.Api.MissingAward=true;
         using var client=fixture.CreateClient();
         // Act
-        var html=WebUtility.HtmlDecode(await client.GetStringAsync("/campeonatos/"+FixtureApi.Slug+"?visao=geral"));
+        var html=WebUtility.HtmlDecode(await client.GetStringAsync("/campeonatos/"+FixtureApi.Slug));
         // Assert
-        html.ShouldContain("Classificação geral");html.ShouldContain("Jogos por fase");html.ShouldContain("Melhor jogador");html.ShouldContain("ainda não foi atribuído");html.ShouldContain("Mais gols marcados");html.ShouldContain("Menos gols sofridos");html.ShouldContain("/lib/bootstrap/bootstrap.min.");
+        html.ShouldContain("Classificação final");
+        html.ShouldContain("Resultado do campeonato");
+        html.ShouldContain("Melhor jogador da copa");
+        html.ShouldContain("Prêmio ainda não confirmado.");
+        html.ShouldContain("Melhores ataques");
+        html.ShouldContain("Piores defesas");
+        html.ShouldNotContain("Jogos por fase");
+        html.ShouldNotContain("Quem entra em campo.");
+        html.ShouldNotContain("scorers-preview");
+        html.ShouldContain("/primeira-fase");
     }
     [Fact]
     public async Task Confirmed_ballon_dor_displays_official_recipient()
@@ -749,7 +758,7 @@ public sealed class PortalTests
         // Act
         var html=WebUtility.HtmlDecode(await client.GetStringAsync("/campeonatos/"+FixtureApi.Slug));
         // Assert
-        html.ShouldContain("Léo Reis");html.ShouldNotContain("O prêmio de melhor jogador da competição ainda não foi atribuído.");
+        html.ShouldContain("Léo Reis");html.ShouldNotContain("Prêmio ainda não confirmado.");
     }
     [Fact]
     public async Task Wiki_profile_has_career_statistics_gallery_and_methodology()

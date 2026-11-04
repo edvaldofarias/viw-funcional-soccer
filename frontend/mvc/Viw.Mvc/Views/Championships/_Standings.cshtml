@@ -1,0 +1,44 @@
+@model StandingsTable
+@if (Model.Rows.Count == 0)
+{
+    <p class="empty-state">A classificação ainda não está disponível.</p>
+}
+else
+{
+    <div class="table-wrap">
+        <table>
+            <caption class="sr-only">@Model.Caption</caption>
+            <thead>
+                <tr>
+                    <th scope="col" class="numeric">Pos.</th>
+                    <th scope="col">Equipe</th>
+                    @if (Model.ShowPoints) { <th scope="col" class="numeric"><abbr title="Pontos">PTS</abbr></th> }
+                    <th scope="col" class="numeric"><abbr title="Jogos">J</abbr></th>
+                    <th scope="col" class="numeric"><abbr title="Vitórias">V</abbr></th>
+                    <th scope="col" class="numeric"><abbr title="Empates">E</abbr></th>
+                    <th scope="col" class="numeric"><abbr title="Derrotas">D</abbr></th>
+                    <th scope="col" class="numeric"><abbr title="Gols pró">GP</abbr></th>
+                    <th scope="col" class="numeric"><abbr title="Gols contra">GC</abbr></th>
+                    <th scope="col" class="numeric"><abbr title="Saldo de gols">SG</abbr></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var row in Model.Rows)
+                {
+                    <tr>
+                        <td class="numeric strong">@(row.Position?.ToString() ?? "—")</td>
+                        <td><a class="person-link" href="@PortalRoutes.Team(Model.Edition.Slug, row.Team.Id)"><viw-avatar kind="teams" entity-id="@row.Team.Id" name="@row.Team.Name" class="team-avatar small"></viw-avatar>@row.Team.Name</a></td>
+                        @if (Model.ShowPoints) { <td class="numeric goals-cell">@(row.Points?.ToString("0.##") ?? "—")</td> }
+                        <td class="numeric">@row.Played</td>
+                        <td class="numeric">@row.Wins</td>
+                        <td class="numeric">@row.Draws</td>
+                        <td class="numeric">@row.Losses</td>
+                        <td class="numeric goals-cell">@row.GoalsFor</td>
+                        <td class="numeric">@row.GoalsAgainst</td>
+                        <td class="numeric">@(row.GoalsFor - row.GoalsAgainst)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

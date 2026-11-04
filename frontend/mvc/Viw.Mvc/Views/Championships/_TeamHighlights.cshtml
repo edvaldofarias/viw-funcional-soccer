@@ -1,0 +1,21 @@
+@model TeamHighlights
+<article class="competition-highlight">
+    <h3>@Model.Title</h3>
+    @if (Model.Rows.Count == 0)
+    {
+        <p class="muted">Sem resultados disponíveis.</p>
+    }
+    else
+    {
+        <ul class="competition-leaders">
+            @foreach (var row in Model.Rows)
+            {
+                var value = Model.Metric switch { "against" => row.GoalsAgainst, "wins" => row.Wins, _ => row.GoalsFor };
+                <li>
+                    <a class="person-link" href="@PortalRoutes.Team(Model.Edition.Slug, row.Team.Id)"><viw-avatar kind="teams" entity-id="@row.Team.Id" name="@row.Team.Name" class="team-avatar small"></viw-avatar>@row.Team.Name</a>
+                    <span><strong>@value</strong><small>@(Model.Metric == "wins" ? "vitórias" : "gols") · @row.Played jogos</small></span>
+                </li>
+            }
+        </ul>
+    }
+</article>

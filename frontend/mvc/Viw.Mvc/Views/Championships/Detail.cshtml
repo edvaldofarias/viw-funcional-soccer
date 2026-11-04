@@ -1,370 +1,126 @@
 @model CupPage
 @{
     var cup = Model.Edition.Edition;
-    var root = PortalRoutes.Cup(cup.Slug);
-    var overview = Model.Overview;
     var finished = cup.Status == "Archived";
-    var first = overview?.Phases.FirstOrDefault();
-    var rows = Model.General ? overview?.Overall : first?.Standings;
-    var campaigns = overview?.Overall.Where(x => x.Played > 0).ToArray() ?? [];
-    var bestAttack = campaigns.Length > 0 ? campaigns.Where(x => x.GoalsFor == campaigns.Max(y => y.GoalsFor)).ToArray() : [];
-    var bestDefense = campaigns.Length > 0 ? campaigns.Where(x => x.GoalsAgainst == campaigns.Min(y => y.GoalsAgainst)).ToArray() : [];
-    var scorers = (Model.Scorers ??
-[]).Where(x => x.Statistics.Goals > 0).OrderByDescending(x => x.Statistics.Goals).ThenBy(x => x.Player.Name).ToArray();
-    var scorerCutoff = scorers.Length > 10 ? scorers[9].Statistics.Goals : 0;
-    var topScorers = scorers.Where(x => x.Statistics.Goals >= scorerCutoff).ToArray();
-    var bestPlayers = (Model.Awards ??
-[]).Where(x => x.Scope == "Championship" && x.SourcePlayerId != null && x.Code.Contains("ballon", StringComparison.OrdinalIgnoreCase)).ToArray();
+    var root = PortalRoutes.Cup(cup.Slug);
+    var standings = Model.Overview.Overall.OrderBy(x => x.Position ?? int.MaxValue).ToArray();
+    var campaigns = standings.Where(x => x.Played > 0).ToArray();
+    var games = Model.Overview.Phases.SelectMany(x => x.Matches).DistinctBy(x => x.Id).ToArray();
+    var played = games.Where(x => x.Status == "Finished").ToArray();
+    var scored = played.Where(x => x.HomeScore is >= 0 && x.AwayScore is >= 0 && x.Home != null && x.Away != null).ToArray();
+    var goals = scored.Sum(x => (long)x.HomeScore!.Value + x.AwayScore!.Value);
+    var scorerGroups = Model.Scorers.Where(x => x.Statistics.Goals > 0).GroupBy(x => x.Statistics.Goals)
+        .OrderByDescending(x => x.Key).Take(3).ToArray();
+    var bestPlayers = Model.Awards.Where(x => x.Scope == "Championship" && x.SourcePlayerId != null &&
+        x.Code is "official-ballon-dor" or "ballon-dor").ToArray();
+    var scorerLabels = new[] { "Artilheiro", "Vice-artilheiro", "Terceiro artilheiro" };
+    var podiumLabels = new[] { "Campeão", "Vice-campeão", "Terceiro lugar" };
+    IReadOnlyList<StandingRow> Leaders(Func<StandingRow, long> metric, bool ascending = false)
+    {
+        var ordered = ascending ? campaigns.OrderBy(metric) : campaigns.OrderByDescending(metric);
+        var sorted = ordered.ThenBy(x => x.Team.Name).ToArray();
+        if (sorted.Length <= 3) return sorted;
+        var cutoff = metric(sorted[2]);
+        return sorted.Where(x => ascending ? metric(x) <= cutoff : metric(x) >= cutoff).ToArray();
+    }
+    var metrics = new (string Label, string Value)[]
+    {
+        ("Equipes", Model.Edition.Teams.ToString()),
+        ("Jogadores com estatísticas", Model.Scorers.Count.ToString()),
+        ("Jogos encerrados", played.Length.ToString()),
+        ("Gols no placar", goals.ToString()),
+        ("Gols por jogo", scored.Length > 0 ? ((decimal)goals / scored.Length).ToString("0.00", System.Globalization.CultureInfo.GetCultureInfo("pt-BR")) : "—"),
+        ("Cartões amarelos", Model.Scorers.Sum(x => x.Statistics.YellowCards).ToString()),
+        ("Cartões vermelhos", Model.Scorers.Sum(x => x.Statistics.RedCards).ToString()),
+        ("Empates", scored.Count(x => x.HomeScore == x.AwayScore).ToString()),
+        ("Vitórias mandantes", scored.Count(x => x.HomeScore > x.AwayScore).ToString()),
+        ("Vitórias visitantes", scored.Count(x => x.AwayScore > x.HomeScore).ToString()),
+        ("Jogos sem gols", scored.Count(x => x.HomeScore == 0 && x.AwayScore == 0).ToString()),
+        ("Jogadores que marcaram", Model.Scorers.Count(x => x.Statistics.Goals > 0).ToString())
+    };
+    var records = new[]
+    {
+        (Title: "Jogos com mais gols", Games: scored.OrderByDescending(x => (long)x.HomeScore!.Value + x.AwayScore!.Value).ThenBy(x => x.ScheduledAt).ThenBy(x => x.Id).Take(3).ToArray()),
+        (Title: "Maiores goleadas", Games: scored.Where(x => x.HomeScore != x.AwayScore).OrderByDescending(x => Math.Abs((long)x.HomeScore!.Value - x.AwayScore!.Value)).ThenBy(x => x.ScheduledAt).ThenBy(x => x.Id).Take(3).ToArray())
+    };
 }
 <partial name="_EditionHeader" model="Model.Edition" />
-<section class="shell section cup-overview">
-    <nav class="nav nav-pills gap-2 mb-4" aria-label="Seções do campeonato"><a class="nav-link active"
-                                                                                   href="#classificacao">Classificação</a><a class="nav-link" href="#fases">Jogos por fase</a><a
-        class="nav-link" href="#equipes">Equipes e jogadores</a><a class="nav-link"
-                                                                   href="#artilharia">Artilharia</a>@if(finished){
-        <a class="nav-link" href="#destaques">Destaques finais</a>
-    }
-</nav>
 @if (finished)
 {
-    <div class="alert alert-primary" role="status"><strong>Campeonato encerrado.</strong> Consulte a
-        campanha das equipes, os resultados de cada fase e os destaques da competição.</div>
-    }
-    <div class="section-heading" id="classificacao">
-        <div>
-            <p class="eyebrow">A CAMPANHA DAS EQUIPES</p>
-            <h2>@(Model.General?"Classificação geral":"Classificação da primeira fase")</h2>
-        </div>
-    </div>
-    @if (finished)
-    {
-        <nav class="nav nav-tabs mb-3" aria-label="Tipo de classificação"><a
-            class="nav-link @(!Model.General?"active":"")" href="@root#classificacao">Primeira fase</a><a
-            class="nav-link @(Model.General?"active":"")" href="@(root+"?visao=geral#classificacao")">Classificação
-            geral</a></nav>
-        }
-        @if (Model.General)
-        {
-            <p class="text-body-secondary">As disputas de colocação são identificadas pelo título de cada
-                jogo: final, 3º/4º, 5º/6º e demais posições. Decisões por pênaltis são consideradas; empate sem decisão
-                informada deixa a posição pendente. As demais equipes são ordenadas pela fase atingida e, na mesma fase, por
-                pontos (3 por vitória e 1 por empate), vitórias, saldo de gols e gols marcados. Campanhas iguais compartilham
-                posição. V/E/D e gols abrangem todas as fases, sem somar pênaltis de desempate.</p>
-            }
-    else
+    <section class="shell section" id="resultado">
+        <div class="section-heading"><div><p class="eyebrow">OS DESTAQUES DA COPA</p><h2>Resultado do campeonato</h2></div></div>
+        <div class="competition-podium">
+            @foreach (var place in new[] { 2, 1, 3 })
             {
-
-                <p class="text-body-secondary">Posição e pontos registrados no Copa Fácil. J/V/E/D e gols consideram os jogos
-                    encerrados desta fase. “—” indica informação ainda não disponível; não é usado o nome da equipe como critério de
-                    desempate.</p>
-                }
-                @* Fases com grupos editoriais mostram uma tabela por grupo, como na fonte. *@
-                @if (!Model.General && first?.Groups.Count > 0)
-                {
-                    @foreach (var table in first.Groups)
+                var teams = standings.Where(x => x.Position == place).ToArray();
+                <article class="podium-place podium-place-@place">
+                    <p class="eyebrow">@podiumLabels[place - 1]</p>
+                    @foreach (var team in teams)
                     {
-                        <h3 class="h5 mt-4">@table.Group.Name</h3>
-                        <div class="table-responsive border rounded-3">
-                            <table class="table table-hover align-middle mb-0 standings-table">
-                                <caption class="visually-hidden">Classificação do @table.Group.Name</caption>
-                                <thead class="table-light">
-                                    <tr>
-                                        <th scope="col">Pos.</th>
-                                        <th scope="col">Equipe</th>
-                                        <th scope="col"><abbr title="Pontos">PTS</abbr></th>
-                                        <th scope="col"><abbr title="Jogos">J</abbr></th>
-                                        <th scope="col"><abbr title="Vitórias">V</abbr></th>
-                                        <th scope="col"><abbr title="Empates">E</abbr></th>
-                                        <th scope="col"><abbr title="Derrotas">D</abbr></th>
-                                        <th scope="col"><abbr title="Gols pró">GP</abbr></th>
-                                        <th scope="col"><abbr title="Gols contra">GC</abbr></th>
-                                        <th scope="col"><abbr title="Saldo de gols">SG</abbr></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var row in table.Standings)
-                                    {
-                                        <tr>
-                                            <td>@(row.Position?.ToString()??"—")</td>
-                                            <th scope="row"><a href="@PortalRoutes.Team(cup.Slug,row.Team.Id)">@row.Team.Name</a></th>
-                                            <td><strong>@(row.Points?.ToString("0.##")??"—")</strong></td>
-                                            <td>@row.Played</td>
-                                            <td>@row.Wins</td>
-                                            <td>@row.Draws</td>
-                                            <td>@row.Losses</td>
-                                            <td>@row.GoalsFor</td>
-                                            <td>@row.GoalsAgainst</td>
-                                            <td>@(row.GoalsFor-row.GoalsAgainst)</td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
+                        <a href="@PortalRoutes.Team(cup.Slug, team.Team.Id)"><viw-avatar kind="teams" entity-id="@team.Team.Id" name="@team.Team.Name" class="team-avatar jumbo"></viw-avatar><strong>@team.Team.Name</strong></a>
                     }
-                    <details class="mt-4">
-                        <summary class="text-link">Ver classificação geral da fase</summary>
-                        <div class="table-responsive border rounded-3 mt-2">
-                            <table class="table table-hover align-middle mb-0 standings-table">
-                                <caption class="visually-hidden">Classificação geral da primeira fase</caption>
-                                <thead class="table-light">
-                                    <tr>
-                                        <th scope="col">Pos.</th>
-                                        <th scope="col">Equipe</th>
-                                        <th scope="col"><abbr title="Pontos">PTS</abbr></th>
-                                        <th scope="col"><abbr title="Jogos">J</abbr></th>
-                                        <th scope="col"><abbr title="Vitórias">V</abbr></th>
-                                        <th scope="col"><abbr title="Empates">E</abbr></th>
-                                        <th scope="col"><abbr title="Derrotas">D</abbr></th>
-                                        <th scope="col"><abbr title="Gols pró">GP</abbr></th>
-                                        <th scope="col"><abbr title="Gols contra">GC</abbr></th>
-                                        <th scope="col"><abbr title="Saldo de gols">SG</abbr></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var row in rows ?? [])
-                                    {
-                                        <tr>
-                                            <td>@(row.Position?.ToString()??"—")</td>
-                                            <th scope="row"><a href="@PortalRoutes.Team(cup.Slug,row.Team.Id)">@row.Team.Name</a></th>
-                                            <td><strong>@(row.Points?.ToString("0.##")??"—")</strong></td>
-                                            <td>@row.Played</td>
-                                            <td>@row.Wins</td>
-                                            <td>@row.Draws</td>
-                                            <td>@row.Losses</td>
-                                            <td>@row.GoalsFor</td>
-                                            <td>@row.GoalsAgainst</td>
-                                            <td>@(row.GoalsFor-row.GoalsAgainst)</td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    </details>
-                }
-                else
-                {
-                    <div class="table-responsive border rounded-3">
-                        <table class="table table-hover align-middle mb-0 standings-table">
-                            <caption class="visually-hidden">@(Model.General?"Classificação geral":"Classificação da primeira fase")
-                            </caption>
-                            <thead class="table-light">
-                                <tr>
-                                    <th scope="col">Pos.</th>
-                                    <th scope="col">Equipe</th>@if(!Model.General){
-                                    <th scope="col"><abbr title="Pontos">PTS</abbr></th>
-                                }
-                                <th scope="col"><abbr title="Jogos">J</abbr></th>
-                                <th scope="col"><abbr title="Vitórias">V</abbr></th>
-                                <th scope="col"><abbr title="Empates">E</abbr></th>
-                                <th scope="col"><abbr title="Derrotas">D</abbr></th>
-                                <th scope="col"><abbr title="Gols pró">GP</abbr></th>
-                                <th scope="col"><abbr title="Gols contra">GC</abbr></th>
-                                <th scope="col"><abbr title="Saldo de gols">SG</abbr></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var row in rows ?? [])
+                    @if (teams.Length == 0) { <p class="muted">Não definido</p> }
+                    <div class="podium-step" aria-label="@($"{place}º lugar")">@place</div>
+                </article>
+            }
+        </div>
+        <div class="competition-awards">
+            @for (var index = 0; index < 3; index++)
+            {
+                <article class="competition-highlight" data-scorer-rank="@(index + 1)">
+                    <p class="eyebrow">@(index + 1)º MAIOR TOTAL DE GOLS</p><h3>@scorerLabels[index]</h3>
+                    @if (index < scorerGroups.Length)
+                    {
+                        <ul class="competition-leaders">
+                            @foreach (var scorer in scorerGroups[index].OrderBy(x => x.Player.Name))
                             {
-                                <tr>
-                                    <td>@(row.Position?.ToString()??"—")</td>
-                                    <th scope="row"><a href="@PortalRoutes.Team(cup.Slug,row.Team.Id)">@row.Team.Name</a></th>
-                                    @if (!Model.General)
-                                    {
-                                        <td><strong>@(row.Points?.ToString("0.##")??"—")</strong></td>
-                                    }
-                                    <td>@row.Played
-                                    </td>
-                                    <td>@row.Wins</td>
-                                    <td>@row.Draws</td>
-                                    <td>@row.Losses</td>
-                                    <td>@row.GoalsFor</td>
-                                    <td>@row.GoalsAgainst</td>
-                                    <td>@(row.GoalsFor-row.GoalsAgainst)</td>
-                                </tr>
+                                <li><span class="person-link"><viw-avatar kind="sourceplayers" entity-id="@scorer.Player.Id" name="@scorer.Player.Name" class="avatar small" edition-id="@cup.Id"></viw-avatar>@scorer.Player.Name</span><strong>@scorer.Statistics.Goals <small>gols</small></strong></li>
                             }
-                        </tbody>
-                    </table>
-                </div>
-            }
-            @if (rows == null || rows.Count == 0)
-            {
-                <div class="alert alert-light border mt-3">A classificação desta fase ainda não está
-                    disponível.</div>
-                }
-            </section>
-            @if (finished)
-            {
-                <section class="shell section section-tight" id="destaques">
-                    <div class="section-heading">
-                        <div>
-                            <p class="eyebrow">OS DESTAQUES DA COMPETIÇÃO</p>
-                            <h2>Quem marcou esta copa.</h2>
-                        </div>
-                    </div>
-                    <div class="row g-3">
-                        <div class="col-md-4">
-                            <article class="card h-100 shadow-sm">
-                                <div class="card-body">
-                                    <p class="eyebrow">MELHOR ATAQUE</p>
-                                    <h3 class="h4">Mais gols marcados</h3>@foreach(var row in bestAttack){
-                                    <p><a
-                                        href="@PortalRoutes.Team(cup.Slug,row.Team.Id)"><strong>@row.Team.Name</strong></a><br />@row.GoalsFor
-                                        gols em @row.Played jogos</p>
-                                    }
-                                    @if (bestAttack.Length == 0)
-                                    {
-                                        <p>Resultados ainda não disponíveis.</p>
-                                    }
-                                </div>
-                            </article>
-                        </div>
-                        <div class="col-md-4">
-                            <article class="card h-100 shadow-sm">
-                                <div class="card-body">
-                                    <p class="eyebrow">MELHOR DEFESA</p>
-                                    <h3 class="h4">Menos gols sofridos</h3>@foreach(var row in bestDefense){
-                                    <p><a
-                                        href="@PortalRoutes.Team(cup.Slug,row.Team.Id)"><strong>@row.Team.Name</strong></a><br />@row.GoalsAgainst
-                                        gols em @row.Played jogos</p>
-                                    }
-                                    @if (bestDefense.Length == 0)
-                                    {
-                                        <p>Resultados ainda não disponíveis.
-                                        </p>
-                                    }
-                                </div>
-                            </article>
-                        </div>
-                        <div class="col-md-4">
-                            <article class="card h-100 shadow-sm">
-                                <div class="card-body">
-                                    <p class="eyebrow">BALLON D’OR</p>
-                                    <h3 class="h4">Melhor jogador</h3>@foreach(var award in bestPlayers){
-                                    <p>
-                                        <strong>@award.PlayerName</strong></p>
-                                    }
-                                    @if (bestPlayers.Length == 0)
-                                    {
-                                        <p
-                                            class="text-body-secondary">O prêmio de melhor jogador da competição ainda não foi atribuído.
-                                        </p>
-                                    }
-                                    <a href="@(root+"/premiacoes")">Ver premiações oficiais →</a>
-                                </div>
-                            </article>
-                        </div>
-                    </div>
-                    <p class="small text-body-secondary mt-3">Ataque e defesa comparam totais de gols nos jogos encerrados, com todos os
-                        empatados exibidos. As equipes podem ter disputado quantidades diferentes de jogos. O melhor jogador é uma
-                        decisão oficial confirmada pelo Admin.</p>
-                    </section>
-                }
-                <section class="shell section" id="fases">
-                    <div class="section-heading">
-                        <div>
-                            <p class="eyebrow">DO PRIMEIRO JOGO À DECISÃO</p>
-                            <h2>Jogos por fase</h2>
-                        </div><a class="text-link" href="@(root+"/jogos")">Filtrar jogos →</a>
-                    </div>
-                    <div class="accordion" id="competition-phases">@foreach(var stage in overview?.Phases ?? []){var
-                        key = "phase-" + stage.Phase.Id.ToString("N"); var expanded = stage == first; var
-                        preview = stage.Matches.OrderByDescending(x => x.ScheduledAt).ThenBy(x => x.Id).Take(6).OrderBy(x => x.ScheduledAt).ToArray();
-                        <article class="accordion-item">
-                            <h3 class="accordion-header"><button class="accordion-button @(expanded?"":"collapsed")" type="button"
-                                                                 data-bs-toggle="collapse" data-bs-target="#@key" aria-expanded="@(expanded?"true":"false")"
-                                                                 aria-controls="@key">@stage.Phase.Name <span class="badge text-bg-light ms-3">@stage.Matches.Count
-                                jogos</span></button></h3>
-                                <div id="@key" class="accordion-collapse collapse @(expanded?"show":"")">
-                                    <div class="accordion-body">
-                                        <div class="match-grid">@foreach(var game in preview){
-                                            <partial name="_MatchCard" model="new MatchCard(cup,game)" />
-                                        }
-                                    </div>@if(stage.Matches.Count>preview.Length){
-                                    <div class="phase-more">
-                                        <p>Exibindo @preview.Length de @stage.Matches.Count jogos desta fase, com os confrontos mais
-                                            recentes.</p><a class="button secondary" href="@(root+"/jogos?fase="+stage.Phase.Id)">Ver
-                                            todos os jogos de @stage.Phase.Name →</a>
-                                        </div>
-                                    }
-                                    @if (stage.Matches.Count == 0)
-                                    {
-                                        <p>Confrontos ainda não cadastrados.</p>
-                                    }
-                                </div>
-                            </div>
-                        </article>
+                        </ul>
                     }
-                </div>
-                @if (overview?.Phases.Count == 0)
-                {
-                    <p>As fases ainda não estão disponíveis.</p>
-                }
-            </section>
-            <section class="shell section section-tight" id="equipes">
-                <div class="section-heading">
-                    <div>
-                        <p class="eyebrow">EQUIPES E ELENCOS</p>
-                        <h2>Quem entra em campo.</h2>
-                    </div><a class="text-link" href="@(root+"/equipes")">Ver todas as equipes →</a>
-                </div>
-                <div class="row g-3">@foreach(var team in Model.Teams.Items){
-                    <div class="col-6 col-md-4 col-xl-3"><a
-                        class="card h-100 text-decoration-none team-tile"
-                        href="@PortalRoutes.Team(cup.Slug,team.Id)"><viw-avatar kind="teams" entity-id="@(team.Id)"
-                                                                                name="@(team.Name)" class="team-avatar"></viw-avatar>
-                        <h3 class="h5">@team.Name</h3><span>Equipe e jogadores →</span>
-                    </a></div>
-                }
-            </div>
-        </section>
-        <section class="shell section" id="artilharia">
-            <div class="section-heading">
-                <div>
-                    <p class="eyebrow">OS GOLS DA COPA</p>
-                    <h2>Artilharia</h2>
-                </div><a class="text-link" href="@(root+"/estatisticas/jogadores")">Estatísticas completas →</a>
-            </div>
-            @if (scorers.Length > 0)
-            {
-                var goals = scorers[0].Statistics.Goals;
-                <div class="alert alert-primary">
-                    <strong>@(scorers.Count(x=>x.Statistics.Goals==goals)>1?"Líderes da artilharia":"Líder da artilharia"):</strong>
-                    @string.Join(", ",scorers.Where(x=>x.Statistics.Goals==goals).Select(x=>x.Player.Name)) · @goals gols
-                    registrados.</div>
-                    <div class="table-responsive">
-                        <table class="table table-striped scorers-preview">
-                            <thead>
-                                <tr>
-                                    <th scope="col">Jogador</th>
-                                    <th scope="col">Gols</th>
-                                </tr>
-                            </thead>
-                            <tbody>@foreach(var scorer in topScorers){
-                                <tr>
-                                    <th scope="row"><a
-                                        href="@(string.IsNullOrEmpty(scorer.Player.Slug) ? null : PortalRoutes.Player(scorer.Player.Slug))">@scorer.Player.Name</a>
-                                    </th>
-                                    <td>@scorer.Statistics.Goals</td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
+                    else { <p class="muted">Sem gols registrados para esta colocação.</p> }
+                </article>
             }
-            else
-            {
-
-                <p>Nenhum gol individual registrado até o momento.</p>
-            }
-            <div class="artillery-footer">
-                @if (topScorers.Length < scorers.Length)
+            <article class="competition-highlight">
+                <p class="eyebrow">BALLON D’OR</p><h3>Melhor jogador da copa</h3>
+                @foreach (var award in bestPlayers)
                 {
-                    <div class="phase-more">
-                        <p>Os primeiros colocados, incluindo todos os empatados no corte.</p><a class="button secondary"
-                                                                                                href="@(root+"/estatisticas/jogadores")">Ver artilharia completa →</a>
-                    </div>
+                    <p class="person-link"><viw-avatar kind="sourceplayers" entity-id="@award.SourcePlayerId" name="@award.PlayerName" class="avatar small" edition-id="@cup.Id"></viw-avatar><strong>@award.PlayerName</strong></p>
                 }
-                <p class="artillery-note">Artilharia calculada pelas súmulas importadas. Em campeonatos encerrados, todos os
-                    líderes empatados recebem o reconhecimento de artilheiro; súmulas incompletas podem limitar os totais.</p>
-                </div>
-            </section>
+                @if (bestPlayers.Length == 0) { <p class="muted">Prêmio ainda não confirmado.</p> }
+            </article>
+        </div>
+    </section>
+}
+<section class="shell section section-tight" id="classificacao">
+    <div class="section-heading"><div><p class="eyebrow">DO PRIMEIRO AO ÚLTIMO</p><h2>@(finished ? "Classificação final" : "Classificação geral")</h2></div></div>
+    <partial name="_Standings" model='new StandingsTable(cup, finished ? "Classificação final do campeonato" : "Classificação geral do campeonato", standings, false)' />
+    <details class="competition-method"><summary>Como a classificação é definida</summary><p>As posições seguem a classificação da competição. Em copas, decisões de colocação e pênaltis são considerados; as demais equipes são ordenadas pela fase atingida e campanha acumulada. Empates podem compartilhar posição; posições não definidas aparecem como “—”. Jogos e gols abrangem todas as fases, sem somar pênaltis de desempate.</p></details>
+</section>
+<section class="shell section" id="numeros">
+    <div class="section-heading"><div><p class="eyebrow">A COPA EM NÚMEROS</p><h2>Estatísticas do campeonato</h2></div><a class="text-link" href="@(root + "/estatisticas/jogadores")">Estatísticas dos jogadores →</a></div>
+    <dl class="competition-metrics">
+        @foreach (var metric in metrics) { <div><dt>@metric.Label</dt><dd>@metric.Value</dd></div> }
+    </dl>
+    <p class="muted competition-footnote">Placares e médias usam @scored.Length jogos encerrados com placar conhecido. Cartões e gols individuais seguem os registros disponíveis da edição. Pênaltis de desempate não entram nos gols.</p>
+    <div class="competition-highlights">
+        <partial name="_TeamHighlights" model='new TeamHighlights(cup, "Melhores ataques", Leaders(x => x.GoalsFor), "for")' />
+        <partial name="_TeamHighlights" model='new TeamHighlights(cup, "Piores defesas", Leaders(x => x.GoalsAgainst), "against")' />
+        <partial name="_TeamHighlights" model='new TeamHighlights(cup, "Melhores defesas", Leaders(x => x.GoalsAgainst, true), "against")' />
+        <partial name="_TeamHighlights" model='new TeamHighlights(cup, "Mais vitórias", Leaders(x => x.Wins), "wins")' />
+    </div>
+    <p class="muted competition-footnote">Três primeiras equipes por total, incluindo empatadas no corte. As equipes podem ter disputado quantidades diferentes de jogos.</p>
+</section>
+<section class="shell section section-tight competition-records">
+    @foreach (var record in records)
+    {
+        <div>
+            <div class="section-heading"><h2>@record.Title</h2></div>
+            @if (record.Games.Length == 0) { <p class="muted">Sem resultados disponíveis.</p> }
+            @foreach (var game in record.Games)
+            {
+                <partial name="_MatchCard" model="new MatchCard(cup, game)" />
+            }
+        </div>
+    }
+</section>

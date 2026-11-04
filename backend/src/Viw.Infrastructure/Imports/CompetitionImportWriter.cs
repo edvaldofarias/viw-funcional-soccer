@@ -73,16 +73,18 @@ public sealed partial class CompetitionImportWriter(ViwDbContext db)
                 phase = new CompetitionPhase { EditionId = editionId, ExternalId = phaseKey, Name = "Fase " + (phases.Count + 1), SortOrder = phases.Count + 1 };
                 phases.Add(phaseKey, phase); db.Add(phase);
             }
-            if(definition?.PhaseNames.TryGetValue(phaseKey,out var officialName)==true) {
-                if(phase.Name.StartsWith("Fase ",StringComparison.Ordinal))phase.Name=officialName;
-                phase.SortOrder=definition.PhaseNames.Keys.ToList().IndexOf(phaseKey)+1;
+            if (definition?.PhaseNames.TryGetValue(phaseKey, out var officialName) == true)
+            {
+                if (phase.Name.StartsWith("Fase ", StringComparison.Ordinal)) phase.Name = officialName;
+                phase.SortOrder = definition.PhaseNames.Keys.ToList().IndexOf(phaseKey) + 1;
             }
             // O cadastro fs contém o título oficial. As chaves são IDs cronológicos
             // das fases; usar essa ordem evita depender da data do primeiro jogo.
-            if(core.Phases?.TryGetValue(phaseKey,out var sourcePhase)==true) {
-                var title=CopaFacilValidation.BoundedText(sourcePhase.Title,200);
-                if(!string.IsNullOrWhiteSpace(title))phase.Name=title.Trim();
-                phase.SortOrder=core.Phases.Keys.OrderBy(x=>x,StringComparer.Ordinal).ToList().IndexOf(phaseKey)+1;
+            if (core.Phases?.TryGetValue(phaseKey, out var sourcePhase) == true)
+            {
+                var title = CopaFacilValidation.BoundedText(sourcePhase.Title, 200);
+                if (!string.IsNullOrWhiteSpace(title)) phase.Name = title.Trim();
+                phase.SortOrder = core.Phases.Keys.OrderBy(x => x, StringComparer.Ordinal).ToList().IndexOf(phaseKey) + 1;
             }
             CompetitionRound? round = null;
             var roundKey = CopaFacilValidation.BoundedText(item.Value.RoundId, 128);
@@ -196,8 +198,13 @@ public sealed partial class CompetitionImportWriter(ViwDbContext db)
             else db.Remove(membership);
         }
         foreach (var (key, groupId) in desired)
-            db.Add(new CompetitionGroupTeam {
-                EditionId = editionId, PhaseId = key.PhaseId, TeamEntryId = key.TeamId, GroupId = groupId });
+            db.Add(new CompetitionGroupTeam
+            {
+                EditionId = editionId,
+                PhaseId = key.PhaseId,
+                TeamEntryId = key.TeamId,
+                GroupId = groupId
+            });
         db.CompetitionGroupRecords.RemoveRange(groups.Where(x => !keep.Contains(x.Id)));
     }
 

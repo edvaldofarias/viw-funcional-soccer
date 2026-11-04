@@ -17,19 +17,30 @@ public sealed class ChampionshipsController(ViwApiClient api, SeoService seo) : 
         return Page("Index", new CatalogPage(editions, ano, pager), "Campeonatos da VIW", "Todas as edições das copas da VIW: equipes, partidas, protagonistas e premiações em um só lugar.", pager.Url(page), ano != null || editions.TotalCount == 0, "CollectionPage");
     }
     [HttpGet("/campeonatos/{slug}")]
-    public async Task<IActionResult> Detail(string slug, [RegularExpression("^(fase|geral)$")] string visao = "fase", CancellationToken ct = default)
+    public async Task<IActionResult> Detail(string slug, [RegularExpression("^(fase|geral)$")] string? visao = null, CancellationToken ct = default)
     {
         var edition = await api.EditionAsync(slug, ct);
         if (edition is null) return Missing();
         if (slug != edition.Edition.Slug) return RedirectPermanent(PortalRoutes.Cup(edition.Edition.Slug));
-        var teams = ViwApiClient.CollectAsync<TeamResponse>(page => api.TeamsAsync(slug, page, ct, 100));
+        if (visao is not null) return RedirectPermanent(PortalRoutes.Cup(slug) + (visao == "fase" ? "/primeira-fase" : ""));
         var overview = api.CompetitionViewAsync(slug, ct);
         var scorers = ViwApiClient.CollectAsync<PlayerStatisticsResponse>(page => api.PlayerStatsAsync(slug, page, ct));
         var awards = ViwApiClient.CollectAsync<AwardResponse>(page => api.AwardsAsync(slug, page, ct));
-        await Task.WhenAll(teams, overview, scorers, awards);
-        var view = ViwApiClient.Required(await overview); var allGames = view.Phases.SelectMany(x => x.Matches).ToArray(); var allTeams = await teams;
-        return Page("Detail", new CupPage(edition, new(allTeams, 1, 100, allTeams.Count), new(allGames, 1, Math.Max(1, allGames.Length), allGames.Length), view, await scorers, await awards, visao == "geral" && edition.Edition.Status == "Archived"), edition.Edition.Name,
-            $"Classificação, fases, jogos, equipes, artilharia e destaques de {edition.Edition.Name}.", PortalRoutes.Cup(slug));
+        await Task.WhenAll(overview, scorers, awards);
+        return Page("Detail", new CupPage(edition, ViwApiClient.Required(await overview), await scorers, await awards), edition.Edition.Name,
+            $"Resultados, classificação, artilharia e estatísticas de {edition.Edition.Name}.", PortalRoutes.Cup(slug));
+    }
+    [HttpGet("/campeonatos/{slug}/primeira-fase")]
+    public async Task<IActionResult> FirstPhase(string slug, CancellationToken ct)
+    {
+        var edition = await api.EditionAsync(slug, ct);
+        if (edition is null) return Missing();
+        var path = PortalRoutes.Cup(edition.Edition.Slug) + "/primeira-fase";
+        if (slug != edition.Edition.Slug) return RedirectPermanent(path);
+        var overview = ViwApiClient.Required(await api.CompetitionViewAsync(slug, ct));
+        var phase = overview.Phases.OrderBy(x => x.Phase.SortOrder).ThenBy(x => x.Phase.Id).FirstOrDefault();
+        return Page("FirstPhase", new FirstPhasePage(edition, phase), $"Primeira fase · {edition.Edition.Name}",
+            $"Classificação da primeira fase de {edition.Edition.Name}, por grupos quando disponíveis.", path);
     }
     [HttpGet("/campeonatos/{slug}/equipes")]
     public async Task<IActionResult> Teams(string slug, [Range(1, 100000)] int page = 1, CancellationToken ct = default)

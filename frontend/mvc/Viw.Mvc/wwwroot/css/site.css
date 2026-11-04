@@ -1479,6 +1479,181 @@ body:has(.player-dialog[open]) {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+.competition-podium {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  gap: 24px;
+  padding: 36px 36px 0;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.podium-place {
+  min-width: 0;
+  text-align: center;
+}
+.podium-place > a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.podium-place strong {
+  overflow-wrap: anywhere;
+}
+.podium-place .eyebrow {
+  color: #64746a;
+}
+.podium-place-1 .eyebrow {
+  color: #876512;
+}
+.podium-step {
+  display: grid;
+  place-items: center;
+  border-radius: 12px 12px 0 0;
+  min-height: 84px;
+  background: #e7ece8;
+  color: var(--ink);
+  font-size: 40px;
+  font-weight: 850;
+}
+.podium-place-1 .podium-step {
+  min-height: 150px;
+  background: var(--ink);
+  color: var(--white);
+}
+.podium-place-2 .podium-step {
+  min-height: 115px;
+}
+.competition-awards,
+.competition-highlights,
+.competition-records {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+.competition-awards {
+  margin-top: 24px;
+}
+.competition-highlight {
+  min-width: 0;
+  padding: 24px;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+.competition-highlight h3 {
+  font-size: 20px;
+  margin-bottom: 20px;
+}
+.competition-leaders {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.competition-leaders li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-block: 14px;
+  border-top: 1px solid var(--line);
+}
+.competition-leaders .person-link {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.competition-leaders .media-avatar {
+  flex-shrink: 0;
+}
+.competition-leaders li > :last-child:not(:first-child) {
+  flex-shrink: 0;
+  text-align: right;
+}
+.competition-leaders small {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 400;
+}
+.competition-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin: 0;
+}
+.competition-metrics > div {
+  display: flex;
+  flex-direction: column-reverse;
+  justify-content: end;
+  padding: 20px;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.competition-metrics dt {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 400;
+}
+.competition-metrics dd {
+  margin: 0 0 8px;
+  font-size: 30px;
+  font-weight: 850;
+}
+.competition-footnote,
+.competition-method {
+  font-size: 12px;
+  margin-block: 18px 24px;
+}
+.competition-method summary {
+  cursor: pointer;
+  color: var(--muted);
+}
+.competition-method p {
+  margin-top: 12px;
+}
+.phase-standings + .phase-standings {
+  margin-top: 32px;
+}
+.phase-standings h3 {
+  font-size: 20px;
+  margin-bottom: 16px;
+}
+.competition-records > div {
+  min-width: 0;
+}
+.competition-records .match-card {
+  margin-bottom: 16px;
+}
+@media (max-width: 800px) {
+  .competition-awards,
+  .competition-highlights,
+  .competition-records {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .competition-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .competition-podium {
+    padding: 24px 12px 0;
+    gap: 12px;
+  }
+  .competition-podium .jumbo {
+    width: 64px;
+    height: 64px;
+  }
+  .podium-place strong {
+    font-size: 11px;
+  }
+  .podium-place .eyebrow {
+    font-size: 8px;
+    letter-spacing: 0;
+  }
+}
 .award-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

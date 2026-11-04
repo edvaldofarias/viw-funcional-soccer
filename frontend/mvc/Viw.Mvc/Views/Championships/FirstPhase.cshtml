@@ -1,0 +1,27 @@
+@model FirstPhasePage
+<partial name="_EditionHeader" model="Model.Edition" />
+<section class="shell section">
+    <div class="section-heading"><div><p class="eyebrow">A CAMPANHA DAS EQUIPES</p><h2>Classificação da primeira fase</h2></div></div>
+    @if (Model.Phase is not { } phase)
+    {
+        <div class="empty-state"><p>A primeira fase ainda não está disponível.</p></div>
+    }
+    else
+    {
+        <p class="muted">@phase.Phase.Name · Posições e pontos registrados na competição. Jogos e gols desta fase.</p>
+        @if (phase.Groups.Count > 0)
+        {
+            @foreach (var group in phase.Groups)
+            {
+                <section class="phase-standings">
+                    <h3>@group.Group.Name</h3>
+                    <partial name="_Standings" model="new StandingsTable(Model.Edition.Edition, group.Group.Name, group.Standings, true)" />
+                </section>
+            }
+        }
+        else
+        {
+            <partial name="_Standings" model='new StandingsTable(Model.Edition.Edition, "Classificação da primeira fase", phase.Standings, true)' />
+        }
+    }
+</section>

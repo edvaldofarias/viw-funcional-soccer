@@ -31,7 +31,7 @@ public sealed class SitemapService(ViwApiClient api, SeoService seo)
                 foreach (var edition in editions)
                 {
                     Add(PortalRoutes.Cup(edition.Slug)); Add(PortalRoutes.WikiCup(edition.Slug));
-                    foreach (var section in new[] { "equipes", "jogos", "estatisticas/jogadores", "estatisticas/equipes", "premiacoes" }) Add(PortalRoutes.Cup(edition.Slug) + "/" + section);
+                    foreach (var section in new[] { "primeira-fase", "equipes", "jogos", "estatisticas/jogadores", "estatisticas/equipes", "premiacoes" }) Add(PortalRoutes.Cup(edition.Slug) + "/" + section);
                     var teams = await ViwApiClient.CollectAsync(page => api.TeamsAsync(edition.Slug, page, ct, 100));
                     foreach (var team in teams) Add(PortalRoutes.Team(edition.Slug, team.Id));
                 }

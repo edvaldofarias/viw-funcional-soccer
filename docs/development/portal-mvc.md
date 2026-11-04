@@ -34,7 +34,7 @@ As rotas abreviadas da tabela continuam sob a copa correspondente. Slugs vêm do
 ## Conteúdo e qualidade
 
 - Paginação e filtros de edição/ano, jogos e busca de jogador.
-- Horários no fuso da edição; placar desconhecido aparece como travessão. Zero confirmado permanece zero.
+- Todos os horários visíveis usam Brasília (UTC−3), sem sufixo de offset, independentemente do fuso da edição, do servidor ou do dispositivo. `PortalFormat.Date` centraliza essa apresentação em cartões, súmula e Wiki; instantes e fusos da API continuam preservados. Placar desconhecido aparece como travessão. Zero confirmado permanece zero.
 - Estatísticas seguem os contratos da API: partidas encerradas, presença desconhecida e súmula incompleta são apresentados sem inventar participações ou regras de classificação.
 - Na tabela de estatísticas de jogadores, não exibir a coluna “Registros”. A coluna “Jogos” mostra somente o valor de `KnownAppearances`, inclusive zero, sem “confirmados” ou avisos de presença na célula. Os campos técnicos permanecem na API; o aviso geral de estatísticas é preservado.
 - Em edições encerradas, todos os líderes empatados em gols recebem reconhecimento de artilheiro. Ballon d’Or e demais categorias continuam dependentes de confirmação oficial.
@@ -63,6 +63,14 @@ npm run vendor
 ```
 
 Versionar o lockfile e os arquivos regenerados. Depois de alterar opções compartilhadas, regenerar os assets MVC e recompilar o Angular. Falhas de inicialização são registradas no console e exibem aviso na tabela, sem ocultar os dados.
+
+### Súmula da partida
+
+A súmula separa os jogadores pelo `TeamId` dos fatos da partida, com um bloco para cada equipe, escudo e nome no cabeçalho. Os blocos ficam lado a lado em telas largas e empilhados até 1000 px; cada tabela mantém sua própria ordenação, busca e paginação DataTables sobre todos os registros daquela equipe. Não inferir a equipe pelo elenco atual: transferências não podem mudar o lado histórico da súmula.
+
+Fotos usam `SourcePlayerId` com `/imagens/sourceplayers/{id}?editionId={editionId}`, inclusive quando `PlayerId` é null (sem identidade Wiki). Para respostas antigas sem o novo campo, preserva-se a foto canônica quando houver `PlayerId`; sem imagem disponível, mantém-se o placeholder existente. As tabelas exibem jogador, gols, cartões e jogos; desconhecido continua “—”, não zero. Não exibir coluna “Súmula” com os estados técnicos “Completa”/“Parcial”; `IsComplete` permanece no contrato da API para controle interno.
+
+Uma equipe sem fatos mostra uma mensagem própria, sem atribuir a ela jogadores do outro lado. Fatos cujo `TeamId` não corresponde a nenhum participante aparecem em um bloco explícito “Equipe não identificada”, nunca são descartados ou atribuídos por suposição. Sem fatos em toda a partida, mantém-se o estado de súmula indisponível.
 
 ### Elenco da equipe
 

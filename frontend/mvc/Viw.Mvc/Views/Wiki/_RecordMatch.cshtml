@@ -7,4 +7,4 @@
     var goalsAgainst = home ? Model.Match.AwayScore : Model.Match.HomeScore;
 }
 <a href="@PortalRoutes.Match(Model.Edition.Slug, Model.Match.Id)">@(team?.Name ?? "Equipe a confirmar") @PortalFormat.Score(goalsFor) × @PortalFormat.Score(goalsAgainst) @(opponent?.Name ?? "Adversário a confirmar")</a>
-<span class="wiki-record-context">@Model.Goals gols do jogador · @Model.Edition.Name · @Model.Edition.Year/@Model.Edition.Semester · @PortalFormat.Date(Model.Match.ScheduledAt, Model.Edition.TimeZoneId)</span>
+<span class="wiki-record-context">@Model.Goals gols do jogador · @Model.Edition.Name · @Model.Edition.Year/@Model.Edition.Semester · @PortalFormat.Date(Model.Match.ScheduledAt)</span>

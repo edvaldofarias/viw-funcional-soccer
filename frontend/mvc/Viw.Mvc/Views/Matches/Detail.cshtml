@@ -2,17 +2,62 @@
 <partial name="_EditionHeader" model="Model.Edition" />
 <section class="shell section"><div class="scoreboard panel"><div class="scoreboard-top"><span class="eyebrow">@(Model.Match.Title ?? "JOGO DA EDIÇÃO")</span><span class="status status-@Model.Match.Status.ToLowerInvariant()">@PortalFormat.Status(Model.Match.Status)</span></div><div class="scoreboard-score"><div class="scoreboard-team"><viw-avatar kind="teams" entity-id="@(Model.Match.Home?.Id)" name="@(Model.Match.Home?.Name)" class="team-avatar jumbo"></viw-avatar><h2>@if (Model.Match.Home is { } home) { <a href="@PortalRoutes.Team(Model.Edition.Edition.Slug, home.Id)">@home.Name</a> } else { <span>A definir</span> }</h2></div><div class="scoreboard-numbers" aria-label="Placar @PortalFormat.Score(Model.Match.HomeScore) a @PortalFormat.Score(Model.Match.AwayScore)"><span>@PortalFormat.Score(Model.Match.HomeScore)</span><b>:</b><span>@PortalFormat.Score(Model.Match.AwayScore)</span></div><div class="scoreboard-team"><viw-avatar kind="teams" entity-id="@(Model.Match.Away?.Id)" name="@(Model.Match.Away?.Name)" class="team-avatar jumbo away"></viw-avatar><h2>@if (Model.Match.Away is { } away) { <a href="@PortalRoutes.Team(Model.Edition.Edition.Slug, away.Id)">@away.Name</a> } else { <span>A definir</span> }</h2></div></div>
 @if (Model.Match.HomePenalties is not null && Model.Match.AwayPenalties is not null) { <p class="text-center muted">Pênaltis: @Model.Match.HomePenalties × @Model.Match.AwayPenalties</p> }
-<p class="muted scoreboard-date">@PortalFormat.Date(Model.Match.ScheduledAt, Model.Edition.Edition.TimeZoneId) @if (PortalFormat.HumanVenue(Model.Match.Venue)) { <span> · @Model.Match.Venue</span> }</p>@if (Model.Match.HomeScore is null || Model.Match.AwayScore is null) { <p class="muted">O placar ainda não está confirmado.</p> }</div>
+<p class="muted scoreboard-date">@PortalFormat.Date(Model.Match.ScheduledAt) @if (PortalFormat.HumanVenue(Model.Match.Venue)) { <span> · @Model.Match.Venue</span> }</p>@if (Model.Match.HomeScore is null || Model.Match.AwayScore is null) { <p class="muted">O placar ainda não está confirmado.</p> }</div>
 <div class="section-heading"><div><p class="eyebrow">OS REGISTROS DA PARTIDA</p><h2>Dentro do jogo</h2></div></div>
 @if (Model.Players.Items.Count == 0) {
     <div class="empty-state"><h3>A súmula ainda não está disponível.</h3><p>As estatísticas dos jogadores serão exibidas quando os registros estiverem disponíveis.</p></div>
 } else {
-    <div class="table-wrap"><table data-table-page="@Model.Pager.Page">
-        <caption class="sr-only">Estatísticas dos jogadores da partida</caption>
-        <thead><tr><th>Jogador</th><th>Equipe</th><th class="numeric">Gols</th><th class="numeric">Amarelos</th><th class="numeric">Vermelhos</th><th>Jogos</th><th>Súmula</th></tr></thead>
-        <tbody>@foreach (var player in Model.Players.Items) {
-            <tr><td>@if (player.PlayerId is { } id) { <a class="person-link" href="@PortalRoutes.Player(id)"><viw-avatar kind="players" entity-id="@(player.PlayerId)" name="@(player.Name)" class="avatar small" edition-id="@(Model.Edition.Edition.Id)"></viw-avatar>@player.Name</a> } else { @player.Name }</td><td>@(player.TeamId == Model.Match.Home?.Id ? Model.Match.Home.Name : player.TeamId == Model.Match.Away?.Id ? Model.Match.Away.Name : "Equipe da partida")</td><td class="numeric strong">@PortalFormat.Score(player.Goals)</td><td class="numeric">@PortalFormat.Score(player.YellowCards)</td><td class="numeric">@PortalFormat.Score(player.RedCards)</td><td>@PortalFormat.Appearance(player.Appearances)</td><td><span class="status @(player.IsComplete ? "status-finished" : "status-unknown")">@(player.IsComplete ? "Completa" : "Parcial")</span></td></tr>
-        }</tbody>
-    </table></div>
+    var sides = new List<(string Key, TeamResponse? Team, string Name, IReadOnlyList<MatchPlayerResponse> Players)>
+    {
+        ("home", Model.Match.Home, Model.Match.Home?.Name ?? "Equipe A a definir",
+            Model.Players.Items.Where(p => p.TeamId == Model.Match.Home?.Id).ToArray()),
+        ("away", Model.Match.Away, Model.Match.Away?.Name ?? "Equipe B a definir",
+            Model.Players.Items.Where(p => p.TeamId == Model.Match.Away?.Id).ToArray())
+    };
+    var unassigned = Model.Players.Items.Where(p => p.TeamId != Model.Match.Home?.Id && p.TeamId != Model.Match.Away?.Id).ToArray();
+    if (unassigned.Length > 0)
+    {
+        sides.Add(("unassigned", null, "Equipe não identificada", unassigned));
+    }
+    <div class="match-sheet-grid">
+        @foreach (var side in sides)
+        {
+            <article class="match-sheet-team" aria-labelledby="match-sheet-@side.Key-title">
+                <header class="match-sheet-team-header">
+                    <viw-avatar kind="teams" entity-id="@(side.Team?.Id)" name="@side.Name" class="team-avatar small"></viw-avatar>
+                    <h3 id="match-sheet-@side.Key-title">@side.Name</h3>
+                </header>
+                @if (side.Players.Count == 0)
+                {
+                    <p class="muted match-sheet-empty">Nenhum jogador registrado na súmula desta equipe.</p>
+                }
+                else
+                {
+                    <div class="table-wrap"><table data-table-page="@Model.Pager.Page">
+                        <caption class="sr-only">Estatísticas dos jogadores de @side.Name nesta partida</caption>
+                        <thead><tr><th scope="col">Jogador</th><th scope="col" class="numeric">Gols</th><th scope="col" class="numeric"><abbr title="Cartões amarelos">CA</abbr></th><th scope="col" class="numeric"><abbr title="Cartões vermelhos">CV</abbr></th><th scope="col">Jogos</th></tr></thead>
+                        <tbody>@foreach (var player in side.Players) {
+                            <tr>
+                                <td>
+                                    @if (player.PlayerId is { } id)
+                                    {
+                                        <a class="person-link" href="@PortalRoutes.Player(id)"><viw-avatar kind="@(player.SourcePlayerId is not null ? "sourceplayers" : "players")" entity-id="@(player.SourcePlayerId ?? player.PlayerId)" name="@player.Name" class="avatar small" edition-id="@Model.Edition.Edition.Id"></viw-avatar>@player.Name</a>
+                                    }
+                                    else
+                                    {
+                                        <span class="person-link"><viw-avatar kind="sourceplayers" entity-id="@player.SourcePlayerId" name="@player.Name" class="avatar small" edition-id="@Model.Edition.Edition.Id"></viw-avatar>@player.Name</span>
+                                    }
+                                </td>
+                                <td class="numeric strong">@PortalFormat.Score(player.Goals)</td>
+                                <td class="numeric">@PortalFormat.Score(player.YellowCards)</td>
+                                <td class="numeric">@PortalFormat.Score(player.RedCards)</td>
+                                <td>@PortalFormat.Appearance(player.Appearances)</td>
+                            </tr>
+                        }</tbody>
+                    </table></div>
+                }
+            </article>
+        }
+    </div>
 }
 <aside class="notice"><span class="notice-icon" aria-hidden="true">i</span><p>O traço (—) indica um valor ainda desconhecido. Súmulas parciais podem ser completadas ou corrigidas posteriormente.</p></aside></section>

@@ -52,6 +52,7 @@ Recursos inexistentes ou pertencentes a outra edição recebem `404`. Uma lista 
 
 - Totais de carreira e da edição consideram fatos de partidas encerradas. Estatísticas em andamento podem ser consultadas na própria partida.
 - Vínculos ativos relacionam o cadastro da origem à identidade canônica. A busca considera o nome oficial, nomes originais e apelidos vinculados. A mesma identidade não aparece duplicada na busca por ter vários cadastros na fonte.
+- As linhas de `/championships/{slug}/matches/{matchId}/players` incluem `sourcePlayerId` (cadastro da edição) além de `playerId` (identidade canônica opcional). O primeiro permite obter a foto por `/api/media/sourceplayers/{sourcePlayerId}` mesmo sem vínculo com a Wiki. `teamId` vem do fato da partida e permite separar as equipes sem consultar ou inferir o elenco atual.
 - Presenças desconhecidas não são convertidas em presença/ausência confirmada. `knownAppearances`, `unknownAppearances` e `incompleteSheets` tornam essa diferença explícita. Uma súmula com revisão anterior à partida também é sinalizada como incompleta.
 - Totais são os fatos disponíveis nas súmulas; não são silenciosamente substituídos por agregados textuais da fonte. Sem súmulas, eles podem estar incompletos ou vazios e devem ser exibidos com essa ressalva no futuro MVC.
 - Inscrições contêm períodos **observados pelo importador**; não afirmam a data histórica exata de uma transferência. Técnicos retornam seus períodos e eventual rodada; não são inferidos a partir de jogadores.

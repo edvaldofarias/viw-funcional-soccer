@@ -1,12 +1,12 @@
 import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { DatePipe, JsonPipe } from '@angular/common';
+import { DATE_PIPE_DEFAULT_OPTIONS, DatePipe, formatDate, JsonPipe } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { PlayerPhoto } from './player-photo';
 import { ViwDataTable } from './data-table';
 import { Api, message, Page, Person, Source, Definition, Edition, Award, Assignment, Audit, Account, Choice } from './api';
-@Component({ selector: 'viw-workspace', standalone: true, imports: [FormsModule, DatePipe, JsonPipe, PlayerPhoto, ViwDataTable], templateUrl: './workspace.html' })
+@Component({ selector: 'viw-workspace', standalone: true, imports: [FormsModule, DatePipe, JsonPipe, PlayerPhoto, ViwDataTable], providers: [{ provide: DATE_PIPE_DEFAULT_OPTIONS, useValue: { timezone: '-0300' } }], templateUrl: './workspace.html' })
 export class Workspace implements OnInit, OnDestroy {
     readonly timestamp = Date.parse;
     api = inject(Api); route = inject(ActivatedRoute); private subscription?: Subscription; private generation = 0; private targetGeneration = 0;
@@ -48,7 +48,7 @@ export class Workspace implements OnInit, OnDestroy {
             const detail = await this.api.get<{ rounds: Choice[] }>('v1/championships/' + edition.slug); this.rounds.set(detail.rounds);
             this.teams.set(await this.api.all<Choice>('v1/championships/' + edition.slug + '/teams'));
             const games = await this.api.all<{ id: string; home: { name: string } | null; away: { name: string } | null; scheduledAt: string | null }>('v1/championships/' + edition.slug + '/matches');
-            this.matches.set(games.map(x => ({ id: x.id, name: (x.home?.name ?? 'A definir') + ' × ' + (x.away?.name ?? 'A definir') + (x.scheduledAt ? ' · ' + new Date(x.scheduledAt).toLocaleDateString('pt-BR') : '') + ' · ' + x.id.slice(0, 8) })));
+            this.matches.set(games.map(x => ({ id: x.id, name: (x.home?.name ?? 'A definir') + ' × ' + (x.away?.name ?? 'A definir') + (x.scheduledAt ? ' · ' + formatDate(x.scheduledAt, 'dd/MM/yyyy', 'en-US', '-0300') : '') + ' · ' + x.id.slice(0, 8) })));
         } catch (e) { this.error.set(message(e)); }
     }
     async run(action: () => Promise<unknown>, success: string) { if (this.busy()) return; this.busy.set(true); this.error.set(''); this.notice.set(''); try { await action(); this.clear(); await this.load(); this.notice.set(success); } catch (e) { this.error.set(message(e)); } finally { this.busy.set(false); } }
@@ -78,8 +78,8 @@ export class Workspace implements OnInit, OnDestroy {
     }
     saveAward() { if (!this.target) return; const c = { ...this.awardForm, editionId: this.editionId, matchId: this.awardForm.matchId || null, roundId: this.awardForm.roundId || null, sourcePlayerId: this.definition()?.recipientKind === 'Player' ? this.target.id : null, coachId: this.definition()?.recipientKind === 'Coach' ? this.target.id : null, position: this.awardForm.position || null, version: this.version || null }; return this.run(() => this.api.change(this.editingId ? 'PUT' : 'POST', 'admin/awards' + (this.editingId ? '/' + this.editingId : ''), c), 'Premiação salva. Apenas prêmios confirmados aparecem no portal.'); }
     async editAssignment(a: Assignment) { this.clear(); this.editingId = a.id; this.version = a.version; this.assignmentForm = { teamId: a.teamId, coachId: a.coachId, roundId: a.roundId ?? '', startsAt: this.localDate(a.startsAt), endsAt: a.endsAt ? this.localDate(a.endsAt) : '', reason: '' }; this.target = { id: a.coachId, name: a.coachName ?? 'Técnico designado', slug: '', imageId: null, version: '' }; }
-    localDate(value: string) { const date = new Date(value); return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16); }
-    saveAssignment() { const c = { ...this.assignmentForm, editionId: this.editionId, coachId: this.target?.id, roundId: this.assignmentForm.roundId || null, startsAt: new Date(this.assignmentForm.startsAt).toISOString(), endsAt: this.assignmentForm.endsAt ? new Date(this.assignmentForm.endsAt).toISOString() : null, version: this.version || null }; return this.run(() => this.api.change(this.editingId ? 'PUT' : 'POST', 'admin/assignments' + (this.editingId ? '/' + this.editingId : ''), c), 'Designação salva.'); }
+    localDate(value: string) { return formatDate(value, "yyyy-MM-dd'T'HH:mm", 'en-US', '-0300'); }
+    saveAssignment() { const c = { ...this.assignmentForm, editionId: this.editionId, coachId: this.target?.id, roundId: this.assignmentForm.roundId || null, startsAt: new Date(this.assignmentForm.startsAt + '-03:00').toISOString(), endsAt: this.assignmentForm.endsAt ? new Date(this.assignmentForm.endsAt + '-03:00').toISOString() : null, version: this.version || null }; return this.run(() => this.api.change(this.editingId ? 'PUT' : 'POST', 'admin/assignments' + (this.editingId ? '/' + this.editingId : ''), c), 'Designação salva.'); }
     createAccount() { return this.run(async () => { await this.api.change('POST', 'admin/users', this.accountForm); this.accountForm = { email: '', password: '', role: 'Editor' }; }, 'Conta criada. Compartilhe a credencial por um canal seguro.'); }
     changeAccess(a: Account) { return this.run(() => this.api.change('PUT', 'admin/users/' + a.id + '/access', { enabled: !a.enabled }), 'Acesso atualizado; sessões anteriores invalidadas.'); }
     changePassword() { return this.run(async () => { await this.api.change('POST', 'admin/session/password', this.passwordForm); this.passwordForm = { currentPassword: '', newPassword: '' }; await this.api.csrf(); }, 'Senha alterada.'); }

@@ -149,7 +149,7 @@ public sealed partial class ViwQueries(ViwDbContext db) : IViwQueries
             where fact.MatchId == matchId && fact.EditionId == edition.Id
             orderby source.OriginalName, fact.Id
             select new MatchPlayerResponse(player == null ? null : player.Id, source.OriginalName,
-                fact.TeamEntryId, fact.Goals, fact.YellowCards, fact.RedCards, fact.Appearances, fact.IsComplete && fact.Revision == db.MatchRecords.Where(m => m.Id == fact.MatchId).Select(m => m.Revision).First());
+                fact.TeamEntryId, fact.Goals, fact.YellowCards, fact.RedCards, fact.Appearances, fact.IsComplete && fact.Revision == db.MatchRecords.Where(m => m.Id == fact.MatchId).Select(m => m.Revision).First(), source.Id);
         return await PageAsync(query, request, ct);
     }
 }

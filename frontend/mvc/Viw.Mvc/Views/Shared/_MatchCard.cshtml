@@ -6,5 +6,5 @@
 
 @if (game.HomePenalties is not null && game.AwayPenalties is not null) { <p class="text-center muted">Pênaltis: @game.HomePenalties × @game.AwayPenalties</p> }
 
-    <div class="match-card-footer"><span>@PortalFormat.Date(game.ScheduledAt, Model.Edition.TimeZoneId)</span><span aria-hidden="true">↗</span></div>
+    <div class="match-card-footer"><span>@PortalFormat.Date(game.ScheduledAt)</span><span aria-hidden="true">↗</span></div>
 </a>

@@ -1,4 +1,5 @@
 import { vi } from 'vitest';
+import { DATE_PIPE_DEFAULT_OPTIONS, DatePipe } from '@angular/common';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute } from '@angular/router';
 import { Api } from './api';
@@ -7,11 +8,30 @@ import { Workspace } from './workspace';
 describe('Destinatários da premiação',()=>{
  afterEach(()=>TestBed.resetTestingModule());
  function setup(){
-  const api={get:vi.fn(),all:vi.fn()};
+  const api={get:vi.fn(),all:vi.fn(),change:vi.fn()};
   TestBed.configureTestingModule({providers:[{provide:Api,useValue:api},{provide:ActivatedRoute,useValue:{}}]});
   const workspace=TestBed.runInInjectionContext(()=>new Workspace());
   return {workspace,api};
  }
+ it('exibe auditoria e designações no horário de Brasília sem offset',()=>{
+  setup();
+  const fixture=TestBed.createComponent(Workspace);
+  const options=fixture.componentRef.injector.get(DATE_PIPE_DEFAULT_OPTIONS);
+  const pipe=new DatePipe('en-US',undefined,options);
+  expect(pipe.transform('2026-11-04T01:15:00Z','dd/MM/yyyy HH:mm:ss')).toBe('03/11/2026 22:15:00');
+  fixture.destroy();
+ });
+ it('edita datas em Brasília e salva o mesmo instante em UTC',async()=>{
+  const {workspace,api}=setup();
+  expect(workspace.localDate('2026-11-04T01:15:00Z')).toBe('2026-11-03T22:15');
+  workspace.section.set('assignments');workspace.editionId='copa';
+  workspace.assignmentForm={teamId:'equipe',coachId:'tecnico',roundId:'',startsAt:'2026-11-03T22:15',endsAt:'2026-11-04T09:00',reason:'Correção'};
+  workspace.target={id:'tecnico',name:'Técnico',slug:'',imageId:null,version:''};
+  api.all.mockResolvedValue([]);
+  await workspace.saveAssignment();
+  expect(api.change).toHaveBeenCalledWith('POST','admin/assignments',expect.objectContaining({startsAt:'2026-11-04T01:15:00.000Z',endsAt:'2026-11-04T12:00:00.000Z'}));
+  expect(workspace.error()).toBe('');
+ });
  it('busca apenas jogadores da edição da premiação',async()=>{
   const {workspace,api}=setup();workspace.section.set('awards');workspace.editionId='copa-mundo';workspace.targetSearch='Pimenta';api.get.mockResolvedValue({items:[]});
   await workspace.findTargets();

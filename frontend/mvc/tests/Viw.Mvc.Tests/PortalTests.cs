@@ -9,6 +9,117 @@ namespace Viw.Mvc.Tests;
 public sealed class PortalTests
 {
     [Theory]
+    [InlineData("2026-11-04T15:40:00Z", "04 nov 2026 · 12:40")]
+    [InlineData("2026-11-04T01:15:00Z", "03 nov 2026 · 22:15")]
+    [InlineData("2026-11-04T10:00:00+05:00", "04 nov 2026 · 02:00")]
+    public void Dates_always_use_brasilia_without_a_visible_offset(string instant, string expected)
+    {
+        PortalFormat.Date(DateTimeOffset.Parse(instant, System.Globalization.CultureInfo.InvariantCulture))
+            .ShouldMatch("^" + expected.Replace("nov ", @"nov\.? ") + "$");
+        PortalFormat.Date(null).ShouldBe("Data a confirmar");
+    }
+
+    [Theory]
+    [InlineData("jogos/40000000-0000-0000-0000-000000000001")]
+    [InlineData("jogos")]
+    public async Task Match_times_have_no_visible_offset(string suffix)
+    {
+        await using var fixture = new PortalFixture();
+        using var client = fixture.CreateClient();
+        var html = WebUtility.HtmlDecode(await client.GetStringAsync($"/campeonatos/{FixtureApi.Slug}/{suffix}"));
+        html.ShouldMatch(@"01 nov\.? 2026 · 14:00");
+        html.ShouldNotContain("(-03:00)");
+    }
+
+    [Fact]
+    public async Task Match_sheet_separates_teams_and_shows_edition_photos_with_or_without_wiki_identity()
+    {
+        await using var fixture = new PortalFixture();
+        var linkedSource = Guid.NewGuid();
+        var unlinkedSource = Guid.NewGuid();
+        var awaySource = Guid.NewGuid();
+        fixture.Api.MatchPlayers =
+        [
+            new(FixtureApi.PlayerId, "Jogador Aurora", FixtureApi.HomeId, 0, 1, 0, 1, true, linkedSource),
+            new(null, "Sem identidade Wiki", FixtureApi.HomeId, null, null, null, null, false, unlinkedSource),
+            new(null, "Jogador Estrela", FixtureApi.AwayId, 2, 0, 1, 1, true, awaySource)
+        ];
+        using var client = fixture.CreateClient();
+        var html = WebUtility.HtmlDecode(await client.GetStringAsync(
+            $"/campeonatos/{FixtureApi.Slug}/jogos/{FixtureApi.MatchId:D}"));
+        var teams = Regex.Matches(html, """<article class="match-sheet-team"[\s\S]*?</article>""");
+        teams.Count.ShouldBe(2);
+        teams[0].Value.ShouldContain("Aurora");
+        teams[0].Value.ShouldContain("Jogador Aurora");
+        teams[0].Value.ShouldContain("Sem identidade Wiki");
+        teams[0].Value.ShouldNotContain("Jogador Estrela");
+        teams[1].Value.ShouldContain("Estrela");
+        teams[1].Value.ShouldContain("Jogador Estrela");
+        teams[1].Value.ShouldNotContain("Jogador Aurora");
+        foreach (var source in new[] { linkedSource, unlinkedSource, awaySource })
+            html.ShouldContain($"/imagens/sourceplayers/{source:D}?editionId={FixtureApi.EditionId:D}");
+        teams[0].Value.ShouldContain(">—</td>");
+        teams[0].Value.ShouldContain(">0</td>");
+        teams[1].Value.ShouldContain(">2</td>");
+        html.ShouldNotContain("<th>Equipe</th>");
+        foreach (Match table in Regex.Matches(html, @"<table\b[\s\S]*?</table>"))
+        {
+            Regex.Matches(table.Value, @"<th(?:\s[^>]*)?>").Count.ShouldBe(5);
+            table.Value.ShouldNotContain(">Súmula</th>");
+            table.Value.ShouldNotContain(">Completa</span>");
+            table.Value.ShouldNotContain(">Parcial</span>");
+            var body = Regex.Match(table.Value, @"<tbody>[\s\S]*?</tbody>").Value;
+            foreach (Match row in Regex.Matches(body, @"<tr>[\s\S]*?</tr>"))
+                Regex.Matches(row.Value, @"<td(?:\s[^>]*)?>").Count.ShouldBe(5);
+        }
+    }
+
+    [Fact]
+    public async Task Match_sheet_preserves_unassigned_players_without_attributing_them_to_a_team()
+    {
+        await using var fixture = new PortalFixture();
+        fixture.Api.MatchPlayers =
+        [
+            new(null, "Jogador sem equipe reconhecida", Guid.NewGuid(), 1, 0, 0, 1, false)
+        ];
+        using var client = fixture.CreateClient();
+        var html = WebUtility.HtmlDecode(await client.GetStringAsync(
+            $"/campeonatos/{FixtureApi.Slug}/jogos/{FixtureApi.MatchId:D}"));
+        var teams = Regex.Matches(html, """<article class="match-sheet-team"[\s\S]*?</article>""");
+        teams.Count.ShouldBe(3);
+        teams[0].Value.ShouldContain("Nenhum jogador registrado");
+        teams[1].Value.ShouldContain("Nenhum jogador registrado");
+        teams[0].Value.ShouldNotContain("Jogador sem equipe reconhecida");
+        teams[1].Value.ShouldNotContain("Jogador sem equipe reconhecida");
+        teams[2].Value.ShouldContain("Equipe não identificada");
+        teams[2].Value.ShouldContain("Jogador sem equipe reconhecida");
+        teams[2].Value.ShouldContain("<img");
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Match_sheet_handles_empty_team_and_unavailable_sheet(bool empty)
+    {
+        await using var fixture = new PortalFixture();
+        if (empty) fixture.Api.MatchPlayers = [];
+        using var client = fixture.CreateClient();
+        var html = WebUtility.HtmlDecode(await client.GetStringAsync(
+            $"/campeonatos/{FixtureApi.Slug}/jogos/{FixtureApi.MatchId:D}"));
+        if (empty)
+        {
+            html.ShouldContain("A súmula ainda não está disponível.");
+            html.ShouldNotContain("class=\"match-sheet-grid\"");
+        }
+        else
+        {
+            html.ShouldContain("Nenhum jogador registrado na súmula desta equipe.");
+            html.ShouldContain($"/imagens/players/{FixtureApi.PlayerId:D}?editionId={FixtureApi.EditionId:D}");
+            Regex.Matches(html, @"<table\b").Count.ShouldBe(1);
+        }
+    }
+
+    [Theory]
     [InlineData("players")]
     [InlineData("teams")]
     [InlineData("roster")]
@@ -372,7 +483,7 @@ public sealed class PortalTests
         // Act
         var html = await client.GetStringAsync(path);
         // Assert
-        html.ShouldContain("<th>Jogos</th>");
+        html.ShouldMatch("""<th(?: scope="col")?>Jogos</th>""");
         html.ShouldNotContain("Presença");
         html.ShouldNotContain("presença");
     }

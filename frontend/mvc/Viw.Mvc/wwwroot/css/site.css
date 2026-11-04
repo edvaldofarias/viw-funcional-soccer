@@ -1432,6 +1432,53 @@ body:has(.player-dialog[open]) {
   font-size: 11px;
   margin-block: 15px 0;
 }
+.match-sheet-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  margin-bottom: 24px;
+}
+.match-sheet-team {
+  min-width: 0;
+  align-self: start;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+.match-sheet-team-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px;
+}
+.match-sheet-team-header h3 {
+  margin: 0;
+  font-size: 18px;
+}
+.match-sheet-team .table-wrap {
+  border-width: 1px 0 0;
+  border-radius: 0 0 13px 13px;
+}
+.match-sheet-team th,
+.match-sheet-team td {
+  padding: 14px 10px;
+}
+.match-sheet-team .person-link {
+  white-space: normal;
+  min-width: 140px;
+}
+.match-sheet-team .avatar {
+  flex-shrink: 0;
+}
+.match-sheet-empty {
+  margin: 0;
+  padding: 0 18px 18px;
+}
+@media (max-width: 1000px) {
+  .match-sheet-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
 .award-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

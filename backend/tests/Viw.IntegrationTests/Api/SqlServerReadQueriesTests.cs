@@ -12,6 +12,40 @@ namespace Viw.IntegrationTests.Api;
 public sealed class SqlServerReadQueriesTests
 {
     [SqlServerFact]
+    public async Task Match_sheet_includes_source_ids_and_fact_teams_without_requiring_canonical_identity()
+    {
+        await using var database = await SqlServerTestDatabase.CreateAsync();
+        var db = database.Context;
+        var data = database.Data;
+        var match = data.CreateMatch();
+        var unlinked = new SourcePlayer {
+            EditionId = data.Edition.Id, Provider = "fixture", ExternalId = "unlinked-sheet-player",
+            OriginalName = "Sem vínculo"
+        };
+        db.AddRange(match, unlinked, data.CreateIdentityLink(),
+            Statistic(data, match, 2),
+            new PlayerMatchStatistics {
+                EditionId = data.Edition.Id, MatchId = match.Id, SourcePlayerId = unlinked.Id,
+                TeamEntryId = data.Away.Id, Goals = 1, Revision = match.Revision, IsComplete = true
+            });
+        await db.SaveChangesAsync();
+        db.ChangeTracker.Clear();
+
+        var sheet = await new ViwQueries(db).MatchPlayersAsync(data.Edition.Slug, match.Id, new PageRequest(), default);
+
+        sheet.ShouldNotBeNull();
+        sheet.Items.Count.ShouldBe(2);
+        var linked = sheet.Items.Single(p => p.SourcePlayerId == data.SourcePlayer.Id);
+        linked.PlayerId.ShouldBe(data.Player.Id);
+        linked.TeamId.ShouldBe(data.Home.Id);
+        var withoutIdentity = sheet.Items.Single(p => p.SourcePlayerId == unlinked.Id);
+        withoutIdentity.PlayerId.ShouldBeNull();
+        withoutIdentity.TeamId.ShouldBe(data.Away.Id);
+        withoutIdentity.Goals.ShouldBe(1);
+        db.ChangeTracker.Entries().ShouldBeEmpty();
+    }
+
+    [SqlServerFact]
     public async Task Archived_cards_use_source_totals_once_and_current_cards_use_finished_sheets()
     {
         // Arrange

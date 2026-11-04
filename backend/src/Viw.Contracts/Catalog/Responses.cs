@@ -194,8 +194,9 @@ public sealed record MatchResponse(Guid Id, Guid EditionId, Guid? PhaseId, Guid?
 /// <param name="RedCards">Cartões vermelhos registrados; null indica desconhecido.</param>
 /// <param name="Appearances">Presença confirmada: 1; ausência confirmada: 0; desconhecida: null.</param>
 /// <param name="IsComplete">Indica se os dados da súmula estão completos e correspondem à revisão atual da partida.</param>
+/// <param name="SourcePlayerId">GUID do cadastro do jogador na edição, usado para obter a foto mesmo sem identidade canônica.</param>
 public sealed record MatchPlayerResponse(Guid? PlayerId, string Name, Guid TeamId, int? Goals,
-    int? YellowCards, int? RedCards, int? Appearances, bool IsComplete);
+    int? YellowCards, int? RedCards, int? Appearances, bool IsComplete, Guid? SourcePlayerId = null);
 
 /// <summary>Resultados da equipe em partidas encerradas com placares válidos; sem classificação por pontos.</summary>
 /// <param name="Team">Identificação da equipe.</param>

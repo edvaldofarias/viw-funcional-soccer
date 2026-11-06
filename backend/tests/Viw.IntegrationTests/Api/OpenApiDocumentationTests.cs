@@ -18,7 +18,7 @@ public sealed class OpenApiDocumentationTests(WebApplicationFactory<Program> fac
             .Where(path => path.Name.StartsWith("/api/v1/", StringComparison.Ordinal)).ToArray();
 
         // Assert
-        paths.Length.ShouldBe(21);
+        paths.Length.ShouldBe(22);
         foreach (var path in paths)
         {
             var operation = path.Value.GetProperty("get");

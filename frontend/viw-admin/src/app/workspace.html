@@ -156,8 +156,6 @@
                 class="btn btn-outline-primary secondary" [class.selected]="target?.id===p.id"
                 (click)="target=p"><viw-player-photo [sourceId]="definition()?.recipientKind==='Player'?p.id:null" [name]="p.name" />{{p.name}} <small>{{p.slug}}</small></button>}</div>@if(target){<p class="review">
             Destinatário: <strong>{{target.name}}</strong></p>}
-        <label>Motivo da decisão<textarea class="form-control" name="awardReason" [(ngModel)]="awardForm.reason"
-                minlength="5" maxlength="200" required></textarea></label>
         <div class="actions"><button [disabled]="busy()||awardEdit.invalid||!target">Salvar premiação</button><button
                 class="btn btn-outline-primary secondary" type="button" (click)="clear()">Limpar / novo prêmio</button>
         </div>

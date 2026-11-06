@@ -6,8 +6,9 @@ namespace Viw.Infrastructure.Admin;
 
 public sealed partial class AdminService
 {
+    private static bool AutomaticTopScorer(string code) => code is "official-top-scorer" or "top-scorer";
     public async Task<IReadOnlyList<DefinitionRow>> DefinitionsAsync(CancellationToken ct) =>
-        await db.AwardDefinitionRecords.AsNoTracking().OrderBy(x=>x.Name).Select(x=>new DefinitionRow(x.Id,x.Code,x.Name,x.Scope.ToString(),x.RecipientKind.ToString())).ToArrayAsync(ct);
+        await db.AwardDefinitionRecords.AsNoTracking().Where(x=>x.Code!="official-top-scorer" && x.Code!="top-scorer").OrderBy(x=>x.Name).Select(x=>new DefinitionRow(x.Id,x.Code,x.Name,x.Scope.ToString(),x.RecipientKind.ToString())).ToArrayAsync(ct);
     private static AwardRow Award(AwardGrant x) => new(x.Id,x.EditionId,x.AwardDefinitionId,x.MatchId,x.RoundId,x.SourcePlayerId,x.CoachId,x.Position,x.Status.ToString(),Version(x));
     public async Task<AdminPage<AwardRow>> AwardsAsync(Guid editionId,int page,CancellationToken ct)
     {
@@ -21,6 +22,7 @@ public sealed partial class AdminService
     public async Task<AwardRow> SaveAwardAsync(Guid? id,AwardCommand c,string actor,CancellationToken ct)
     {
         var def=await db.AwardDefinitionRecords.SingleOrDefaultAsync(x=>x.Id==c.DefinitionId,ct) ?? throw new AdminRuleException("Categoria não encontrada.",404);
+        if(AutomaticTopScorer(def.Code)) throw new AdminRuleException("O artilheiro é reconhecido automaticamente pelos gols; não há concessão editorial.");
         if(!await db.ChampionshipEditionRecords.AnyAsync(x=>x.Id==c.EditionId,ct)) throw new AdminRuleException("Edição não encontrada.",404);
         if(!Enum.TryParse<AwardStatus>(c.Status,out var status) || !Enum.IsDefined(status)) throw new AdminRuleException("Situação inválida.");
         if((def.Scope==AwardScope.Match)!=(c.MatchId!=null) || (def.Scope==AwardScope.Round)!=(c.RoundId!=null)) throw new AdminRuleException("Partida/rodada deve corresponder ao âmbito da categoria.");
@@ -32,8 +34,8 @@ public sealed partial class AdminService
         if(def.Code.StartsWith("selection-",StringComparison.Ordinal) && string.IsNullOrWhiteSpace(c.Position)) throw new AdminRuleException("Informe a posição na seleção.");
         var row=id==null?new AwardGrant():await db.AwardGrantRecords.SingleOrDefaultAsync(x=>x.Id==id,ct) ?? throw new AdminRuleException("Prêmio não encontrado.",404);
         object? before=id==null?null:Award(row);if(id!=null) CheckVersion(row,c.Version);
-        row.EditionId=c.EditionId;row.AwardDefinitionId=c.DefinitionId;row.MatchId=c.MatchId;row.RoundId=c.RoundId;row.SourcePlayerId=c.SourcePlayerId;row.CoachId=c.CoachId;row.Position=c.Position?.Trim();row.Status=status;row.ConfirmedAt=status==AwardStatus.Confirmed?DateTimeOffset.UtcNow:null;row.DecidedBy=actor;row.Reason=c.Reason;
-        if(id==null) db.AwardGrantRecords.Add(row);Audit(row,before,actor,c.Reason,Award(row));await db.SaveChangesAsync(ct);return Award(row);
+        row.EditionId=c.EditionId;row.AwardDefinitionId=c.DefinitionId;row.MatchId=c.MatchId;row.RoundId=c.RoundId;row.SourcePlayerId=c.SourcePlayerId;row.CoachId=c.CoachId;row.Position=c.Position?.Trim();row.Status=status;row.ConfirmedAt=status==AwardStatus.Confirmed?DateTimeOffset.UtcNow:null;row.DecidedBy=actor;row.Reason=string.Empty;
+        if(id==null) db.AwardGrantRecords.Add(row);Audit(row,before,actor,"Premiação revisada pelo Admin.",Award(row));await db.SaveChangesAsync(ct);return Award(row);
     }
     private static AssignmentRow Assignment(CoachAssignment x)=>new(x.Id,x.EditionId,x.TeamEntryId,x.CoachId,x.RoundId,x.StartsAt,x.EndsAt,Version(x));
     public async Task<AdminPage<AssignmentRow>> AssignmentsAsync(Guid editionId,int page,CancellationToken ct)

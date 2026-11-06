@@ -59,8 +59,6 @@ public sealed class AwardCommand
     [StringLength(100)] public string? Position { get; set; }
     /// <summary>Draft, Confirmed ou Revoked; somente Confirmed aparece no portal público.</summary>
     [Required, RegularExpression("^(Draft|Confirmed|Revoked)$")] public string Status { get; set; } = "Draft";
-    /// <summary>Justificativa obrigatória da alteração, entre 5 e 200 caracteres.</summary>
-    [Required, StringLength(200, MinimumLength=5)] public string Reason { get; set; } = "";
     /// <summary>RowVersion em Base64 recebida na consulta; divergência retorna 409.</summary>
     public string? Version { get; set; }
 }

@@ -101,8 +101,21 @@ public sealed class AdminSqlTests
         await using var database=await SqlServerTestDatabase.CreateAsync();var db=database.Context;var d=database.Data;var game=d.CreateMatch();db.Add(game);await db.SaveChangesAsync();
         var definition=await db.AwardDefinitionRecords.SingleAsync(x=>x.Code=="official-match-mvp");var service=new AdminService(db);
         // Act
-        var error=await Should.ThrowAsync<AdminRuleException>(()=>service.SaveAwardAsync(null,new AwardCommand {EditionId=d.OtherEdition.Id,DefinitionId=definition.Id,MatchId=game.Id,SourcePlayerId=d.SourcePlayer.Id,Status="Confirmed",Reason="Prêmio conferido"},"editor",default));
+        var error=await Should.ThrowAsync<AdminRuleException>(()=>service.SaveAwardAsync(null,new AwardCommand {EditionId=d.OtherEdition.Id,DefinitionId=definition.Id,MatchId=game.Id,SourcePlayerId=d.SourcePlayer.Id,Status="Confirmed"},"editor",default));
         // Assert
+        error.Status.ShouldBe(400);(await db.AwardGrantRecords.CountAsync()).ShouldBe(0);(await db.AuditEntryRecords.CountAsync()).ShouldBe(0);
+    }
+    [SqlServerFact]
+    public async Task Top_scorer_recognition_is_automatic_and_not_an_editorial_category()
+    {
+        // Arrange
+        await using var database=await SqlServerTestDatabase.CreateAsync();var db=database.Context;var d=database.Data;var service=new AdminService(db);
+        // Act
+        var definitions=await service.DefinitionsAsync(default);
+        var seeded=await db.AwardDefinitionRecords.SingleAsync(x=>x.Code=="official-top-scorer");
+        var error=await Should.ThrowAsync<AdminRuleException>(()=>service.SaveAwardAsync(null,new AwardCommand {EditionId=d.Edition.Id,DefinitionId=seeded.Id,SourcePlayerId=d.SourcePlayer.Id,Status="Confirmed"},"editor",default));
+        // Assert
+        definitions.ShouldNotContain(x=>x.Code=="official-top-scorer"||x.Code=="top-scorer");
         error.Status.ShouldBe(400);(await db.AwardGrantRecords.CountAsync()).ShouldBe(0);(await db.AuditEntryRecords.CountAsync()).ShouldBe(0);
     }
     [SqlServerFact]
@@ -110,9 +123,10 @@ public sealed class AdminSqlTests
     {
         // Arrange
         await using var database=await SqlServerTestDatabase.CreateAsync();var db=database.Context;var d=database.Data;db.Add(d.CreateIdentityLink());await db.SaveChangesAsync();var service=new AdminService(db);
-        var command=new AwardCommand {EditionId=d.Edition.Id,DefinitionId=d.TopScorer.Id,SourcePlayerId=d.SourcePlayer.Id,Status="Confirmed",Reason="Decisão oficial"};
+        var definition=await db.AwardDefinitionRecords.SingleAsync(x=>x.Code=="official-ballon-dor");
+        var command=new AwardCommand {EditionId=d.Edition.Id,DefinitionId=definition.Id,SourcePlayerId=d.SourcePlayer.Id,Status="Confirmed"};
         // Act
-        var saved=await service.SaveAwardAsync(null,command,"editor",default);command.Version=saved.Version;command.Status="Revoked";command.Reason="Correção de premiação";var revoked=await service.SaveAwardAsync(saved.Id,command,"editor",default);
+        var saved=await service.SaveAwardAsync(null,command,"editor",default);command.Version=saved.Version;command.Status="Revoked";var revoked=await service.SaveAwardAsync(saved.Id,command,"editor",default);
         // Assert
         revoked.Status.ShouldBe("Revoked");(await db.AuditEntryRecords.CountAsync()).ShouldBe(2);(await db.AwardGrantRecords.CountAsync()).ShouldBe(1);
     }

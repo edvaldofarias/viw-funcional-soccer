@@ -12,7 +12,7 @@ Nomes semelhantes geram sugestões, nunca união automática. Um vínculo manual
 
 ## Administração
 
-Persistir decisões editoriais, como Ballon d’Or da edição, craque da partida, seleções e técnicos por rodada/período, em AwardDefinition/AwardGrant com situação rascunho/confirmado, observação e auditoria.
+Persistir decisões editoriais, como Ballon d’Or da edição, craque da partida, seleções e técnicos por rodada/período, em AwardDefinition/AwardGrant com situação rascunho/confirmado e auditoria; premiações não exigem motivo.
 
 **Artilharia de edição encerrada:** todos os cadastros empatados no maior total positivo de gols recebem o reconhecimento de artilheiro. Somar fatos das partidas encerradas da edição inteira, inclusive transferências; não usar carreira, gols de partidas em andamento ou desempate por nome. Sem gols registrados não há artilheiro. Antes de encerrar a edição, liderança não gera reconhecimento automático.
 

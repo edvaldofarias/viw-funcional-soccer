@@ -15,7 +15,7 @@ export class Workspace implements OnInit, OnDestroy {
     editions = signal<Edition[]>([]); definitions = signal<Definition[]>([]); teams = signal<Choice[]>([]); rounds = signal<Choice[]>([]); matches = signal<Choice[]>([]);
     search = ''; editionId = ''; targetSearch = ''; targets = signal<Person[]>([]); target: Person | null = null; source: Source | null = null; person: Person | null = null;
     personForm = { name: '', slug: '', reason: '' }; reason = ''; editingId: string | null = null; version = '';
-    awardForm = { definitionId: '', matchId: '', roundId: '', position: '', status: 'Draft', reason: '' };
+    awardForm = { definitionId: '', matchId: '', roundId: '', position: '', status: 'Draft' };
     assignmentForm = { teamId: '', coachId: '', roundId: '', startsAt: '', endsAt: '', reason: '' };
     accountForm = { email: '', password: '', role: 'Editor' }; passwordForm = { currentPassword: '', newPassword: '' }; securityEvents = signal<unknown[]>([]);
     titles: Record<string, string> = { players: 'Jogadores', identities: 'Unir jogadores', awards: 'Prêmios e seleções', coaches: 'Técnicos', assignments: 'Equipes e técnicos', audit: 'Histórico de alterações', accounts: 'Contas e acessos', password: 'Minha senha' };
@@ -24,7 +24,7 @@ export class Workspace implements OnInit, OnDestroy {
         try { this.editions.set(await this.api.all<Edition>('v1/championships')); this.definitions.set(await this.api.get<Definition[]>('admin/award-definitions')); } catch (e) { this.error.set(message(e)); }
     }
     ngOnDestroy() { this.subscription?.unsubscribe(); this.generation++; }
-    clear() { this.targetGeneration++; this.targetSearch = ''; this.person = null; this.source = null; this.target = null; this.targets.set([]); this.editingId = null; this.version = ''; this.reason = ''; this.error.set(''); this.notice.set(''); this.awardForm = { definitionId: '', matchId: '', roundId: '', position: '', status: 'Draft', reason: '' }; this.assignmentForm = { teamId: '', coachId: '', roundId: '', startsAt: '', endsAt: '', reason: '' }; }
+    clear() { this.targetGeneration++; this.targetSearch = ''; this.person = null; this.source = null; this.target = null; this.targets.set([]); this.editingId = null; this.version = ''; this.reason = ''; this.error.set(''); this.notice.set(''); this.awardForm = { definitionId: '', matchId: '', roundId: '', position: '', status: 'Draft' }; this.assignmentForm = { teamId: '', coachId: '', roundId: '', startsAt: '', endsAt: '', reason: '' }; }
     async load() {
         const generation = ++this.generation; const section = this.section(); this.busy.set(true); this.error.set('');
         try {
@@ -72,7 +72,7 @@ export class Workspace implements OnInit, OnDestroy {
     definition() { return this.definitions().find(x => x.id === this.awardForm.definitionId); }
     changeDefinition() { this.target = null; this.targets.set([]); this.awardForm.matchId = ''; this.awardForm.roundId = ''; }
     async editAward(a: Award) {
-        this.clear(); this.editingId = a.id; this.version = a.version; this.awardForm = { definitionId: a.definitionId, matchId: a.matchId ?? '', roundId: a.roundId ?? '', position: a.position ?? '', status: a.status, reason: '' };
+        this.clear(); this.editingId = a.id; this.version = a.version; this.awardForm = { definitionId: a.definitionId, matchId: a.matchId ?? '', roundId: a.roundId ?? '', position: a.position ?? '', status: a.status };
         if (a.sourcePlayerId) { this.target = {id:a.sourcePlayerId,name:a.recipientName??'Jogador',slug:'',imageId:null,version:''}; }
         else if (a.coachId) { this.targetSearch = ''; await this.findTargets(true); this.target = this.targets().find(x => x.id === a.coachId) ?? { id: a.coachId, name: a.recipientName ?? 'Técnico selecionado', slug: '', imageId: null, version: '' }; }
     }

@@ -9,6 +9,26 @@ namespace Viw.Mvc.Tests;
 public sealed class PortalTests
 {
     [Theory]
+    [InlineData("/")]
+    [InlineData("/estatisticas/invencibilidade")]
+    public async Task Footer_navigation_matches_the_main_menu(string path)
+    {
+        await using var fixture = new PortalFixture();
+        using var client = fixture.CreateClient();
+        var html = WebUtility.HtmlDecode(await client.GetStringAsync(path));
+        string[] Links(string label)
+        {
+            var nav = Regex.Match(html, $"""<nav[^>]*aria-label="{label}"[^>]*>([\s\S]*?)</nav>""");
+            nav.Success.ShouldBeTrue();
+            return Regex.Matches(nav.Groups[1].Value, """<a\s+[^>]*href="([^"]+)"[^>]*>([^<]+)</a>""")
+                .Select(x => $"{x.Groups[1].Value}|{x.Groups[2].Value}").ToArray();
+        }
+        var main = Links("Navegação principal");
+        main.ShouldBe(new[] { "/|Início", "/campeonatos|Campeonatos", "/estatisticas|Estatísticas", "/wiki|Wiki VIW" });
+        Links("Navegação do rodapé").ShouldBe(main);
+    }
+
+    [Theory]
     [InlineData("")]
     [InlineData("/estatisticas/jogadores")]
     [InlineData("/premiacoes")]

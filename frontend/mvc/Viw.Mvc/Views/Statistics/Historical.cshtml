@@ -1,0 +1,79 @@
+@model HistoricalStatisticsPage
+@{
+    var categories = new (string Id, string Title)[] {
+        ("campanhas", "Melhores campanhas"), ("duplas", "Duplas artilheiras"),
+        ("trios", "Trios artilheiros"), ("ataques", "Melhores ataques"),
+        ("defesas", "Melhores defesas"), ("sem-sofrer", "Jogos sem sofrer gols"),
+        ("invencibilidade", "Invencibilidade"), ("cartoes-equipes", "Cartões por equipe"),
+        ("cartoes-jogadores", "Cartões por jogador"), ("artilheiros", "Artilheiros por copa"),
+        ("copas-gols", "Copas com mais gols"), ("copas-cartoes", "Copas com mais cartões"),
+        ("copas-artilheiros", "Copas com mais jogadores marcando")
+    };
+    var title = categories.Single(x => x.Id == Model.Category).Title;
+    var path = Model.Category == "campanhas" ? "/estatisticas" : "/estatisticas/" + Model.Category;
+    var cupRanking = Model.Category.StartsWith("copas-", StringComparison.Ordinal);
+    var cardRanking = Model.Category is "copas-cartoes" or "cartoes-equipes" or "cartoes-jogadores";
+    var teamPerformance = Model.Category is "ataques" or "defesas" or "sem-sofrer";
+    var scorerCount = Model.Category == "duplas" ? 2 : Model.Category == "trios" ? 3 : 0;
+}
+<section class="shell page-header">
+    <p class="eyebrow">A HISTÓRIA EM NÚMEROS</p>
+    <h1>Estatísticas<span class="accent">.</span></h1>
+    <p>Explore as campanhas e os protagonistas das copas da VIW.</p>
+</section>
+<section class="shell section section-tight">
+    <nav class="segment-nav historical-nav" aria-label="Tipos de estatística">
+        @foreach (var category in categories) {
+            <a class="@(category.Id == Model.Category ? "active" : "")" aria-current="@(category.Id == Model.Category ? "page" : null)" href="@(category.Id == "campanhas" ? "/estatisticas" : "/estatisticas/" + category.Id)">@category.Title</a>
+        }
+    </nav>
+    <form class="filter-bar" method="get" action="@path">
+        <div class="grow"><label for="busca">Pesquisar</label><input id="busca" name="busca" type="search" maxlength="100" value="@Model.Search" placeholder="Equipe, jogador ou copa" /></div>
+        <div><label for="edicao">Campeonato</label><select id="edicao" name="edicao"><option value="">Todas as edições</option>@foreach (var cup in Model.Editions) { <option value="@cup.Id" selected="@(Model.EditionId == cup.Id)">@cup.Name · @cup.Year</option> }</select></div>
+        <button class="button button-primary" type="submit">Buscar <span aria-hidden="true">↗</span></button>
+        @if (Model.Search != null || Model.EditionId != null) { <a class="text-link" href="@path">Limpar filtros</a> }
+    </form>
+    <div class="section-heading"><div><p class="eyebrow">ARQUIVO VIW</p><h2>@title</h2></div></div>
+    <aside class="notice"><span class="notice-icon" aria-hidden="true">i</span><p>
+        @switch (Model.Category) {
+            case "campanhas": <text>Uma linha por equipe em cada edição. Três pontos por vitória e um por empate, sem desempates por pênaltis. Ordenação: pontos, gols pró e saldo, nessa ordem.</text> break;
+            case "duplas": case "trios": <text>Maiores artilheiros de cada equipe na mesma edição, com gols registrados em partidas encerradas. Empates são ordenados por nome.</text> break;
+            case "ataques": <text>Ordenados pela média de gols marcados por partida encerrada com placar conhecido.</text> break;
+            case "defesas": <text>Ordenadas pela menor média de gols sofridos por partida encerrada com placar conhecido.</text> break;
+            case "sem-sofrer": <text>Partidas encerradas com placar conhecido em que a equipe não sofreu gols.</text> break;
+            case "invencibilidade": <text>Maior sequência de jogos sem derrota em cada campanha, em ordem de data. Ordene a coluna de sequência para ver os menores valores. Campanhas com datas ou placares desconhecidos ou datas empatadas são omitidas; pênaltis não contam como derrota.</text> break;
+            case "cartoes-equipes": <text>Totais da edição são usados quando o cadastro pertence a uma única equipe e as súmulas identificam os cadastros; caso contrário, usam-se as súmulas por equipe. Valores com atribuição incerta são indicados como parciais. Dados incompletos podem reduzir os totais.</text> break;
+            case "cartoes-jogadores": <text>Cartões por jogador em cada edição, conforme os registros disponíveis. Os agregados de edições encerradas substituem os cartões das súmulas quando disponíveis.</text> break;
+            case "artilheiros": <text>Todos os líderes empatados com gols registrados em cada edição; edições em andamento podem mudar.</text> break;
+            case "copas-gols": <text>Jogos finalizados incluem partidas sem placar conhecido; a soma de gols usa apenas placares conhecidos, sem pênaltis. Edições sem placares conhecidos não aparecem.</text> break;
+            case "copas-cartoes": <text>Soma dos cartões por cadastro de jogador na edição, sem duplicar transferências. Em edições encerradas, agregados disponíveis substituem os dados das súmulas; registros ausentes podem reduzir o total.</text> break;
+            case "copas-artilheiros": <text>Quantidade de cadastros de jogadores com pelo menos um gol registrado na edição. Gols desconhecidos não são contabilizados; edições sem estatísticas não aparecem.</text> break;
+        }
+    </p></aside>
+    @if (Model.Rows.Count == 0) {
+        <div class="empty-state"><h3>Nenhum registro encontrado.</h3><p>Tente outros filtros ou volte quando houver dados disponíveis.</p></div>
+    } else {
+        <p class="result-count">@Model.Rows.Count registros encontrados</p>
+        <p class="result-count">Posições correspondem à ordem inicial com os filtros selecionados. Em estatísticas de equipes, empates usam pontos, gols pró e saldo.</p>
+        @if (Model.Category is "campanhas" or "invencibilidade") {
+        <div class="table-wrap"><table>
+            <caption class="sr-only">@title</caption>
+            <thead><tr><th>Posição</th><th>Equipe</th><th>Campeonato</th><th class="numeric">Jogos</th><th class="numeric">Vitórias</th><th class="numeric">Empates</th><th class="numeric">Derrotas</th>@if (Model.Category == "campanhas") { <th class="numeric">Gols pró</th><th class="numeric">Gols contra</th><th class="numeric">Saldo</th><th class="numeric">Pontos</th> } else { <th class="numeric">Sequência invicta (jogos)</th> }</tr></thead>
+            <tbody>@foreach (var entry in Model.Rows.Select((row, index) => (row, index))) {
+                var row = entry.row;
+                var campaign = row.Campaign!;
+                <tr><td data-order="@(entry.index + 1)">@(entry.index + 1)º</td><td><a class="person-link" href="@row.Url"><viw-avatar kind="teams" entity-id="@campaign.Team.Id" edition-id="@row.EditionId" name="@row.Name" class="team-avatar small"></viw-avatar>@row.Name</a></td><td><span class="person-link"><viw-avatar kind="editions" entity-id="@row.EditionId" name="@row.Edition" class="team-avatar small"></viw-avatar>@row.Edition</span></td><td class="numeric">@campaign.Played</td><td class="numeric">@campaign.Wins</td><td class="numeric">@campaign.Draws</td><td class="numeric">@campaign.Losses</td>@if (Model.Category == "campanhas") { <td class="numeric">@campaign.GoalsFor</td><td class="numeric">@campaign.GoalsAgainst</td><td class="numeric">@(campaign.GoalsFor - campaign.GoalsAgainst)</td> }<td class="numeric strong">@row.Value</td></tr>
+            }</tbody>
+        </table></div>
+        } else {
+        <div class="table-wrap"><table>
+            <caption class="sr-only">@title</caption>
+            <thead><tr><th>Posição</th><th>Nome</th><th>Campeonato</th>@if (cardRanking) { <th class="numeric"><abbr title="Cartões amarelos">CA</abbr></th><th class="numeric"><abbr title="Cartões vermelhos">CV</abbr></th> } else if (teamPerformance) { <th class="numeric">Jogos</th><th class="numeric">Vitórias</th><th class="numeric">Empates</th><th class="numeric">Derrotas</th>@if (Model.Category == "ataques") { <th class="numeric">Gols marcados</th> } else if (Model.Category == "defesas") { <th class="numeric">Gols sofridos</th> } } else if (scorerCount > 0) { @for (var i = 1; i <= scorerCount; i++) { <th>Jogador @i</th><th class="numeric">Gols jogador @i</th> } } else if (Model.Category == "copas-gols") { <th class="numeric">Jogos finalizados</th> }<th>Resultado</th></tr></thead>
+            <tbody>@foreach (var entry in Model.Rows.Select((row, index) => (row, index))) {
+                var row = entry.row;
+                <tr><td data-order="@(entry.index + 1)">@(entry.index + 1)º</td><td>@if (row.Url != null) { <a class="person-link" href="@row.Url">@if (row.Campaign != null) { <viw-avatar kind="teams" entity-id="@row.Campaign.Team.Id" edition-id="@row.EditionId" name="@row.Name" class="team-avatar small"></viw-avatar> } else if (cupRanking) { <viw-avatar kind="editions" entity-id="@row.EditionId" name="@row.Name" class="team-avatar small"></viw-avatar> }@row.Name</a> } else { @row.Name }</td><td>@if (cupRanking) { @row.Edition } else { <span class="person-link"><viw-avatar kind="editions" entity-id="@row.EditionId" name="@row.Edition" class="team-avatar small"></viw-avatar>@row.Edition</span> }</td>@if (cardRanking) { <td class="numeric">@row.Discipline!.YellowCards</td><td class="numeric">@row.Discipline.RedCards</td> } else if (teamPerformance) { var campaign = row.Campaign!; <td class="numeric">@campaign.Played</td><td class="numeric">@campaign.Wins</td><td class="numeric">@campaign.Draws</td><td class="numeric">@campaign.Losses</td>@if (Model.Category == "ataques") { <td class="numeric">@campaign.GoalsFor</td> } else if (Model.Category == "defesas") { <td class="numeric">@campaign.GoalsAgainst</td> } } else if (scorerCount > 0) { @foreach (var scorer in row.Scorers!) { <td>@scorer.Name</td><td class="numeric">@scorer.Goals</td> } } else if (Model.Category == "copas-gols") { <td class="numeric">@row.FinishedGames</td> }<td class="strong" data-order="@row.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)">@row.Metric@if (row.Partial) { <span class="cell-note">Parcial: atribuição incerta</span> }</td></tr>
+            }</tbody>
+        </table></div>
+        }
+    }
+</section>

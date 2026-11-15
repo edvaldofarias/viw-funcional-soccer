@@ -25,12 +25,15 @@ Docker: `docker compose up --build webapi mvc`. O portal fica em `http://localho
 | Equipes e elenco | `/campeonatos/{slug}/equipes`, `/equipes/{id}` |
 | Jogos e súmula | `/campeonatos/{slug}/jogos`, `/jogos/{id}` |
 | Estatísticas | `/campeonatos/{slug}/estatisticas/jogadores` e `/estatisticas/equipes` |
+| Estatísticas históricas | `/estatisticas` e `/estatisticas/{categoria}` |
 | Prêmios oficiais | `/campeonatos/{slug}/premiacoes` |
-| Memória das copas | `/wiki` e `/wiki/campeonatos/{slug}` |
-| Busca e perfil | `/wiki/jogadores` e `/wiki/jogadores/{slug}` |
+| Memória das copas | `/wiki/campeonatos/{slug}` |
+| Busca e perfil | `/wiki`, `/wiki/jogadores` e `/wiki/jogadores/{slug}` |
 | Link estável por identidade | `/wiki/jogadores/id/{id}` redireciona 301 para o slug atual |
 
 As rotas abreviadas da tabela continuam sob a copa correspondente. Slugs vêm do cadastro; nunca são deduzidos a partir do nome ou do identificador. Dentro de qualquer campeonato, clicar no nome ou foto de um jogador abre o modal do cadastro naquela edição, nunca navega diretamente para a Wiki. Isso vale para elenco (inclusive nome na edição), súmula, estatísticas, destaques da Visão Geral e premiações. A Wiki fica acessível apenas por um link opcional dentro do modal, quando houver vínculo ativo.
+
+O cabeçalho e o rodapé usam a mesma lista de navegação principal definida no layout, mantendo rótulos, destinos e ordem sincronizados.
 
 ## Conteúdo e qualidade
 
@@ -42,6 +45,20 @@ As rotas abreviadas da tabela continuam sob a copa correspondente. Slugs vêm do
 - Técnicos, vínculos e nomes históricos são exibidos conforme o cadastro.
 - Imagens usam monogramas enquanto não houver URL pública de mídia no contrato. IDs de assets não são convertidos em URLs privadas ou links com token do Firebase.
 - Recursos ausentes retornam 404; filtros inválidos, 400; indisponibilidade ou resposta inválida da API, 503 com tentativa posterior. A API continua responsável pela preservação dos dados importados.
+
+### Estatísticas históricas
+
+O menu reúne campanhas por equipe e edição, sem consolidar nomes de equipes entre copas. O ranking calcula três pontos por vitória e um por empate e ordena por pontos, gols pró e saldo, nessa ordem; nos demais rankings de equipes esses critérios desempatarão a métrica principal. Ataques e defesas usam médias por jogo, sem pênaltis. Duplas e trios somam os maiores artilheiros com gols registrados da mesma equipe e edição; empates são ordenados por nome. Jogos sem sofrer gols e sequências usam partidas encerradas com placar conhecido. Para invencibilidade, uma campanha com data, placar ou participante desconhecido ou partidas na mesma data/hora é omitida, pois a ordem não é segura. O grid mostra jogos, vitórias, empates, derrotas e a maior sequência invicta; ordenar esta última coluna permite ver também os menores máximos. Posições mostram a ordem inicial depois dos filtros do formulário, e não são recalculadas pela ordenação ou busca local do DataTables.
+
+Os grids apresentam os dados em colunas ordenáveis: jogos e resultados das campanhas, gols marcados ou sofridos, integrantes e gols individuais de duplas e trios, cartões amarelos e vermelhos e jogos finalizados das copas.
+
+Cartões por equipe usam o total da edição do cadastro quando inscrições e súmulas apontam para uma única equipe e os cadastros nas súmulas estão identificados, substituindo e nunca somando os cartões das mesmas súmulas. Quando um cadastro aparece em mais de uma equipe, usam-se apenas as súmulas atribuídas a cada equipe; se diferirem do total da edição, as equipes são sinalizadas como parciais. Súmulas sem identificador do cadastro também impedem a substituição pelos totais e sinalizam a equipe como parcial. Cartões por jogador usam o total da edição retornado pela API, inclusive agregados históricos disponíveis; ambos podem ser incompletos. Artilheiros incluem todos os líderes empatados com gols, inclusive em edições em andamento, identificados como líderes e não como prêmio oficial. As categorias aceitam busca e filtro de edição e deixam as limitações visíveis.
+
+Os rankings de copas contam jogos finalizados, inclusive sem placar conhecido, e gols nos placares conhecidos dessas partidas (inclusive sem fase e sem pênaltis), jogadores por cadastro da edição com gol registrado e cartões por cadastro, sem duplicar inscrições ou transferências. Os cartões reúnem os cadastros com estatísticas de partida e os inscritos nos elencos, usando o total de disciplina da edição, com agregados disponíveis em edições arquivadas. Cadastros ausentes dessas fontes não são contados. Edições sem dados para a métrica são omitidas; valores podem ser parciais.
+
+Os grids históricos exibem o logo da edição junto à competição, usando o mesmo mecanismo de imagem e fallback dos demais cartões do portal. Nos rankings de cartões, CA e CV ficam em colunas numéricas separadas.
+
+Nos rankings históricos de jogadores, duplas e trios, cadastros com vínculo ativo exibem o nome da identidade unificada da Wiki; sem vínculo, exibem o nome da edição. A busca também aceita o nome original e as métricas continuam separadas por cadastro e edição.
 
 ### Tabelas ordenáveis (DataTables)
 

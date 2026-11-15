@@ -8,13 +8,13 @@ namespace Viw.Mvc.Controllers;
 public sealed class WikiController(ViwApiClient api, SeoService seo) : PortalController(seo)
 {
     [HttpGet("/wiki")]
-    public async Task<IActionResult> Index(CancellationToken ct)
-    {
-        var editions = ViwApiClient.Required(await api.EditionsAsync(1, null, ct, 6));
-        return Page("Index", new HomePage(editions), "Wiki VIW · A memória do nosso futebol", "Explore o histórico dos jogadores, os nomes que marcaram cada edição e a memória das copas da VIW.", "/wiki");
-    }
+    public Task<IActionResult> Index([Range(1, 100000)] int page = 1, [StringLength(100)] string? busca = null, Guid? edicao = null, CancellationToken ct = default) =>
+        PlayerList("/wiki", page, busca, edicao, ct);
     [HttpGet("/wiki/jogadores")]
     public async Task<IActionResult> Players([Range(1, 100000)] int page = 1, [StringLength(100)] string? busca = null, Guid? edicao = null, CancellationToken ct = default)
+        => await PlayerList("/wiki/jogadores", page, busca, edicao, ct);
+
+    private async Task<IActionResult> PlayerList(string path, int page, string? busca, Guid? edicao, CancellationToken ct)
     {
         busca = string.IsNullOrWhiteSpace(busca) ? null : busca.Trim();
         var players = api.PlayersAsync(page, busca, edicao, ct);
@@ -22,7 +22,7 @@ public sealed class WikiController(ViwApiClient api, SeoService seo) : PortalCon
         await Task.WhenAll(players, editions);
         var data = ViwApiClient.Required(await players);
         if (BeyondPage(data)) return Missing();
-        var pager = new Pager("/wiki/jogadores", page, data.PageSize, data.TotalCount, new() { ["busca"] = busca, ["edicao"] = edicao?.ToString("D") });
+        var pager = new Pager(path, page, data.PageSize, data.TotalCount, new() { ["busca"] = busca, ["edicao"] = edicao?.ToString("D") });
         return Page("Players", new WikiPlayersPage(data, await editions, busca, edicao, pager), "Jogadores · Wiki VIW", "Encontre os jogadores da VIW pelo nome ou apelido e descubra suas participações entre as copas.", pager.Url(page), busca != null || edicao != null || data.TotalCount == 0, "CollectionPage");
     }
     [HttpGet("/wiki/jogadores/id/{id:guid}")]

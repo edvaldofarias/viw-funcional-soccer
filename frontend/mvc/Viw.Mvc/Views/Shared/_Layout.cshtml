@@ -3,6 +3,10 @@
     var meta = ViewData["Seo"] as SeoMetadata ?? Seo.Create("VIW Funcional Soccer", "As copas, os jogos e a história do futebol da VIW.", Context.Request.Path.Value ?? "/", true);
     var path = Context.Request.Path.Value ?? "/";
     var title = meta.Title.Contains("VIW", StringComparison.OrdinalIgnoreCase) ? meta.Title : meta.Title + " · VIW Funcional Soccer";
+    var navigation = new (string Url, string Label)[] {
+        ("/", "Início"), ("/campeonatos", "Campeonatos"),
+        ("/estatisticas", "Estatísticas"), ("/wiki", "Wiki VIW")
+    };
 }
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -46,16 +50,16 @@
         <div class="shell header-inner">
             <a href="/" class="brand" aria-label="VIW Funcional Soccer — início"><span class="brand-mark" aria-hidden="true">V<span>↗</span></span><span class="brand-name">VIW<small>FUNCIONAL SOCCER</small></span></a>
             <nav class="main-nav" aria-label="Navegação principal">
-                <a href="/" class="@(path == "/" ? "active" : "")">Início</a>
-                <a href="/campeonatos" class="@(path.StartsWith("/campeonatos") ? "active" : "")">Campeonatos</a>
-                <a href="/wiki" class="@(path.StartsWith("/wiki") ? "active" : "")">Wiki VIW</a>
+                @foreach (var item in navigation) {
+                    <a href="@item.Url" class="@((item.Url == "/" ? path == "/" : path.StartsWith(item.Url)) ? "active" : "")">@item.Label</a>
+                }
             </nav>
             <a class="header-search" href="/wiki/jogadores"><span aria-hidden="true">⌕</span> <span>Buscar jogador</span></a>
         </div>
     </header>
     <main id="conteudo" tabindex="-1">@RenderBody()</main>
     <footer class="site-footer">
-        <div class="shell footer-inner"><div><a class="footer-brand" href="/">VIW <span>FUNCIONAL SOCCER</span></a><p>O jogo passa. A história fica.</p></div><nav aria-label="Navegação do rodapé"><a href="/campeonatos">Todas as copas</a><a href="/wiki/jogadores">Nossos jogadores</a><a href="/wiki">Memória VIW</a></nav><p class="footer-note">Feito para quem vive o nosso futebol.</p></div>
+        <div class="shell footer-inner"><div><a class="footer-brand" href="/">VIW <span>FUNCIONAL SOCCER</span></a><p>O jogo passa. A história fica.</p></div><nav aria-label="Navegação do rodapé">@foreach (var item in navigation) { <a href="@item.Url">@item.Label</a> }</nav><p class="footer-note">Feito para quem vive o nosso futebol.</p></div>
     </footer>
     @await RenderSectionAsync("Scripts", required: false)
 </body>

@@ -23,6 +23,12 @@ public sealed record PlayerStatsPage(EditionDetailResponse Edition, PageResponse
 public sealed record TeamStatsPage(EditionDetailResponse Edition, PageResponse<TeamStatisticsResponse> Teams, Pager Pager);
 public sealed record AwardsPage(EditionDetailResponse Edition, PageResponse<AwardResponse> Awards, Pager Pager);
 public sealed record WikiPlayersPage(PageResponse<PlayerResponse> Players, IReadOnlyList<EditionResponse> Editions, string? Search, Guid? EditionId, Pager Pager);
+public sealed record HistoricalStatisticsPage(string Category, IReadOnlyList<EditionResponse> Editions,
+    Guid? EditionId, string? Search, IReadOnlyList<HistoricalStatisticsRow> Rows);
+public sealed record HistoricalScorer(string Name, long Goals);
+public sealed record HistoricalStatisticsRow(string Name, string Edition, Guid EditionId, string? Url,
+    string Details, decimal Value, string Metric, StandingRow? Campaign = null, PlayerDisciplineResponse? Discipline = null,
+    string? SearchText = null, bool Partial = false, IReadOnlyList<HistoricalScorer>? Scorers = null, int? FinishedGames = null);
 public sealed record WikiPlayerPage(PlayerDetailResponse Player, PageResponse<PlayerHistoryResponse> History, Pager Pager);
 public sealed record MatchCard(EditionResponse Edition, MatchResponse Match);
 public sealed record Pager(string Path, int Page, int PageSize, int TotalCount, Dictionary<string, string?>? Filters = null)

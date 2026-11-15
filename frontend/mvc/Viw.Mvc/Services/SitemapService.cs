@@ -27,7 +27,7 @@ public sealed class SitemapService(ViwApiClient api, SeoService seo)
             var editions = await ViwApiClient.CollectAsync(page => api.EditionsAsync(page, null, ct, 100));
             if (part == "campeonatos")
             {
-                Add("/"); Add("/campeonatos"); Add("/wiki");
+                Add("/"); Add("/campeonatos"); Add("/wiki"); Add("/estatisticas");
                 foreach (var edition in editions)
                 {
                     Add(PortalRoutes.Cup(edition.Slug)); Add(PortalRoutes.WikiCup(edition.Slug));

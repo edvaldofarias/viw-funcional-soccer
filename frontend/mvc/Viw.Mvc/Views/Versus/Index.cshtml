@@ -26,7 +26,7 @@
                 </div>
             }
         </div>
-        <p class="result-count">↑ indica vantagem no critério; ↓ indica desvantagem. Em derrotas, gols contra e cartões, o menor valor é favorável. Empates e dados parciais ou indisponíveis não têm indicador.</p>
+        <p class="result-count">↑ indica vantagem; ↓ indica desvantagem; = indica valores iguais. Em derrotas, gols contra e cartões, o menor valor é favorável. Dados parciais ou indisponíveis não têm indicador.</p>
         <div class="versus-metrics" aria-label="Comparação de estatísticas">
             @foreach (var metric in Model.Metrics) {
                 <partial name="_VersusMetric" model="metric" />

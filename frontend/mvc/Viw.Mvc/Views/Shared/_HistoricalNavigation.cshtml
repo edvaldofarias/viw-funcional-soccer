@@ -1,17 +1,32 @@
 @model string
 @{
-    var categories = new (string Id, string Title)[] {
-        ("campanhas", "Melhores campanhas"), ("duplas", "Duplas artilheiras"),
-        ("trios", "Trios artilheiros"), ("ataques", "Melhores ataques"),
-        ("defesas", "Melhores defesas"), ("sem-sofrer", "Jogos sem sofrer gols"),
-        ("invencibilidade", "Invencibilidade"), ("cartoes-equipes", "Cartões por equipe"),
-        ("cartoes-jogadores", "Cartões por jogador"), ("artilheiros", "Artilheiros por copa"),
-        ("copas-gols", "Copas com mais gols"), ("copas-cartoes", "Copas com mais cartões"),
-        ("copas-artilheiros", "Copas com mais jogadores marcando")
+    var groups = new (string Title, (string Id, string Title)[] Categories)[] {
+        ("Copas", new[] {
+            ("copas-gols", "Copas com mais gols"), ("copas-cartoes", "Copas com mais cartões"),
+            ("copas-artilheiros", "Copas com mais jogadores marcando")
+        }),
+        ("Jogadores", new[] {
+            ("artilheiros", "Artilheiros por copa"), ("duplas", "Duplas artilheiras"),
+            ("trios", "Trios artilheiros"), ("cartoes-jogadores", "Cartões por jogador")
+        }),
+        ("Times", new[] {
+            ("campanhas", "Melhores campanhas"), ("ataques", "Melhores ataques"),
+            ("defesas", "Melhores defesas"), ("sem-sofrer", "Jogos sem sofrer gols"),
+            ("invencibilidade", "Invencibilidade"), ("cartoes-equipes", "Cartões por equipe")
+        })
     };
+    var current = groups.Single(group => group.Categories.Any(category => category.Id == Model));
+    string Href(string id) => id == "campanhas" ? "/estatisticas" : "/estatisticas/" + id;
 }
-<div class="cup-nav-wrap"><nav class="shell cup-nav" aria-label="Tipos de estatística">
-    @foreach (var category in categories) {
-        <a class="@(category.Id == Model ? "active" : "")" aria-current="@(category.Id == Model ? "page" : null)" href="@(category.Id == "campanhas" ? "/estatisticas" : "/estatisticas/" + category.Id)">@category.Title</a>
-    }
-</nav></div>
+<div class="cup-nav-wrap">
+    <div class="shell"><nav class="segment-nav historical-switch" aria-label="Grupos de estatística">
+        @foreach (var group in groups) {
+            <a class="@(group.Title == current.Title ? "active" : "")" aria-current="@(group.Title == current.Title ? "true" : null)" href="@Href(group.Categories[0].Id)">@group.Title</a>
+        }
+    </nav></div>
+    <nav class="shell cup-nav historical-nav" aria-label="Tipos de estatística">
+        @foreach (var category in current.Categories) {
+            <a class="@(category.Id == Model ? "active" : "")" aria-current="@(category.Id == Model ? "page" : null)" href="@Href(category.Id)">@category.Title</a>
+        }
+    </nav>
+</div>

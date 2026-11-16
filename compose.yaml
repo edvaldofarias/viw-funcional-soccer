@@ -27,6 +27,7 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       ViwApi__BaseUrl: http://webapi:8080/
       Site__PublicBaseUrl: ${VIW_PUBLIC_BASE_URL:-http://localhost:5081/}
+      Instagram__AccessToken: ${VIW_INSTAGRAM_ACCESS_TOKEN:-}
     depends_on:
       - webapi
   worker:

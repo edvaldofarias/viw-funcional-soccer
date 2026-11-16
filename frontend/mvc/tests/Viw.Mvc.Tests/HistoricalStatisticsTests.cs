@@ -7,6 +7,30 @@ namespace Viw.Mvc.Tests;
 public sealed class HistoricalStatisticsTests
 {
     [Theory]
+    [InlineData("/estatisticas/copas-cartoes", "Copas", "copas-gols,copas-cartoes,copas-artilheiros")]
+    [InlineData("/estatisticas/trios", "Jogadores", "artilheiros,duplas,trios,cartoes-jogadores")]
+    [InlineData("/estatisticas", "Times", "campanhas,ataques,defesas,sem-sofrer,invencibilidade,cartoes-equipes")]
+    public async Task Historical_navigation_switches_groups_and_lists_only_the_active_group_categories(
+        string path, string group, string categories)
+    {
+        await using var fixture = new PortalFixture();
+        using var client = fixture.CreateClient();
+        var html = WebUtility.HtmlDecode(await client.GetStringAsync(path));
+        string Href(string id) => id == "campanhas" ? "/estatisticas" : "/estatisticas/" + id;
+        var groups = Regex.Match(html, """<nav class="segment-nav historical-switch" aria-label="Grupos de estatística">[\s\S]*?</nav>""").Value;
+        Regex.Matches(groups, "<a [^>]*>([^<]*)</a>").Select(x => x.Groups[1].Value).ShouldBe(["Copas", "Jogadores", "Times"]);
+        foreach (var target in new[] { "copas-gols", "artilheiros", "campanhas" })
+            groups.ShouldContain($"href=\"{Href(target)}\"");
+        Regex.Matches(groups, "aria-current").Count.ShouldBe(1);
+        Regex.IsMatch(groups, $"""<a class="active" aria-current="true" href="[^"]*">{group}</a>""").ShouldBeTrue();
+        var nav = Regex.Match(html, """<nav class="shell cup-nav historical-nav" aria-label="Tipos de estatística">[\s\S]*?</nav>""").Value;
+        Regex.Matches(nav, "href=\"([^\"]*)\"").Select(x => x.Groups[1].Value).ShouldBe(categories.Split(',').Select(Href));
+        nav.ShouldContain($"aria-current=\"page\" href=\"{path}\"");
+        html.IndexOf("historical-switch", StringComparison.Ordinal).ShouldBeLessThan(html.IndexOf("historical-nav", StringComparison.Ordinal));
+        html.ShouldNotContain("header-search");
+    }
+
+    [Theory]
     [InlineData("/estatisticas", false)]
     [InlineData("/estatisticas/ataques", false)]
     [InlineData("/estatisticas/cartoes-jogadores", false)]

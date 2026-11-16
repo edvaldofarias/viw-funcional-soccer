@@ -14,14 +14,21 @@ namespace Viw.Mvc.Tests;
 internal sealed class PortalFixture : WebApplicationFactory<Program>
 {
     public FixtureApi Api { get; } = new();
+    public FixtureInstagram Instagram { get; } = new();
+    public string? InstagramToken { get; set; }
     public bool Indexing { get; set; } = true;
     protected override void ConfigureWebHost(IWebHostBuilder builder) => builder.UseEnvironment("Development")
         .ConfigureAppConfiguration((_, configuration) => configuration.AddInMemoryCollection(new Dictionary<string, string?>
         {
             ["ViwApi:BaseUrl"] = "http://api.test/",
             ["Site:PublicBaseUrl"] = "https://viw.test/",
-            ["Site:EnableIndexing"] = Indexing.ToString()
-        })).ConfigureServices(services => services.AddHttpClient<ViwApiClient>().ConfigurePrimaryHttpMessageHandler(() => Api));
+            ["Site:EnableIndexing"] = Indexing.ToString(),
+            ["Instagram:AccessToken"] = InstagramToken
+        })).ConfigureServices(services =>
+        {
+            services.AddHttpClient<ViwApiClient>().ConfigurePrimaryHttpMessageHandler(() => Api);
+            services.AddHttpClient<InstagramFeedService>().ConfigurePrimaryHttpMessageHandler(() => Instagram);
+        });
 }
 
 internal sealed class FixtureApi : HttpMessageHandler

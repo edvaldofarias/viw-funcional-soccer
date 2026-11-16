@@ -12,8 +12,8 @@ public sealed class VersusTests
         var pattern = $"""<div class="versus-metric">\s*<strong>((?:(?!</strong>)[\s\S])*)</strong>\s*<span>{Regex.Escape(label)}</span>\s*<strong>((?:(?!</strong>)[\s\S])*)</strong>""";
         var match = Regex.Match(html, pattern);
         match.Success.ShouldBeTrue($"Métrica {label} ausente");
-        Regex.Match(match.Groups[1].Value, @"^\s*(-?\d+\*?|—)").Groups[1].Value.ShouldBe(left);
-        Regex.Match(match.Groups[2].Value, @"^\s*(-?\d+\*?|—)").Groups[1].Value.ShouldBe(right);
+        Regex.Match(match.Groups[1].Value, """<span class="versus-value">([^<]+)</span>""").Groups[1].Value.ShouldBe(left);
+        Regex.Match(match.Groups[2].Value, """<span class="versus-value">([^<]+)</span>""").Groups[1].Value.ShouldBe(right);
         return match;
     }
 
@@ -21,9 +21,11 @@ public sealed class VersusTests
     [InlineData("5", "2", false, 1)]
     [InlineData("5", "2", true, -1)]
     [InlineData("2", "2", false, 0)]
-    [InlineData("5*", "2", false, 0)]
-    [InlineData("—", "2", false, 0)]
-    public void Indicators_only_compare_complete_values(string left, string right, bool lower, int expected)
+    [InlineData("5*", "2", false, null)]
+    [InlineData("2*", "2*", false, null)]
+    [InlineData("—", "—", false, null)]
+    [InlineData("—", "2", false, null)]
+    public void Indicators_only_compare_complete_values(string left, string right, bool lower, int? expected)
     {
         new VersusMetric("Teste", left, right, lower).Advantage.ShouldBe(expected);
     }
@@ -62,7 +64,10 @@ public sealed class VersusTests
         defeats.Groups[1].Value.ShouldContain("favorable");
         defeats.Groups[2].Value.ShouldContain("unfavorable");
         var draws = Metric(html, "Empates", "1", "1");
-        draws.Value.ShouldNotContain("versus-indicator");
+        draws.Groups[1].Value.ShouldContain("""class="versus-indicator equal" aria-hidden="true">=</span>""");
+        draws.Groups[2].Value.ShouldContain("""class="versus-indicator equal" aria-hidden="true">=</span>""");
+        draws.Groups[1].Value.ShouldContain("Valores iguais");
+        draws.Groups[2].Value.ShouldContain("Valores iguais");
         Metric(html, "Títulos na edição", "1", "0");
         Metric(html, "Gols nos confrontos", "2", "1");
         Metric(html, "Cartões amarelos", "2", "3");
@@ -95,7 +100,7 @@ public sealed class VersusTests
         html.ShouldNotContain("aria-label=\"Tipos de estatística\"");
         fixture.Api.Archived = false;
         var active = WebUtility.HtmlDecode(await client.GetStringAsync(url));
-        Metric(active, "Títulos na edição", "—", "—");
+        Metric(active, "Títulos na edição", "—", "—").Value.ShouldNotContain("versus-indicator");
     }
 
     [Fact]
@@ -127,11 +132,10 @@ public sealed class VersusTests
         var html = WebUtility.HtmlDecode(await client.GetStringAsync(url));
         Metric(html, "Gols", "12", "8");
         Metric(html, "Títulos", "2", "1");
-        Metric(html, "Gols nos confrontos", "1", "0*");
+        Metric(html, "Gols nos confrontos", "1", "0*").Value.ShouldNotContain("versus-indicator");
         var direct = html.Substring(html.IndexOf("<h2>Confrontos diretos</h2>", StringComparison.Ordinal));
-        Metric(direct, "Cartões amarelos", "2", "—");
-        Metric(direct, "Cartões vermelhos", "0", "1*");
-        direct.ShouldNotContain("versus-indicator");
+        Metric(direct, "Cartões amarelos", "2", "—").Value.ShouldNotContain("versus-indicator");
+        Metric(direct, "Cartões vermelhos", "0", "1*").Value.ShouldNotContain("versus-indicator");
         html.ShouldNotContain("Jogadores unidos");
         html.ShouldContain("1 confronto(s)");
         html.ShouldContain("Súmula incompleta");

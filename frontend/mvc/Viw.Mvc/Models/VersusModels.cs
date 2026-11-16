@@ -5,11 +5,11 @@ namespace Viw.Mvc.Models;
 public sealed record VersusOption(string Id, string Name);
 public sealed record VersusMetric(string Label, string Left, string Right, bool LowerIsBetter = false)
 {
-    public int Advantage
+    public int? Advantage
     {
         get
         {
-            if (!long.TryParse(Left, out var left) || !long.TryParse(Right, out var right)) return 0;
+            if (!long.TryParse(Left, out var left) || !long.TryParse(Right, out var right)) return null;
             return (LowerIsBetter ? right.CompareTo(left) : left.CompareTo(right));
         }
     }

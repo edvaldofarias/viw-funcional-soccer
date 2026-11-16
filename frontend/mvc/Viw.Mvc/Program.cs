@@ -25,6 +25,13 @@ builder.Services.AddHttpClient<ViwApiClient>((services, client) =>
 });
 builder.Services.AddHttpClient("media", client => client.Timeout = TimeSpan.FromSeconds(5))
     .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
+builder.Services.AddMemoryCache();
+builder.Services.Configure<InstagramOptions>(builder.Configuration.GetSection("Instagram"));
+builder.Services.AddHttpClient<InstagramFeedService>(client =>
+{
+    client.BaseAddress = new Uri("https://graph.instagram.com/v27.0/");
+    client.Timeout = TimeSpan.FromSeconds(5);
+}).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
 builder.Services.AddScoped<SeoService>();
 builder.Services.AddScoped<SitemapService>();
 builder.Services.Configure<ForwardedHeadersOptions>(options => options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto);

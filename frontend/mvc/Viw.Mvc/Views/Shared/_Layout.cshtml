@@ -54,7 +54,6 @@
                     <a href="@item.Url" class="@((item.Url == "/" ? path == "/" : path.StartsWith(item.Url)) ? "active" : "")">@item.Label</a>
                 }
             </nav>
-            <a class="header-search" href="/wiki/jogadores"><span aria-hidden="true">⌕</span> <span>Buscar jogador</span></a>
         </div>
     </header>
     <main id="conteudo" tabindex="-1">@RenderBody()</main>

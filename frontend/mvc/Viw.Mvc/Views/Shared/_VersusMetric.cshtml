@@ -1,6 +1,6 @@
 @model VersusMetric
 <div class="versus-metric">
-    <strong>@Model.Left@if (Model.Advantage != 0) { <span class="versus-indicator @(Model.Advantage > 0 ? "favorable" : "unfavorable")" aria-hidden="true">@(Model.Advantage > 0 ? "↑" : "↓")</span><span class="sr-only">@(Model.Advantage > 0 ? "Vantagem" : "Desvantagem")</span> }</strong>
+    <strong><span class="versus-value">@Model.Left</span>@if (Model.Advantage is { } advantage) { <span class="versus-indicator @(advantage == 0 ? "equal" : advantage > 0 ? "favorable" : "unfavorable")" aria-hidden="true">@(advantage == 0 ? "=" : advantage > 0 ? "↑" : "↓")</span><span class="sr-only">@(advantage == 0 ? "Valores iguais" : advantage > 0 ? "Vantagem" : "Desvantagem")</span> }</strong>
     <span>@Model.Label</span>
-    <strong>@Model.Right@if (Model.Advantage != 0) { <span class="versus-indicator @(Model.Advantage < 0 ? "favorable" : "unfavorable")" aria-hidden="true">@(Model.Advantage < 0 ? "↑" : "↓")</span><span class="sr-only">@(Model.Advantage < 0 ? "Vantagem" : "Desvantagem")</span> }</strong>
+    <strong><span class="versus-value">@Model.Right</span>@if (Model.Advantage is { } rightAdvantage) { <span class="versus-indicator @(rightAdvantage == 0 ? "equal" : rightAdvantage < 0 ? "favorable" : "unfavorable")" aria-hidden="true">@(rightAdvantage == 0 ? "=" : rightAdvantage < 0 ? "↑" : "↓")</span><span class="sr-only">@(rightAdvantage == 0 ? "Valores iguais" : rightAdvantage < 0 ? "Vantagem" : "Desvantagem")</span> }</strong>
 </div>

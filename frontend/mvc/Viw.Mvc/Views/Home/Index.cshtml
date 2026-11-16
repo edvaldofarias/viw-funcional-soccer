@@ -1,3 +1,4 @@
+@model InstagramFeed
 <section class="home-hero institution-hero">
     <div class="shell hero-grid">
         <div class="hero-copy">
@@ -12,11 +13,39 @@
         </div>
         <div class="institution-poster" aria-label="VIW Funcional Soccer">
             <div class="poster-top"><span>O NOSSO FUTEBOL</span><span>↗</span></div>
-            <div class="poster-field" aria-hidden="true"><div></div><span>VIW</span></div>
+            <div class="poster-field"><div aria-hidden="true"></div><img src="~/images/viw-instagram-profile.jpg" alt="Logo da VIW Funcional Soccer" width="150" height="150" /></div>
             <p>Funcional Soccer.<br /><strong>O seu jogo em movimento.</strong></p>
             <span class="poster-handle">@@viwfuncionalsoccer</span>
         </div>
     </div>
+</section>
+<section class="shell section instagram-feed" aria-labelledby="instagram-titulo">
+    <div class="section-heading instagram-heading">
+        <div><p class="eyebrow">DENTRO E FORA DE CAMPO</p><h2 id="instagram-titulo">A VIW no Instagram.</h2><p>Treinos, copas e os momentos da nossa comunidade.</p></div>
+        <a class="instagram-profile" href="https://www.instagram.com/viwfuncionalsoccer/" target="_blank" rel="noopener noreferrer">
+            <img src="~/images/viw-instagram-profile.jpg" alt="" width="50" height="50" />
+            <span><strong>@@viwfuncionalsoccer</strong><small>Ver perfil no Instagram ↗</small></span>
+        </a>
+    </div>
+    @if (Model.Status == InstagramFeedStatus.Available && Model.Posts.Count > 0) {
+        <div class="instagram-grid">
+            @foreach (var post in Model.Posts) {
+                <a class="instagram-post" href="@post.Permalink" target="_blank" rel="noopener noreferrer">
+                    @if (post.ImageUrl is not null) {
+                        <img src="@post.ImageUrl" alt="" loading="lazy" referrerpolicy="no-referrer" />
+                    } else {
+                        <span class="instagram-post-placeholder" aria-hidden="true">VIW</span>
+                    }
+                    <span class="instagram-post-caption">@post.Caption</span>
+                    <span class="sr-only">Abrir publicação no Instagram</span>
+                </a>
+            }
+        </div>
+    } else if (Model.Status == InstagramFeedStatus.Available) {
+        <p class="instagram-feed-notice">Ainda não há publicações disponíveis no perfil.</p>
+    } else {
+        <p class="instagram-feed-notice">As publicações @(Model.Status == InstagramFeedStatus.NotConfigured ? "ainda não estão conectadas" : "estão temporariamente indisponíveis"). Acompanhe a VIW diretamente no Instagram.</p>
+    }
 </section>
 <section class="shell section institution-about" id="conheca">
     <div><p class="eyebrow">PRAZER, SOMOS A VIW</p><h2>Treino de verdade.<br />Futebol de perto.</h2></div>

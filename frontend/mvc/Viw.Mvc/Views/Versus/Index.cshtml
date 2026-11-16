@@ -1,0 +1,80 @@
+@model VersusPage
+<section class="shell page-header">
+    <p class="eyebrow">LADO A LADO</p>
+    <h1>Versus<span class="accent">.</span></h1>
+    <p>Compare campanhas e jogadores da VIW.</p>
+</section>
+<section class="shell section section-tight">
+    <nav class="segment-nav" aria-label="Tipo de comparação">
+        <a href="/versus?tipo=equipes" class="@(Model.Type == "equipes" ? "active" : "")" aria-current="@(Model.Type == "equipes" ? "page" : null)">Campanhas</a>
+        <a href="/versus?tipo=jogadores" class="@(Model.Type == "jogadores" ? "active" : "")" aria-current="@(Model.Type == "jogadores" ? "page" : null)">Jogadores</a>
+    </nav>
+    <form class="filter-bar" action="/versus" method="get">
+        <input type="hidden" name="tipo" value="@Model.Type" />
+        <div class="grow"><label for="esquerda">@(Model.Type == "equipes" ? "Primeira campanha" : "Primeiro jogador")</label><select id="esquerda" name="esquerda" required><option value="">Selecione</option>@foreach (var option in Model.Options) { <option value="@option.Id" selected="@(option.Id == Model.LeftId)">@option.Name</option> }</select></div>
+        <div class="grow"><label for="direita">@(Model.Type == "equipes" ? "Segunda campanha" : "Segundo jogador")</label><select id="direita" name="direita" required><option value="">Selecione</option>@foreach (var option in Model.Options) { <option value="@option.Id" selected="@(option.Id == Model.RightId)">@option.Name</option> }</select></div>
+        <button class="button button-primary" type="submit">Comparar <span aria-hidden="true">↗</span></button>
+    </form>
+    @if (Model.Error != null) { <p class="notice" role="alert">@Model.Error</p> }
+    @if (Model.Left != null && Model.Right != null) {
+        <aside class="notice"><span class="notice-icon" aria-hidden="true">i</span><p>@(Model.Type == "equipes" ? "Campanhas são comparadas por edição. Títulos usam a classificação final das edições encerradas; posição desconhecida ou edição em andamento aparece como —. Pontos: três por vitória e um por empate; pênaltis não contam." : "Totais da carreira vinculada, sujeitos à disponibilidade das súmulas. Títulos usam a classificação final das edições encerradas. Jogos e resultados exigem presença confirmada; cartões usam agregados disponíveis.")</p></aside>
+        <div class="versus-sides">
+            @foreach (var side in new[] { Model.Left, Model.Right }) {
+                <div class="versus-side">
+                    <viw-avatar kind="@side.AvatarKind" entity-id="@side.Id" edition-id="@side.EditionId" name="@side.Name" class="@(side.AvatarKind == "teams" ? "team-avatar large" : "avatar large")"></viw-avatar>
+                    <div><h3>@side.Name</h3><p>@side.Subtitle</p></div>
+                </div>
+            }
+        </div>
+        <p class="result-count">↑ indica vantagem no critério; ↓ indica desvantagem. Em derrotas, gols contra e cartões, o menor valor é favorável. Empates e dados parciais ou indisponíveis não têm indicador.</p>
+        <div class="versus-metrics" aria-label="Comparação de estatísticas">
+            @foreach (var metric in Model.Metrics) {
+                <partial name="_VersusMetric" model="metric" />
+            }
+        </div>
+        <div class="section-heading"><div><p class="eyebrow">FRENTE A FRENTE</p><h2>Confrontos diretos</h2></div></div>
+        <aside class="notice"><span class="notice-icon" aria-hidden="true">i</span><p>@Model.MatchNote</p></aside>
+        @if (Model.Matches.Count == 0) {
+            <div class="empty-state"><p>Nenhum confronto direto confirmado encontrado.</p></div>
+        } else {
+            var known = Model.Matches.Where(x => x.Match.HomeScore != null && x.Match.AwayScore != null).ToArray();
+            var draws = known.Count(x => x.Match.HomeScore == x.Match.AwayScore);
+            <div class="versus-metrics">
+                @foreach (var metric in Model.DirectMetrics) {
+                    <partial name="_VersusMetric" model="metric" />
+                }
+            </div>
+            <p class="result-count">@Model.Matches.Count confronto(s) · @draws empate(s) · @known.Length placar(es) conhecido(s). Placar desconhecido não entra nas vitórias ou empates.</p>
+            <p class="result-count">@(Model.Type == "equipes" ? "Gols usam os placares; cartões somam os registros das súmulas por equipe." : "Gols e cartões são individuais, somados somente nas súmulas dos confrontos.") * indica total parcial; — indica dados indisponíveis. Registros ausentes podem reduzir os totais.</p>
+            <div class="versus-matches">
+                @foreach (var item in Model.Matches) {
+                    var game = item.Match;
+                    var score = game.HomeScore != null && game.AwayScore != null ? $"{game.HomeScore} × {game.AwayScore}" : "Placar desconhecido";
+                    var winner = game.HomeScore == null || game.AwayScore == null ? "Resultado desconhecido" :
+                        game.HomeScore == game.AwayScore ? "Empate" : $"Vitória: {(game.HomeScore > game.AwayScore ? game.Home!.Name : game.Away!.Name)}";
+                    <article class="versus-match">
+                        <p>@item.Edition.Name · @item.Edition.Year · @PortalFormat.Date(game.ScheduledAt)</p>
+                        <h3 class="versus-match-scoreboard">
+                            <span class="versus-match-team"><viw-avatar kind="teams" entity-id="@game.Home!.Id" edition-id="@item.Edition.Id" name="@game.Home.Name" class="team-avatar"></viw-avatar><span>@game.Home.Name</span></span>
+                            <span class="versus-match-score">@score</span>
+                            <span class="versus-match-team"><viw-avatar kind="teams" entity-id="@game.Away!.Id" edition-id="@item.Edition.Id" name="@game.Away.Name" class="team-avatar"></viw-avatar><span>@game.Away.Name</span></span>
+                        </h3>
+                        <p>@winner · <a class="text-link" href="@(PortalRoutes.Cup(item.Edition.Slug) + "/jogos/" + game.Id)">Ver súmula ↗</a></p>
+                        <p class="versus-sheet-legend">Mini súmula · CA: cartão amarelo · CV: cartão vermelho</p>
+                        <div class="versus-mini-sheet">
+                            <partial name="_VersusMatchEvents" model="new VersusMatchEvents(game.Home.Name, item.Sheet.Where(x => x.TeamId == game.Home.Id).ToArray())" />
+                            <partial name="_VersusMatchEvents" model="new VersusMatchEvents(game.Away.Name, item.Sheet.Where(x => x.TeamId == game.Away.Id).ToArray())" />
+                        </div>
+                        @{ var unassigned = item.Sheet.Where(x => x.TeamId != game.Home.Id && x.TeamId != game.Away.Id).ToArray(); }
+                        @if (unassigned.Length > 0) {
+                            <div class="versus-unassigned"><p>Registros de equipe não identificada</p><partial name="_VersusMatchEvents" model='new VersusMatchEvents("equipe não identificada", unassigned)' /></div>
+                        }
+                        @if (item.Incomplete) { <p class="cell-note">Súmula incompleta ou gols e cartões desconhecidos.</p> }
+                    </article>
+                }
+            </div>
+        }
+    } else if (Model.Error == null) {
+        <div class="empty-state"><p>Escolha duas @(Model.Type == "equipes" ? "campanhas" : "identidades de jogadores") para comparar.</p></div>
+    }
+</section>

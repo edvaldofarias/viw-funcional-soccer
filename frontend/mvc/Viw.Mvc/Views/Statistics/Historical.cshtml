@@ -21,12 +21,8 @@
     <h1>Estatísticas<span class="accent">.</span></h1>
     <p>Explore as campanhas e os protagonistas das copas da VIW.</p>
 </section>
+<partial name="_HistoricalNavigation" model="Model.Category" />
 <section class="shell section section-tight">
-    <nav class="segment-nav historical-nav" aria-label="Tipos de estatística">
-        @foreach (var category in categories) {
-            <a class="@(category.Id == Model.Category ? "active" : "")" aria-current="@(category.Id == Model.Category ? "page" : null)" href="@(category.Id == "campanhas" ? "/estatisticas" : "/estatisticas/" + category.Id)">@category.Title</a>
-        }
-    </nav>
     <form class="filter-bar" method="get" action="@path">
         <div class="grow"><label for="busca">Pesquisar</label><input id="busca" name="busca" type="search" maxlength="100" value="@Model.Search" placeholder="Equipe, jogador ou copa" /></div>
         <div><label for="edicao">Campeonato</label><select id="edicao" name="edicao"><option value="">Todas as edições</option>@foreach (var cup in Model.Editions) { <option value="@cup.Id" selected="@(Model.EditionId == cup.Id)">@cup.Name · @cup.Year</option> }</select></div>

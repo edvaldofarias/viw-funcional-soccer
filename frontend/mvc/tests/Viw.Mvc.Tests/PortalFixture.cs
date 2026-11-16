@@ -60,6 +60,8 @@ internal sealed class FixtureApi : HttpMessageHandler
     public TeamStatisticsResponse[]? TeamStatisticsRows { get; set; }
     public PlayerHistoryResponse[]? PlayerHistory { get; set; }
     public PlayerResponse[]? PlayerList { get; set; }
+    public Dictionary<string, PlayerDetailResponse>? PlayerDetails { get; set; }
+    public Dictionary<string, PlayerHistoryResponse[]>? PlayerHistories { get; set; }
     public PlayerRecordsResponse? PlayerRecords { get; set; }
     public PlayerAwardResponse[] PlayerAwards { get; set; } = [];
     public PlayerResultsResponse? PlayerResults { get; set; } = new(0, 0, 0, 0);
@@ -118,6 +120,8 @@ internal sealed class FixtureApi : HttpMessageHandler
         else if (path == root + "/awards" && MissingAward) response = Paged(Array.Empty<AwardResponse>());
         else if (path == root + "/awards") response = Paged(EditionAwards ?? new[] { new AwardResponse(Guid.NewGuid(), "ballon-dor", "Ballon d’Or", "Championship", null, null, PlayerId, PlayerName, null, null, null, DateTimeOffset.UtcNow) });
         else if (path == "/api/v1/players") response = Paged(PlayerList ?? new[] { Player });
+        else if (PlayerDetails?.FirstOrDefault(x => path == "/api/v1/players/" + x.Key) is { Value: not null } detail) response = Json(detail.Value);
+        else if (PlayerHistories?.FirstOrDefault(x => path == "/api/v1/players/" + x.Key + "/history") is { Value: not null } history) response = Paged(history.Value);
         else if (path == "/api/v1/players/leo-reis") response = Json(new PlayerDetailResponse(Player, PlayerStats,
             Records: PlayerRecords, Awards: PlayerAwards, Results: PlayerResults, CupsPlayed: CupsPlayed, Podium: PlayerPodium));
         else if (path == "/api/v1/players/by-id/" + PlayerId.ToString("D")) response = Json(Player);

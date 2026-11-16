@@ -24,7 +24,7 @@ public sealed class PortalTests
                 .Select(x => $"{x.Groups[1].Value}|{x.Groups[2].Value}").ToArray();
         }
         var main = Links("Navegação principal");
-        main.ShouldBe(new[] { "/|Início", "/campeonatos|Campeonatos", "/estatisticas|Estatísticas", "/wiki|Wiki VIW" });
+        main.ShouldBe(new[] { "/|Início", "/campeonatos|Campeonatos", "/estatisticas|Estatísticas", "/versus|Versus", "/wiki|Wiki VIW" });
         Links("Navegação do rodapé").ShouldBe(main);
     }
 

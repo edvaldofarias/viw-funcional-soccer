@@ -1,0 +1,17 @@
+@model string
+@{
+    var categories = new (string Id, string Title)[] {
+        ("campanhas", "Melhores campanhas"), ("duplas", "Duplas artilheiras"),
+        ("trios", "Trios artilheiros"), ("ataques", "Melhores ataques"),
+        ("defesas", "Melhores defesas"), ("sem-sofrer", "Jogos sem sofrer gols"),
+        ("invencibilidade", "Invencibilidade"), ("cartoes-equipes", "Cartões por equipe"),
+        ("cartoes-jogadores", "Cartões por jogador"), ("artilheiros", "Artilheiros por copa"),
+        ("copas-gols", "Copas com mais gols"), ("copas-cartoes", "Copas com mais cartões"),
+        ("copas-artilheiros", "Copas com mais jogadores marcando")
+    };
+}
+<div class="cup-nav-wrap"><nav class="shell cup-nav" aria-label="Tipos de estatística">
+    @foreach (var category in categories) {
+        <a class="@(category.Id == Model ? "active" : "")" aria-current="@(category.Id == Model ? "page" : null)" href="@(category.Id == "campanhas" ? "/estatisticas" : "/estatisticas/" + category.Id)">@category.Title</a>
+    }
+</nav></div>

@@ -26,6 +26,7 @@ Docker: `docker compose up --build webapi mvc`. O portal fica em `http://localho
 | Jogos e súmula | `/campeonatos/{slug}/jogos`, `/jogos/{id}` |
 | Estatísticas | `/campeonatos/{slug}/estatisticas/jogadores` e `/estatisticas/equipes` |
 | Estatísticas históricas | `/estatisticas` e `/estatisticas/{categoria}` |
+| Versus | `/versus` |
 | Prêmios oficiais | `/campeonatos/{slug}/premiacoes` |
 | Memória das copas | `/wiki/campeonatos/{slug}` |
 | Busca e perfil | `/wiki`, `/wiki/jogadores` e `/wiki/jogadores/{slug}` |
@@ -49,6 +50,10 @@ O cabeçalho e o rodapé usam a mesma lista de navegação principal definida no
 ### Estatísticas históricas
 
 O menu reúne campanhas por equipe e edição, sem consolidar nomes de equipes entre copas. O ranking calcula três pontos por vitória e um por empate e ordena por pontos, gols pró e saldo, nessa ordem; nos demais rankings de equipes esses critérios desempatarão a métrica principal. Ataques e defesas usam médias por jogo, sem pênaltis. Duplas e trios somam os maiores artilheiros com gols registrados da mesma equipe e edição; empates são ordenados por nome. Jogos sem sofrer gols e sequências usam partidas encerradas com placar conhecido. Para invencibilidade, uma campanha com data, placar ou participante desconhecido ou partidas na mesma data/hora é omitida, pois a ordem não é segura. O grid mostra jogos, vitórias, empates, derrotas e a maior sequência invicta; ordenar esta última coluna permite ver também os menores máximos. Posições mostram a ordem inicial depois dos filtros do formulário, e não são recalculadas pela ordenação ou busca local do DataTables.
+
+Em `/versus`, campanhas são comparadas por equipe e edição; como equipes não são unificadas entre edições, confrontos diretos só são apurados entre campanhas da mesma edição. A rota anterior `/estatisticas/versus` redireciona preservando os filtros. A comparação de jogadores usa identidades unificadas e totais da carreira; confrontos exigem presença confirmada de ambos em equipes opostas, sem atribuição ambígua. Títulos de campanhas usam a classificação final das edições encerradas; títulos de jogadores usam o pódio da carreira. Gols exibem o nome unificado quando houver vínculo. Nos confrontos, gols de equipes vêm dos placares e gols individuais e cartões vêm das súmulas, sem atribuir agregados de edição a partidas. Súmulas ausentes, presenças desconhecidas e gols ou cartões não registrados podem deixar os totais incompletos. Placar desconhecido não conta como vitória ou empate, e pênaltis não alteram o resultado. Indicadores favorecem valores menores para derrotas, gols contra e cartões e valores maiores para os demais critérios; não são exibidos em empates ou dados parciais/desconhecidos.
+
+Cada confronto apresenta uma mini súmula com gols, cartões amarelos e vermelhos registrados sob a equipe correspondente. Eventos sem equipe identificada aparecem separadamente; nomes vinculados usam a identidade unificada.
 
 Os grids apresentam os dados em colunas ordenáveis: jogos e resultados das campanhas, gols marcados ou sofridos, integrantes e gols individuais de duplas e trios, cartões amarelos e vermelhos e jogos finalizados das copas.
 

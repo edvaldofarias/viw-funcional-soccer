@@ -1,0 +1,21 @@
+@model VersusMatchEvents
+@{
+    var events = Model.Players.Where(x => x.Goals > 0 || x.YellowCards > 0 || x.RedCards > 0).ToArray();
+}
+<section class="versus-match-events" aria-label="Registros de @Model.TeamName">
+    @if (Model.Players.Count == 0) {
+        <p>Súmula indisponível para esta equipe.</p>
+    } else if (events.Length == 0) {
+        <p>Nenhum gol ou cartão registrado.</p>
+    } else {
+        <ul>
+            @foreach (var player in events) {
+                <li><span class="versus-event-player">@player.Name</span><span class="versus-event-counts">
+                    @if (player.Goals > 0) { <span class="versus-event-goals">Gols @player.Goals</span> }
+                    @if (player.YellowCards > 0) { <span class="versus-event-yellow"><abbr title="Cartões amarelos">CA</abbr> @player.YellowCards</span> }
+                    @if (player.RedCards > 0) { <span class="versus-event-red"><abbr title="Cartões vermelhos">CV</abbr> @player.RedCards</span> }
+                </span></li>
+            }
+        </ul>
+    }
+</section>

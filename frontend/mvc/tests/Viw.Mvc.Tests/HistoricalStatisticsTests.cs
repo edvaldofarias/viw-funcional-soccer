@@ -201,12 +201,12 @@ public sealed class HistoricalStatisticsTests
         ];
         using var client = fixture.CreateClient();
         var duo = WebUtility.HtmlDecode(await client.GetStringAsync("/estatisticas/duplas"));
-        duo.ShouldContain("<th>Jogador 1</th><th class=\"numeric\">Gols jogador 1</th>");
+        duo.ShouldContain("<th>Jogador 1</th><th class=\"numeric\" data-card-label=\"Gols\">Gols jogador 1</th>");
         Regex.IsMatch(duo, "<td>Ana</td>\\s*<td class=\"numeric\">5</td>\\s*<td>Bia</td>\\s*<td class=\"numeric\">4</td>").ShouldBeTrue();
         duo.ShouldNotContain("<th>Detalhes</th>");
         duo.ShouldContain("9 gols");
         var trio = WebUtility.HtmlDecode(await client.GetStringAsync("/estatisticas/trios"));
-        trio.ShouldContain("<th>Jogador 3</th><th class=\"numeric\">Gols jogador 3</th>");
+        trio.ShouldContain("<th>Jogador 3</th><th class=\"numeric\" data-card-label=\"Gols\">Gols jogador 3</th>");
         Regex.IsMatch(trio, "<td>Caio</td>\\s*<td class=\"numeric\">2</td>").ShouldBeTrue();
         trio.ShouldNotContain("<th>Detalhes</th>");
         trio.ShouldContain("11 gols");
@@ -214,9 +214,9 @@ public sealed class HistoricalStatisticsTests
         cards.ShouldContain("<td class=\"numeric\">2</td><td class=\"numeric\">1</td>");
         cards.ShouldNotContain("99 amarelos");
         var scorers = WebUtility.HtmlDecode(await client.GetStringAsync("/estatisticas/artilheiros"));
-        scorers.ShouldContain(">Ana</td>");
-        scorers.ShouldContain(">Bia</td>");
-        scorers.ShouldNotContain(">Caio</td>");
+        Regex.IsMatch(scorers, @">Ana</span>\s*</td>").ShouldBeTrue();
+        Regex.IsMatch(scorers, @">Bia</span>\s*</td>").ShouldBeTrue();
+        scorers.ShouldNotContain(">Caio</span>");
         scorers.ShouldNotContain("<th>Detalhes</th>");
         var playerCards = WebUtility.HtmlDecode(await client.GetStringAsync("/estatisticas/cartoes-jogadores"));
         playerCards.ShouldContain("<td class=\"numeric\">2</td><td class=\"numeric\">0</td>");
@@ -265,6 +265,47 @@ public sealed class HistoricalStatisticsTests
             .Select(x => x.Value).Single(x => x.Contains(FixtureApi.HomeId.ToString("D"), StringComparison.Ordinal));
         row.ShouldContain("<td class=\"numeric\">1</td><td class=\"numeric\">0</td>");
         row.ShouldContain("Parcial: atribuição incerta");
+    }
+
+    [Fact]
+    public async Task Player_cards_merge_linked_identities_across_editions_and_keep_unlinked_rows_per_edition()
+    {
+        await using var fixture = new PortalFixture();
+        var identity = new PlayerResponse(FixtureApi.PlayerId, "nome-unificado", "Nome Unificado", null);
+        fixture.Api.PlayerList = [identity];
+        PlayerStatisticsResponse Cards(string slug, string name, long yellow, long red) =>
+            new(new(Guid.NewGuid(), slug, name, null), new(0, yellow, red, 1, 0, 0));
+        fixture.Api.PlayerStatisticsRows = [Cards(identity.Slug, "Apelido Atual", 2, 1), Cards("", "Sem União", 1, 0)];
+        fixture.Api.PreviousEditionPlayerStatisticsRows = [Cards(identity.Slug, "Apelido Antigo", 3, 0), Cards("", "Sem União", 4, 0)];
+        using var client = fixture.CreateClient();
+        string[] Rows(string html) => Regex.Matches(Regex.Match(html, @"<tbody>[\s\S]*?</tbody>").Value, @"<tr>[\s\S]*?</tr>")
+            .Select(x => x.Value).ToArray();
+        var rows = Rows(WebUtility.HtmlDecode(await client.GetStringAsync("/estatisticas/cartoes-jogadores")));
+        rows.Length.ShouldBe(3);
+        var linked = rows.Single(x => x.Contains("Nome Unificado", StringComparison.Ordinal));
+        rows[0].ShouldBe(linked);
+        linked.ShouldContain("href=\"/wiki/jogadores/nome-unificado\"");
+        Regex.IsMatch(linked, "<td class=\"numeric\">2</td>\\s*<td class=\"numeric\">5</td><td class=\"numeric\">1</td>").ShouldBeTrue();
+        linked.ShouldContain($"/imagens/players/{FixtureApi.PlayerId:D}\"");
+        linked.ShouldContain("6 cartões");
+        linked.ShouldContain("data-search=\"Copa de Teste · 2026 Copa Anterior · 2025\"");
+        linked.ShouldContain(">2 copas</span>");
+        linked.ShouldNotContain("/imagens/editions/");
+        var unlinked = rows.Where(x => x.Contains("Sem União", StringComparison.Ordinal)).ToArray();
+        unlinked.Length.ShouldBe(2);
+        unlinked[0].ShouldContain("Copa Anterior · 2025");
+        Regex.IsMatch(unlinked[0], "<td class=\"numeric\">1</td>\\s*<td class=\"numeric\">4</td><td class=\"numeric\">0</td>").ShouldBeTrue();
+        unlinked[0].ShouldContain($"?editionId={FixtureApi.PreviousEditionId:D}\"");
+        unlinked[0].ShouldContain("/imagens/sourceplayers/");
+        unlinked[1].ShouldContain("Copa de Teste · 2026");
+        foreach (var search in new[] { "Apelido Antigo", "Copa Anterior" })
+            Rows(WebUtility.HtmlDecode(await client.GetStringAsync("/estatisticas/cartoes-jogadores?busca=" + Uri.EscapeDataString(search))))
+                .ShouldContain(x => x.Contains("Nome Unificado", StringComparison.Ordinal));
+        var single = Rows(WebUtility.HtmlDecode(await client.GetStringAsync($"/estatisticas/cartoes-jogadores?edicao={FixtureApi.PreviousEditionId:D}")));
+        single.Length.ShouldBe(2);
+        var filtered = single.Single(x => x.Contains("Nome Unificado", StringComparison.Ordinal));
+        filtered.ShouldContain("<td class=\"numeric\">3</td><td class=\"numeric\">0</td>");
+        filtered.ShouldContain($"/imagens/editions/{FixtureApi.PreviousEditionId:D}");
     }
 
     [Fact]

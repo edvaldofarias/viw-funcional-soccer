@@ -225,6 +225,7 @@ public sealed class PortalTests
         html.ShouldMatch(@"/lib/datatables/dataTables\.min(?:\.[a-z0-9]+)?\.js");
         html.ShouldMatch(@"/lib/datatables/dataTables\.bootstrap5\.min(?:\.[a-z0-9]+)?\.css");
         html.ShouldMatch(@"/lib/datatables/viw-theme(?:\.[a-z0-9]+)?\.css");
+        html.ShouldContain("<script>document.documentElement.classList.add(\"js\");</script>");
         html.ShouldNotContain("class=\"pagination-wrap\"");
         fixture.Api.Requests.Any(request => request.Contains("page=3", StringComparison.Ordinal)).ShouldBeTrue();
         using var missing = await client.GetAsync(path + "?page=4");
@@ -516,7 +517,56 @@ public sealed class PortalTests
         html.ShouldNotContain("href=\"#conquistas\"");
         html.ShouldNotContain("id=\"conquistas\"");
         html.ShouldNotContain("Títulos e pódios");
-        html.ShouldContain("tabindex=\"0\" role=\"region\" aria-label=\"Estatísticas por campeonato, com rolagem horizontal\"");
+        html.ShouldContain("<div class=\"table-responsive\">");
+        html.ShouldNotContain("rolagem horizontal");
+        html.ShouldContain("<th><abbr title=\"Gols por jogo\">G/J</abbr></th>");
+    }
+
+    [Fact]
+    public async Task Wiki_biography_tells_the_career_from_the_recorded_data()
+    {
+        await using var fixture = new PortalFixture();
+        EditionResponse Edition(int id, string name, int year, int semester, string status) =>
+            new(Guid.Parse($"10000000-0000-0000-0000-00000000010{id}"), Guid.Empty, "copa-" + id, name, year, semester, status, "America/Sao_Paulo", null, null);
+        var northeast = Edition(1, "Copa do Nordeste", 2023, 1, "Archived");
+        var league = Edition(2, "La Liga", 2024, 2, "Archived");
+        var italian = Edition(3, "Campeonato Italiano", 2026, 1, "Active");
+        PlayerHistoryResponse Passage(EditionResponse edition, string team, long goals, long games, int? position) =>
+            new(edition, new(Guid.NewGuid(), team, null), "Reis", DateTimeOffset.UtcNow, null,
+                Statistics: new(goals, 0, 0, games, 0, 0), FinalPosition: position);
+        fixture.Api.PlayerHistory = [Passage(italian, "Lazio", 0, 2, null), Passage(league, "Aurora", 3, 7, 1), Passage(northeast, "Sport", 16, 9, 2)];
+        fixture.Api.PlayerStats = new(19, 5, 0, 18, 0, 0);
+        fixture.Api.PlayerResults = new(18, 10, 1, 7);
+        fixture.Api.PlayerPodium = new(1, 1, 0);
+        AwardResponse Award(string code) => new(Guid.NewGuid(), code, code, "Championship", null, null, FixtureApi.PlayerId, "Léo Reis", null, null, null, DateTimeOffset.UtcNow);
+        fixture.Api.PlayerAwards = [new(northeast, Award("top-scorer"), null, null), new(league, Award("top-scorer"), null, null), new(league, Award("ballon-dor"), null, null)];
+        using var client = fixture.CreateClient();
+        var html = WebUtility.HtmlDecode(await client.GetStringAsync("/wiki/jogadores/leo-reis"));
+        var paragraphs = Regex.Matches(Regex.Match(html, """<div class="wiki-biography">[\s\S]*?</div>""").Value, @"<p>([\s\S]*?)</p>")
+            .Select(x => Regex.Replace(Regex.Replace(x.Groups[1].Value, "<[^>]+>", ""), @"\s+", " ").Trim()).ToArray();
+        paragraphs.ShouldBe([
+            "Léo Reis é um jogador da comunidade VIW. Estreou na Copa do Nordeste (2023), defendendo Sport, e soma 3 copas disputadas por 3 equipes: Sport, Aurora e Lazio. Atualmente disputa o Campeonato Italiano (2026) por Lazio.",
+            "Ao todo, o arquivo registra 18 jogos e 19 gols em partidas encerradas, média de 1,06 gol por jogo. Nos jogos com placar conhecido, foram 10 vitórias, 1 empate e 7 derrotas. Na disciplina, recebeu 5 cartões amarelos e nenhum vermelho.",
+            "Sua temporada mais artilheira foi na Copa do Nordeste (2023), com 16 gols em 9 jogos por Sport. Foi campeão com Aurora em La Liga (2024). No total, soma 1 título e 1 vice-campeonato. Entre os reconhecimentos individuais do arquivo estão: Artilheiro do campeonato (2 vezes) e Craque do campeonato (Ballon d’Or).",
+            "Na Copa do Nordeste (2023), defendeu Sport: 9 jogos e 16 gols, com o vice-campeonato. Em La Liga (2024), jogou por Aurora: 7 jogos e 3 gols, com o título. No Campeonato Italiano (2026), representou Lazio: 2 jogos e nenhum gol (campeonato em andamento)."
+        ]);
+        html.ShouldContain("<strong>Léo Reis</strong> é um jogador");
+    }
+
+    [Fact]
+    public void Wiki_biography_stays_factual_for_a_single_cup_without_goals_or_placement()
+    {
+        var edition = new EditionResponse(FixtureApi.EditionId, Guid.Empty, FixtureApi.Slug, "EuroViw", 2024, 2, "Archived", "America/Sao_Paulo", null, null);
+        var player = new PlayerDetailResponse(new(FixtureApi.PlayerId, "ana", "Ana", null), new(0, 0, 0, 1, 0, 0));
+        Viw.Mvc.Services.PlayerBiography.Paragraphs(player, [new(edition, new(FixtureApi.HomeId, "Aurora ", null), "Ana", DateTimeOffset.UtcNow, null)])
+            .ShouldBe([
+                "Ana é um jogador da comunidade VIW. Sua participação registrada é em EuroViw (2024), defendendo Aurora.",
+                "Ao todo, o arquivo registra 1 jogo e nenhum gol em partidas encerradas. Não há cartões registrados."
+            ]);
+        Viw.Mvc.Services.PlayerBiography.Paragraphs(player with { Statistics = new(0, 0, 0, 0, 0, 0) }, []).ShouldBe([
+            "Ana é um jogador da comunidade VIW. As participações em copas ainda não estão disponíveis no arquivo.",
+            "O arquivo ainda não registra jogos nem gols do jogador em partidas encerradas. Não há cartões registrados."
+        ]);
     }
 
     [Theory]

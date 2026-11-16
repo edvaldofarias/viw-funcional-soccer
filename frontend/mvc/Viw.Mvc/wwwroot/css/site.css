@@ -1161,11 +1161,11 @@ p {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-weight: 750;
-  padding: 15px 18px;
+  padding: 15px 14px;
   color: #6b7a64;
 }
 .table-wrap td {
-  padding: 17px 18px;
+  padding: 17px 14px;
   font-size: 12px;
   border-top: 1px solid #edf0e9;
 }
@@ -1185,6 +1185,10 @@ p {
 .person-link:hover {
   text-decoration: underline;
   text-underline-offset: 4px;
+}
+.person-link.unlinked {
+  font-weight: 400;
+  text-decoration: none;
 }
 .player-details-trigger {
   border: 0;
@@ -3082,18 +3086,17 @@ html {
 }
 .wiki-stats {
   font-size: 13px;
-  min-width: 900px;
 }
 .wiki-stats th,
 .wiki-stats td {
   vertical-align: middle;
-  padding: 12px;
-  min-width: 48px;
+  padding: 12px 10px;
+  min-width: 44px;
   white-space: nowrap;
 }
 .wiki-stats th:first-child,
 .wiki-stats td:first-child {
-  min-width: 240px;
+  min-width: 170px;
   white-space: normal;
 }
 .wiki-stats thead,
@@ -3518,5 +3521,267 @@ html {
   }
   .wiki-layout .wiki-article h1 {
     font-size: 30px;
+  }
+}
+
+/*
+ * Grids — mobile first: cada linha é um cartão e nada rola na horizontal.
+ * O site.js mede cada grid e marca o contêiner com .is-table quando a tabela cabe inteira.
+ * Sem JavaScript (sem a classe .js no html) permanece a tabela com cabeçalho, pois os rótulos dos cartões vêm do script.
+ */
+.js :is(.table-wrap, .table-responsive):not(.is-table) {
+  overflow: visible;
+}
+.js :is(.table-wrap, .table-responsive):not(.is-table) table {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  border: 0;
+  white-space: normal;
+}
+.js :is(.table-wrap, .table-responsive):not(.is-table) thead {
+  display: none;
+}
+.js :is(.table-wrap, .table-responsive):not(.is-table) :is(tbody, tfoot) {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 270px), 1fr));
+  gap: 10px;
+  padding: 12px;
+  background: var(--paper);
+}
+.js :is(.table-wrap, .table-responsive):not(.is-table) tfoot {
+  padding-top: 0;
+}
+.js :is(.table-wrap, .table-responsive):not(.is-table) :is(tbody, tfoot) tr {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+  align-content: start;
+  gap: 12px 10px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--white);
+}
+.js :is(.table-wrap, .table-responsive):not(.is-table) :is(tbody, tfoot) tr > * {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  grid-column: 1 / -1;
+  gap: 3px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  font-size: 13px;
+  font-weight: 400;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.js :is(.table-wrap, .table-responsive):not(.is-table) :is(tbody, tfoot) tr > * > br {
+  display: none;
+}
+.js :is(.table-wrap, .table-responsive):not(.is-table) :is(tbody, tfoot) tr > [data-label]::before {
+  content: attr(data-label);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  line-height: 1.3;
+  text-transform: uppercase;
+  color: #6b7a64;
+}
+.js :is(.table-wrap, .table-responsive):not(.is-table) :is(tbody, tfoot) tr > [data-label] {
+  grid-column: span 3;
+}
+.js :is(.table-wrap, .table-responsive):not(.is-table) :is(tbody, tfoot) tr > .cell-stat {
+  grid-column: auto;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.js :is(.table-wrap, .table-responsive):not(.is-table) :is(tbody, tfoot) tr > .strong {
+  font-weight: 750;
+}
+.js :is(.table-wrap, .table-responsive):not(.is-table) :is(tbody, tfoot) tr > .goals-cell {
+  font-size: 13px !important;
+  font-weight: 850;
+}
+.js :is(.table-wrap, .table-responsive):not(.is-table) :is(tbody, tfoot) tr > .cell-title {
+  order: -1;
+  font-size: 15px;
+  font-weight: 700;
+}
+.js :is(.table-wrap, .table-responsive):not(.is-table) :is(tbody, tfoot) tr > .cell-rank {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--muted);
+}
+.js :is(.table-wrap, .table-responsive):not(.is-table) :is(tbody, tfoot) tr:has(> .cell-rank) > .cell-title {
+  padding-right: 44px;
+}
+.js :is(.table-wrap, .table-responsive):not(.is-table) :is(tbody, tfoot) tr > [colspan]:not([colspan="1"]) {
+  align-items: center;
+  color: var(--muted);
+  font-size: 12px;
+}
+.table-sort {
+  display: none;
+}
+.js :is(.table-wrap, .table-responsive):not(.is-table) .table-sort {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--white);
+}
+.table-sort label {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+.table-sort select,
+.table-sort-direction {
+  height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--white);
+  color: var(--ink);
+  font-size: 13px;
+}
+.table-sort select {
+  flex: 1 1 150px;
+  min-width: 0;
+  padding: 8px 12px;
+}
+.table-sort-direction {
+  padding: 0 12px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+.table-sort-direction[hidden] {
+  display: none;
+}
+.js :is(.table-wrap, .table-responsive):not(.is-table) .dt-search label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+.js :is(.table-wrap, .table-responsive):not(.is-table) .dt-search,
+.js :is(.table-wrap, .table-responsive):not(.is-table) .dt-search input {
+  width: 100%;
+}
+/* Em formato de tabela, nomes e cabeçalhos quebram linha para a grade caber na largura disponível. */
+.is-table th,
+.is-table td:not(.numeric):not(.cell-stat):not(.strong) {
+  white-space: normal;
+}
+.is-table td.cell-title {
+  min-width: 150px;
+}
+.is-table td[data-label]:not(.numeric):not(.cell-stat):not(.strong) {
+  min-width: 112px;
+}
+
+/*
+ * Celular primeiro — legibilidade e toque em telas de até 760px:
+ * texto de leitura com 12px ou mais, rótulos em caixa alta com 10px ou mais,
+ * alvos de toque com cerca de 40px e nenhum menu com rolagem horizontal.
+ */
+@media (max-width: 760px) {
+  .cup-nav {
+    flex-wrap: wrap;
+    gap: 0 22px;
+    overflow: visible;
+  }
+  .cup-nav > a,
+  .historical-nav > a {
+    padding-block: 12px;
+    font-size: 13px;
+  }
+  .main-nav {
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0 8px;
+    overflow: visible;
+  }
+  .main-nav a {
+    font-size: 12px;
+  }
+  .eyebrow,
+  .section-heading .eyebrow,
+  .title-row .eyebrow,
+  .edition-card .eyebrow,
+  .status,
+  .edition-card .status {
+    font-size: 10px;
+  }
+  .match-card-top,
+  .match-card-footer,
+  .stat-tile > span,
+  .stat-tile > small {
+    font-size: 11px;
+  }
+  .breadcrumbs {
+    gap: 0 10px;
+    font-size: 12px;
+  }
+  .breadcrumbs a,
+  .edition-facts > a,
+  .footer-inner nav a,
+  .section-heading > .text-link,
+  .stat-tile > .text-link,
+  .filter-bar .text-link,
+  .hero-secondary,
+  .wiki-club a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+  }
+  .js :is(.table-wrap, .table-responsive):not(.is-table) .person-link {
+    min-height: 36px;
+  }
+  .edition-facts,
+  .notice p,
+  .filter-bar label,
+  .filter-count,
+  .player-tile p,
+  .phase-list p,
+  .pagination-wrap p,
+  .pagination a,
+  .pagination span,
+  .scoreboard-date,
+  .footer-inner > div > p,
+  .text-link,
+  .section-heading > .text-link,
+  .stat-tile > .text-link,
+  .edition-card .text-link,
+  .team-tile .text-link,
+  .table-wrap td {
+    font-size: 12px;
+  }
+  .table-wrap th {
+    font-size: 10px;
+  }
+  .edition-facts > a {
+    margin-left: 0;
+  }
+  .footer-inner nav {
+    gap: 0 22px;
+    font-size: 13px;
+  }
+  .pagination a {
+    min-height: 40px;
   }
 }

@@ -31,6 +31,7 @@ public sealed class StatisticsController(ViwApiClient api, SeoService seo) : Por
             identitiesBySlug.TryGetValue(player.Slug, out var identity) ? identity.Name :
             throw new InvalidDataException("Identidade vinculada indisponível no catálogo de jogadores.");
         var rows = new List<HistoricalStatisticsRow>();
+        var linkedCards = new Dictionary<string, List<(EditionResponse Edition, PlayerStatisticsResponse Entry)>>(StringComparer.Ordinal);
         foreach (var edition in selected)
         {
             if (categoria is "cartoes-jogadores" or "artilheiros" or "copas-cartoes" or "copas-artilheiros")
@@ -72,13 +73,20 @@ public sealed class StatisticsController(ViwApiClient api, SeoService seo) : Por
                 {
                     var stats = player.Statistics;
                     if (categoria == "artilheiros" && (top <= 0 || stats.Goals != top)) continue;
+                    if (categoria == "cartoes-jogadores" && !string.IsNullOrEmpty(player.Player.Slug))
+                    {
+                        if (!linkedCards.TryGetValue(player.Player.Slug, out var entries)) linkedCards[player.Player.Slug] = entries = [];
+                        entries.Add((edition, player));
+                        continue;
+                    }
                     var value = categoria == "artilheiros" ? stats.Goals : stats.YellowCards + stats.RedCards;
                     rows.Add(new(StatisticsName(player.Player), edition.Name + " · " + edition.Year, edition.Id,
                         string.IsNullOrEmpty(player.Player.Slug) ? null : PortalRoutes.Player(player.Player.Slug),
                         categoria == "artilheiros" ? "Líder da edição" : $"{stats.YellowCards} amarelos · {stats.RedCards} vermelhos",
                         value, categoria == "artilheiros" ? $"{value} gols" : $"{value} cartões",
                         Discipline: categoria == "cartoes-jogadores" ? new(stats.YellowCards, stats.RedCards) : null,
-                        SearchText: player.Player.Name));
+                        SearchText: player.Player.Name, AvatarKind: "sourceplayers", AvatarId: player.Player.Id,
+                        Games: categoria == "cartoes-jogadores" ? stats.KnownAppearances : null));
                 }
                 continue;
             }
@@ -231,6 +239,18 @@ public sealed class StatisticsController(ViwApiClient api, SeoService seo) : Por
                 rows.Add(new(name, label, edition.Id, url, details, value, metric, campaign, discipline, searchText,
                     partialTeams.Contains(campaign.Team.Id), topScorers));
             }
+        }
+        foreach (var (slug, entries) in linkedCards)
+        {
+            var yellow = entries.Sum(x => x.Entry.Statistics.YellowCards);
+            var red = entries.Sum(x => x.Entry.Statistics.RedCards);
+            var cups = entries.Select(x => x.Edition).DistinctBy(x => x.Id).Select(x => x.Name + " · " + x.Year).ToArray();
+            rows.Add(new(StatisticsName(entries[0].Entry.Player), cups.Length == 1 ? cups[0] : $"{cups.Length} copas",
+                entries[0].Edition.Id, PortalRoutes.Player(slug), $"{yellow} amarelos · {red} vermelhos",
+                yellow + red, $"{yellow + red} cartões", Discipline: new(yellow, red),
+                SearchText: string.Join(" ", entries.Select(x => x.Entry.Player.Name).Concat(cups).Distinct()),
+                Editions: cups.Length > 1 ? cups : null, AvatarKind: "players", AvatarId: identitiesBySlug[slug].Id,
+                Games: entries.Sum(x => x.Entry.Statistics.KnownAppearances)));
         }
         var filtered = rows.Where(x => busca == null || x.Name.Contains(busca, StringComparison.OrdinalIgnoreCase) ||
             x.Edition.Contains(busca, StringComparison.OrdinalIgnoreCase) || x.Details.Contains(busca, StringComparison.OrdinalIgnoreCase) ||

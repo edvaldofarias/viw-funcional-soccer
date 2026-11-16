@@ -42,6 +42,8 @@ internal sealed class FixtureApi : HttpMessageHandler
     public static readonly Guid PhaseId = Guid.Parse("50000000-0000-0000-0000-000000000001");
     public static readonly Guid RoundId = Guid.Parse("60000000-0000-0000-0000-000000000001");
     public const string Slug = "copa-de-teste-2026";
+    public static readonly Guid PreviousEditionId = Guid.Parse("10000000-0000-0000-0000-000000000002");
+    public const string PreviousSlug = "copa-anterior-2025";
     public bool Archived { get; set; }
     public bool MissingAward { get; set; }
     public bool Fail { get; set; }
@@ -64,6 +66,7 @@ internal sealed class FixtureApi : HttpMessageHandler
     public MatchPlayerResponse[]? MatchPlayers { get; set; }
     public MatchResponse[]? MatchRows { get; set; }
     public PlayerStatisticsResponse[]? PlayerStatisticsRows { get; set; }
+    public PlayerStatisticsResponse[]? PreviousEditionPlayerStatisticsRows { get; set; }
     public TeamStatisticsResponse[]? TeamStatisticsRows { get; set; }
     public PlayerHistoryResponse[]? PlayerHistory { get; set; }
     public PlayerResponse[]? PlayerList { get; set; }
@@ -102,7 +105,14 @@ internal sealed class FixtureApi : HttpMessageHandler
         }
         var root = "/api/v1/championships/" + Slug;
         HttpResponseMessage response;
-        if (path == "/api/v1/championships") response = Paged(query.TryGetValue("year", out var year) && year != "2026" ? [] : new[] { Edition });
+        if (path == "/api/v1/championships")
+        {
+            var editions = PreviousEditionPlayerStatisticsRows is null ? new[] { Edition } :
+                [Edition, Edition with { Id = PreviousEditionId, Slug = PreviousSlug, Name = "Copa Anterior", Year = 2025 }];
+            response = Paged(query.TryGetValue("year", out var year) ? editions.Where(x => x.Year.ToString() == year) : editions);
+        }
+        else if (PreviousEditionPlayerStatisticsRows is not null && path == "/api/v1/championships/" + PreviousSlug + "/statistics/players")
+            response = Paged(PreviousEditionPlayerStatisticsRows);
         else if (path == root) response = Json(Detail);
         else if (path == root + "/overview") response = Json(Overview ?? new CompetitionViewResponse([new PhaseTableResponse(new PhaseResponse(PhaseId, "Primeira fase", 1), [Game, Future], [new StandingRow(Home, 1, 1, 1, 0, 1, 0, 0, 0), new StandingRow(Away, 1, 1, 1, 0, 1, 0, 0, 0)], [])], [new StandingRow(Home, 1, null, 1, 0, 1, 0, 0, 0), new StandingRow(Away, 1, null, 1, 0, 1, 0, 0, 0)]));
         else if (path == root + "/teams") response = Paged(new[] { Home, Away });

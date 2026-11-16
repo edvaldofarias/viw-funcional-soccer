@@ -38,6 +38,7 @@ O cabeçalho e o rodapé usam a mesma lista de navegação principal definida no
 
 ## Conteúdo e qualidade
 
+- **Celular primeiro.** Toda tela é desenhada e conferida primeiro em 360px. Nenhuma página, menu ou grid rola na horizontal; em telas de até 760px o texto de leitura tem 12px ou mais (rótulos em caixa alta, 10px), links e botões isolados têm cerca de 40px de área de toque e os menus quebram em linhas.
 - Paginação e filtros de edição/ano, jogos e busca de jogador.
 - Todos os horários visíveis usam Brasília (UTC−3), sem sufixo de offset, independentemente do fuso da edição, do servidor ou do dispositivo. `PortalFormat.Date` centraliza essa apresentação em cartões, súmula e Wiki; instantes e fusos da API continuam preservados. Placar desconhecido aparece como travessão. Zero confirmado permanece zero.
 - Estatísticas seguem os contratos da API: partidas encerradas, presença desconhecida e súmula incompleta são apresentados sem inventar participações ou regras de classificação.
@@ -65,7 +66,9 @@ Os rankings de copas contam jogos finalizados, inclusive sem placar conhecido, e
 
 Os grids históricos exibem o logo da edição junto à competição, usando o mesmo mecanismo de imagem e fallback dos demais cartões do portal. Nos rankings de cartões, CA e CV ficam em colunas numéricas separadas.
 
-Nos rankings históricos de jogadores, duplas e trios, cadastros com vínculo ativo exibem o nome da identidade unificada da Wiki; sem vínculo, exibem o nome da edição. A busca também aceita o nome original e as métricas continuam separadas por cadastro e edição.
+Nos rankings históricos de jogadores, duplas e trios, cadastros com vínculo ativo exibem o nome da identidade unificada da Wiki; sem vínculo, exibem o nome da edição. A busca também aceita o nome original. Em artilheiros, duplas e trios as métricas continuam separadas por cadastro e edição.
+
+Em cartões por jogador, cadastros com identidade unificada aparecem em **uma única linha**, somando os cartões de todas as edições selecionadas; a coluna de campeonato mostra a quantidade de copas (ou a própria edição, quando há só uma) e a busca aceita o nome de qualquer uma delas. Cadastros sem vínculo continuam com uma linha por edição, pois não há como afirmar que são a mesma pessoa. O nome traz a foto — a da identidade unificada ou, sem vínculo, a do cadastro na edição — e a coluna “Jogos” soma as presenças confirmadas (`KnownAppearances`) das mesmas edições dos cartões. Artilheiros por copa também exibem a foto do cadastro na edição.
 
 ### Tabelas ordenáveis (DataTables)
 
@@ -77,7 +80,11 @@ Todas as tabelas HTML do portal usam DataTables 3 com integração Bootstrap 5, 
 
 As opções e os textos pt-BR ficam em `frontend/shared/table-options.json`, também consumido pelo Angular. O tema comum está em `frontend/shared/table-theme.css`: herda as cores do portal, alinha busca/seletor/paginador, usa setas compactas com nomes acessíveis em português e empilha os controles no celular. O paginador inferior fica oculto quando o resultado filtrado tem zero ou uma página, mantendo a contagem visível; reaparece automaticamente se busca ou tamanho de página voltarem a produzir mais páginas. O tema identifica esse estado pelos controles anterior e próxima simultaneamente desabilitados, conforme o markup acessível do DataTables.
 
-A rolagem horizontal pertence somente à linha de dados (`.dt-layout-full`), nunca ao contêiner externo com os controles. Não reintroduzir os gutters e as margens padrão do Bootstrap no wrapper.
+Os grids são **mobile first** e nunca rolam na horizontal. Por padrão cada linha é um cartão: o nome vira o título, a posição fica no canto e os demais valores aparecem rotulados (números em blocos lado a lado). O `site.js` mede cada grid e marca o contêiner com `.is-table` somente quando a tabela cabe inteira na largura disponível — a decisão é por espaço real, não por breakpoint, e é refeita ao redimensionar, paginar ou ordenar. Em formato de tabela, nomes e cabeçalhos quebram linha para caber. Nos cartões o cabeçalho some, então um seletor “Ordenar por” (com inversão de direção) substitui o clique nas colunas.
+
+Os rótulos dos cartões vêm do cabeçalho: o `title` do `<abbr>` quando existir, senão o texto; `data-card-label` no `<th>` define um rótulo mais curto só para os cartões. A coluna de título é a primeira não numérica que não seja de posição. Novas tabelas não precisam de configuração: basta ficarem dentro de `.table-wrap` (ou `.table-responsive`). Sem JavaScript não há a classe `js` no `<html>` e o grid permanece como tabela com cabeçalho.
+
+Não reintroduzir os gutters e as margens padrão do Bootstrap no wrapper.
 
 Os assets e a licença MIT são versionados em `wwwroot/lib/datatables`; o publish .NET não exige Node. Para atualizar a dependência ou regenerar as opções e o tema locais:
 
@@ -170,7 +177,9 @@ O perfil tem sumário lateral no desktop, títulos de seção em estilo enciclop
 
 Carreira e galeria mostram os escudos das equipes pelos endpoints de mídia existentes. Cada participação da página tem um quadro na galeria, mesmo sem foto, com a classificação final do clube (`FinalPosition`) usando os mesmos critérios da visão geral e dos recordes. Campeonatos não encerrados e posições desconhecidas são indicados explicitamente. Fotos, escudos e avatares ausentes ou que falham ao carregar usam imagens cinzas do `https://placehold.co/`, também no Angular Admin. As URLs têm somente dimensões/cores e avisos genéricos fixos (“Sem foto” / “Sem foto disponível”) e as requisições usam `no-referrer`, sem enviar nomes ou endereços dos perfis ao serviço. Nenhum placeholder é armazenado como imagem no projeto; logotipo, compartilhamento e mídias importadas são preservados.
 
-Títulos, vice-campeonatos e terceiros lugares ficam somente no quadro lateral, sem seção repetida no artigo ou no sumário. As seções amplas começam abaixo desse quadro. Carreira, recordes, prêmios e galeria reduzem o número de colunas conforme a largura realmente disponível, preservando cartões legíveis. A tabela mantém largura mínima de 900 pixels, a identificação da equipe/copa tem ao menos 240 pixels e as colunas numéricas não se comprimem. Em telas menores, a rolagem horizontal fica no quadro da tabela, acessível pelo teclado, incluindo a última coluna CV, sem transbordar a página.
+A apresentação no topo do artigo é gerada por `PlayerBiography` a partir dos dados registrados, com o mesmo roteiro para qualquer jogador: estreia, copas e equipes; totais, média de gols, resultados e disciplina; temporada mais artilheira, melhor colocação, pódios e prêmios; e um resumo de cada passagem (jogos, gols e desfecho). Frases sem dado correspondente são omitidas — nada é inferido —, colocações só aparecem em edições encerradas e o artigo da copa (“na Copa…”, “no Campeonato…”) só é usado para nomes de gênero inequívoco; os demais usam “em”.
+
+Títulos, vice-campeonatos e terceiros lugares ficam somente no quadro lateral, sem seção repetida no artigo ou no sumário. As seções amplas começam abaixo desse quadro. Carreira, recordes, prêmios e galeria reduzem o número de colunas conforme a largura realmente disponível, preservando cartões legíveis. A tabela de estatísticas segue os demais grids: cabe sem rolagem horizontal e vira cartões rotulados quando não há largura, inclusive a linha de totais da carreira.
 
 A busca pública usa os mesmos critérios do Admin: acentos ignorados, partes e iniciais preservadas, sugestões de pequenas diferenças com Fastenshtein e resultados exatos primeiro. Filtros de edição e vínculos ativos são aplicados antes da comparação; nomes originais de vínculos encerrados não geram sugestões. Somente IDs/nomes/apelidos são lidos antes da classificação, e fotos são consultadas apenas para os jogadores da página.
 

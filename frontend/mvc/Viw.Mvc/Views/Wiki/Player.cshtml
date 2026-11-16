@@ -85,10 +85,12 @@
                         · @latest.Edition.Year</p>
                     }
                 </aside>
-                <p><strong>@player.Name</strong> é um jogador da comunidade VIW. Seus cadastros em diferentes campeonatos estão
-                    reunidos nesta identidade, com as estatísticas de cada edição preservadas separadamente.</p>
-                    <p>O arquivo registra <strong>@stats.KnownAppearances jogos e @stats.Goals gols</strong> em partidas
-                        encerradas.</p>
+                <div class="wiki-biography">
+                    @foreach (var (paragraph, index) in PlayerBiography.Paragraphs(Model.Player, Model.History.Items).Select((text, index) => (text, index)))
+                    {
+                        <p>@if (index == 0 && paragraph.StartsWith(player.Name, StringComparison.Ordinal)) { <strong>@player.Name</strong>@(paragraph[player.Name.Length..]) } else { @paragraph }</p>
+                    }
+                </div>
                         <section id="carreira">
                             <h2>Carreira</h2>
                             @if (history.Length == 0)
@@ -110,23 +112,23 @@
                         <h2>Estatísticas por campeonato</h2>
                         <p>Resultados das equipes nos jogos com participação confirmada do jogador. Pontos abaixo usam a referência de 3
                             por vitória e 1 por empate; não substituem a classificação oficial da copa.</p>
-                            <div class="table-responsive" tabindex="0" role="region" aria-label="Estatísticas por campeonato, com rolagem horizontal">
+                            <div class="table-responsive">
                                 <table class="table table-bordered wiki-stats" data-table-page="@Model.Pager.Page">
                                     <thead>
                                         <tr>
                                             <th>Equipe / campeonato</th>
-                                            <th>J</th>
-                                            <th>V</th>
-                                            <th>E</th>
-                                            <th>D</th>
-                                            <th>Pts</th>
-                                            <th>G</th>
-                                            <th>G/J</th>
-                                            <th>GP</th>
-                                            <th>GC</th>
-                                            <th>SG</th>
-                                            <th><abbr title="Cartões amarelos no campeonato">CA</abbr></th>
-                                            <th><abbr title="Cartões vermelhos no campeonato">CV</abbr></th>
+                                            <th><abbr title="Jogos">J</abbr></th>
+                                            <th><abbr title="Vitórias">V</abbr></th>
+                                            <th><abbr title="Empates">E</abbr></th>
+                                            <th><abbr title="Derrotas">D</abbr></th>
+                                            <th><abbr title="Pontos">Pts</abbr></th>
+                                            <th><abbr title="Gols">G</abbr></th>
+                                            <th><abbr title="Gols por jogo">G/J</abbr></th>
+                                            <th><abbr title="Gols pró">GP</abbr></th>
+                                            <th><abbr title="Gols contra">GC</abbr></th>
+                                            <th><abbr title="Saldo de gols">SG</abbr></th>
+                                            <th data-card-label="Cartões amarelos"><abbr title="Cartões amarelos no campeonato">CA</abbr></th>
+                                            <th data-card-label="Cartões vermelhos"><abbr title="Cartões vermelhos no campeonato">CV</abbr></th>
                                         </tr>
                                     </thead>
                                     <tbody>

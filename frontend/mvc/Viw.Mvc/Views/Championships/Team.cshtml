@@ -14,7 +14,7 @@ else
         <table data-table-page="@Model.Pager.Page">
             <caption class="sr-only">Elenco e estatísticas de @Model.Team.Team.Name</caption>
             <thead>
-                <tr><th scope="col">Jogador</th><th scope="col">Nome na edição</th><th scope="col">Camisa</th><th scope="col">Posição</th><th scope="col" class="numeric">Gols</th><th scope="col" class="numeric"><abbr title="Cartões amarelos na edição">CA</abbr></th><th scope="col" class="numeric"><abbr title="Cartões vermelhos na edição">CV</abbr></th></tr>
+                <tr><th scope="col">Jogador</th><th scope="col">Nome na edição</th><th scope="col">Camisa</th><th scope="col">Posição</th><th scope="col" class="numeric">Gols</th><th scope="col" class="numeric" data-card-label="Cartões amarelos"><abbr title="Cartões amarelos na edição">CA</abbr></th><th scope="col" class="numeric" data-card-label="Cartões vermelhos"><abbr title="Cartões vermelhos na edição">CV</abbr></th></tr>
             </thead>
             <tbody>
                 @foreach (var entry in Model.Players.Items)

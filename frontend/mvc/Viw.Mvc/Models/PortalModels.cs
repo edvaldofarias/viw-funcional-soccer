@@ -28,7 +28,8 @@ public sealed record HistoricalStatisticsPage(string Category, IReadOnlyList<Edi
 public sealed record HistoricalScorer(string Name, long Goals);
 public sealed record HistoricalStatisticsRow(string Name, string Edition, Guid EditionId, string? Url,
     string Details, decimal Value, string Metric, StandingRow? Campaign = null, PlayerDisciplineResponse? Discipline = null,
-    string? SearchText = null, bool Partial = false, IReadOnlyList<HistoricalScorer>? Scorers = null, int? FinishedGames = null);
+    string? SearchText = null, bool Partial = false, IReadOnlyList<HistoricalScorer>? Scorers = null, int? FinishedGames = null,
+    IReadOnlyList<string>? Editions = null, string? AvatarKind = null, Guid? AvatarId = null, long? Games = null);
 public sealed record WikiPlayerPage(PlayerDetailResponse Player, PageResponse<PlayerHistoryResponse> History, Pager Pager);
 public sealed record MatchCard(EditionResponse Edition, MatchResponse Match);
 public sealed record Pager(string Path, int Page, int PageSize, int TotalCount, Dictionary<string, string?>? Filters = null)

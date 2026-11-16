@@ -44,6 +44,7 @@ As rotas abaixo usam `/api/v1` como prefixo. `{slug}` identifica uma edição ca
 | `/players` | Identidades canônicas; filtros `search` e `editionId` |
 | `/players/{slug}` | Identidade oficial e totais da carreira |
 | `/players/{slug}/history` | Edições, equipes e nomes originais associados pelos vínculos ativos |
+| `/players/results` | Vitórias, empates, derrotas, gols e hat-tricks por jogador para rankings; filtro `editionId`. Identidades vinculadas somam as edições; cadastros sem vínculo aparecem por edição, com slug vazio |
 
 Estados de partida aceitos: `Scheduled`, `Live`, `Finished`, `Cancelled`, `Unknown`. Valores inválidos recebem `400`. Listas aceitam `page` (padrão 1, máximo 100000) e `pageSize` (padrão 20, máximo 100). O resultado contém `items`, `page`, `pageSize` e `totalCount`. Ordenações incluem um ID como desempate para paginação estável; consultas grandes não são carregadas integralmente antes de paginar.
 

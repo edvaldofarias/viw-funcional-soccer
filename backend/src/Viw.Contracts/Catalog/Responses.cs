@@ -115,6 +115,15 @@ public sealed record PlayerPodiumResponse(int Titles, int RunnersUp, int ThirdPl
 /// <param name="Losses">Derrotas nos jogos com placar conhecido, sem pênaltis de desempate.</param>
 public sealed record PlayerResultsResponse(long Played, int Wins, int Draws, int Losses);
 
+/// <summary>Resultados e gols acumulados de uma identidade unificada ou de um cadastro sem vínculo, para rankings entre jogadores.</summary>
+/// <param name="Player">Identidade canônica, com slug da Wiki, ou cadastro da edição sem vínculo, com slug vazio.</param>
+/// <param name="Results">Jogos com presença confirmada e resultados nos placares conhecidos, sem pênaltis de desempate.</param>
+/// <param name="Editions">Edições com registros em partidas encerradas, da mais recente para a mais antiga; um cadastro sem vínculo tem sempre uma.</param>
+/// <param name="Goals">Gols registrados em partidas encerradas, mesmo quando a presença não foi confirmada.</param>
+/// <param name="HatTricks">Partidas encerradas em que o jogador marcou três ou mais gols.</param>
+public sealed record PlayerResultsRankingResponse(PlayerResponse Player, PlayerResultsResponse Results,
+    IReadOnlyList<EditionResponse> Editions, long Goals = 0, int HatTricks = 0);
+
 /// <summary>Totais de um jogador em uma edição específica.</summary>
 /// <param name="Player">Identidade canônica usada para consolidar os cadastros da fonte.</param>
 /// <param name="Statistics">Totais registrados nas partidas encerradas desta edição.</param>

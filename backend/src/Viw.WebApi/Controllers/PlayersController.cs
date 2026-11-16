@@ -23,6 +23,20 @@ public sealed class PlayersController(IViwQueries queries) : ReadControllerBase
     public async Task<ActionResult<PageResponse<PlayerResponse>>> List([FromQuery] PlayerRequest request, CancellationToken ct) =>
         Ok(await queries.PlayersAsync(request, ct));
 
+    /// <summary>Lista resultados, gols e hat-tricks acumulados por jogador.</summary>
+    /// <remarks>Base dos rankings de vitórias, derrotas, aproveitamento, gols e hat-tricks. Identidades com vínculo ativo somam todas as edições vinculadas em uma única linha, com o slug da Wiki; cadastros sem vínculo aparecem por edição, com slug vazio, pois nomes iguais não comprovam a mesma pessoa. Contam somente partidas encerradas. Jogos, vitórias, empates e derrotas exigem presença confirmada e ignoram pênaltis de desempate; gols e hat-tricks (três ou mais gols na mesma partida) usam os gols registrados na súmula, mesmo sem presença confirmada. Jogadores sem presença confirmada nem gols não aparecem. A ordenação é por vitórias, jogos e identificador.</remarks>
+    /// <param name="request">Edição opcional e paginação.</param>
+    /// <param name="ct">Token de cancelamento associado à requisição; não é um parâmetro HTTP.</param>
+    /// <returns>Página com o jogador, seus resultados, gols, hat-tricks e as edições contabilizadas.</returns>
+    /// <response code="200">Página com o jogador, seus resultados, gols, hat-tricks e as edições contabilizadas. Listas podem estar vazias.</response>
+    /// <response code="400">Parâmetros inválidos; retorna ValidationProblemDetails.</response>
+    /// <response code="503">Banco não configurado ou indisponível; retorna ProblemDetails sem detalhes internos.</response>
+    /// <response code="500">Falha inesperada; retorna ProblemDetails sem detalhes internos.</response>
+    [HttpGet("results")]
+    [ProducesResponseType<PageResponse<PlayerResultsRankingResponse>>(StatusCodes.Status200OK)]
+    public async Task<ActionResult<PageResponse<PlayerResultsRankingResponse>>> Results([FromQuery] PlayerResultsRequest request, CancellationToken ct) =>
+        Ok(await queries.PlayerResultsAsync(request, ct));
+
     /// <summary>Resolve uma identidade pelo identificador estável.</summary>
     /// <remarks>Permite ao portal obter o slug canônico atual de um jogador referenciado em partidas ou premiações, sem deduzir o slug a partir do GUID.</remarks>
     /// <param name="id">GUID interno da identidade canônica do jogador.</param>

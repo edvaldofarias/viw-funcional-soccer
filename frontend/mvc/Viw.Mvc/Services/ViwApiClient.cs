@@ -44,6 +44,8 @@ public sealed class ViwApiClient(HttpClient http)
         PageAsync<PlayerResponse>("api/v1/players", page, ct, new() { ["search"] = search, ["editionId"] = edition?.ToString("D") }, size);
     public Task<PlayerResponse?> PlayerByIdAsync(Guid id, CancellationToken ct) => ReadAsync<PlayerResponse>($"api/v1/players/by-id/{id:D}", ct);
     public Task<PlayerDetailResponse?> PlayerAsync(string slug, CancellationToken ct) => ReadAsync<PlayerDetailResponse>("api/v1/players/" + Uri.EscapeDataString(slug), ct);
+    public Task<PageResponse<PlayerResultsRankingResponse>?> PlayerResultsAsync(int page, Guid? edition, CancellationToken ct) =>
+        PageAsync<PlayerResultsRankingResponse>("api/v1/players/results", page, ct, new() { ["editionId"] = edition?.ToString("D") }, 100);
     public Task<PageResponse<PlayerHistoryResponse>?> HistoryAsync(string slug, int page, CancellationToken ct) => PageAsync<PlayerHistoryResponse>("api/v1/players/" + Uri.EscapeDataString(slug) + "/history", page, ct);
 
     public Task<CompetitionViewResponse?> CompetitionViewAsync(string slug,CancellationToken ct) => ReadAsync<CompetitionViewResponse>(PathFor(slug)+"/overview",ct);

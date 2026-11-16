@@ -70,6 +70,7 @@ internal sealed class FixtureApi : HttpMessageHandler
     public TeamStatisticsResponse[]? TeamStatisticsRows { get; set; }
     public PlayerHistoryResponse[]? PlayerHistory { get; set; }
     public PlayerResponse[]? PlayerList { get; set; }
+    public PlayerResultsRankingResponse[] PlayerResultsRows { get; set; } = [];
     public Dictionary<string, PlayerDetailResponse>? PlayerDetails { get; set; }
     public Dictionary<string, PlayerHistoryResponse[]>? PlayerHistories { get; set; }
     public PlayerRecordsResponse? PlayerRecords { get; set; }
@@ -136,6 +137,9 @@ internal sealed class FixtureApi : HttpMessageHandler
         else if (path == root + "/statistics/teams") response = Paged(TeamStatisticsRows ?? new[] { new TeamStatisticsResponse(Home, 1, 0, 1, 0, 0, 0), new TeamStatisticsResponse(Away, 1, 0, 1, 0, 0, 0) });
         else if (path == root + "/awards" && MissingAward) response = Paged(Array.Empty<AwardResponse>());
         else if (path == root + "/awards") response = Paged(EditionAwards ?? new[] { new AwardResponse(Guid.NewGuid(), "ballon-dor", "Ballon d’Or", "Championship", null, null, PlayerId, PlayerName, null, null, null, DateTimeOffset.UtcNow) });
+        else if (path == "/api/v1/players/results")
+            response = Paged(query.TryGetValue("editionId", out var cup)
+                ? PlayerResultsRows.Where(x => x.Editions.Any(edition => edition.Id.ToString("D") == cup)) : PlayerResultsRows);
         else if (path == "/api/v1/players") response = Paged(PlayerList ?? new[] { Player });
         else if (PlayerDetails?.FirstOrDefault(x => path == "/api/v1/players/" + x.Key) is { Value: not null } detail) response = Json(detail.Value);
         else if (PlayerHistories?.FirstOrDefault(x => path == "/api/v1/players/" + x.Key + "/history") is { Value: not null } history) response = Paged(history.Value);

@@ -18,6 +18,7 @@ public interface IViwQueries
     Task<PageResponse<PlayerResponse>> PlayersAsync(PlayerRequest request, CancellationToken ct);
     Task<PlayerResponse?> PlayerByIdAsync(Guid id, CancellationToken ct);
     Task<PlayerDetailResponse?> PlayerAsync(string slug, CancellationToken ct);
+    Task<PageResponse<PlayerResultsRankingResponse>> PlayerResultsAsync(PlayerResultsRequest request, CancellationToken ct);
     Task<PageResponse<PlayerHistoryResponse>?> PlayerHistoryAsync(string slug, PageRequest request, CancellationToken ct);
     Task<PageResponse<PlayerStatisticsResponse>?> PlayerStatisticsAsync(string slug, PageRequest request, CancellationToken ct);
     Task<PageResponse<TeamStatisticsResponse>?> TeamStatisticsAsync(string slug, PageRequest request, CancellationToken ct);

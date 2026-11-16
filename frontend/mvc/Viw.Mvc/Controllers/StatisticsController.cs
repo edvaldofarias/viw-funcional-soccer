@@ -8,7 +8,9 @@ namespace Viw.Mvc.Controllers;
 
 public sealed class StatisticsController(ViwApiClient api, SeoService seo) : PortalController(seo)
 {
-    private static readonly string[] HistoricalCategories = ["campanhas", "duplas", "trios", "ataques", "defesas", "sem-sofrer", "invencibilidade", "cartoes-equipes", "cartoes-jogadores", "artilheiros", "copas-gols", "copas-cartoes", "copas-artilheiros"];
+    private static readonly string[] HistoricalCategories = ["campanhas", "duplas", "trios", "ataques", "defesas", "sem-sofrer", "invencibilidade", "cartoes-equipes", "cartoes-jogadores", "artilheiros", "gols", "hat-tricks", "vitorias", "derrotas", "aproveitamento", "copas-gols", "copas-cartoes", "copas-artilheiros"];
+    /// <summary>Jogos com resultado exigidos para entrar no ranking de aproveitamento.</summary>
+    public const int MinimumRateGames = 5;
 
     [HttpGet("/estatisticas")]
     [HttpGet("/estatisticas/{categoria}")]
@@ -32,7 +34,45 @@ public sealed class StatisticsController(ViwApiClient api, SeoService seo) : Por
             throw new InvalidDataException("Identidade vinculada indisponível no catálogo de jogadores.");
         var rows = new List<HistoricalStatisticsRow>();
         var linkedCards = new Dictionary<string, List<(EditionResponse Edition, PlayerStatisticsResponse Entry)>>(StringComparer.Ordinal);
-        foreach (var edition in selected)
+        var playerResults = categoria is "vitorias" or "derrotas" or "aproveitamento" or "gols" or "hat-tricks";
+        if (playerResults)
+        {
+            var culture = System.Globalization.CultureInfo.GetCultureInfo("pt-BR");
+            foreach (var entry in await ViwApiClient.CollectAsync(p => api.PlayerResultsAsync(p, edicao, ct)))
+            {
+                var results = entry.Results;
+                var decided = results.Wins + results.Draws + results.Losses;
+                if (entry.Editions.Count == 0) continue;
+                var rate = decided == 0 ? 0 : (3m * results.Wins + results.Draws) / (3m * decided) * 100;
+                decimal value;
+                string metric;
+                decimal tieBreak;
+                string? extra = null;
+                if (categoria == "gols")
+                {
+                    var average = results.Played > 0 ? (decimal)entry.Goals / results.Played : (decimal?)null;
+                    (value, metric, tieBreak) = (entry.Goals, entry.Goals == 1 ? "1 gol" : $"{entry.Goals} gols", average ?? 0);
+                    extra = average?.ToString("0.00", culture) ?? "—";
+                }
+                else if (categoria == "hat-tricks")
+                {
+                    (value, metric, tieBreak) = (entry.HatTricks, entry.HatTricks == 1 ? "1 hat-trick" : $"{entry.HatTricks} hat-tricks", entry.Goals);
+                    extra = entry.Goals.ToString(culture);
+                }
+                else if (categoria == "vitorias") (value, metric, tieBreak) = (results.Wins, results.Wins == 1 ? "1 vitória" : $"{results.Wins} vitórias", rate);
+                else if (categoria == "derrotas") (value, metric, tieBreak) = (results.Losses, results.Losses == 1 ? "1 derrota" : $"{results.Losses} derrotas", -rate);
+                else (value, metric, tieBreak) = (rate, rate.ToString("0.0", culture) + "%", decided);
+                if (categoria == "aproveitamento" ? decided < MinimumRateGames : value == 0) continue;
+                var cups = entry.Editions.Select(x => x.Name + " · " + x.Year).ToArray();
+                var linked = !string.IsNullOrEmpty(entry.Player.Slug);
+                rows.Add(new(entry.Player.Name, cups.Length == 1 ? cups[0] : $"{cups.Length} copas", entry.Editions[0].Id,
+                    linked ? PortalRoutes.Player(entry.Player.Slug) : null, $"{results.Wins}V {results.Draws}E {results.Losses}D",
+                    value, metric, SearchText: string.Join(" ", cups), Editions: cups.Length > 1 ? cups : null,
+                    AvatarKind: linked ? "players" : "sourceplayers", AvatarId: entry.Player.Id, Games: results.Played,
+                    Results: extra == null ? results : null, TieBreak: tieBreak, Extra: extra));
+            }
+        }
+        foreach (var edition in playerResults ? [] : selected)
         {
             if (categoria is "cartoes-jogadores" or "artilheiros" or "copas-cartoes" or "copas-artilheiros")
             {
@@ -256,7 +296,8 @@ public sealed class StatisticsController(ViwApiClient api, SeoService seo) : Por
             x.Edition.Contains(busca, StringComparison.OrdinalIgnoreCase) || x.Details.Contains(busca, StringComparison.OrdinalIgnoreCase) ||
             (x.SearchText?.Contains(busca, StringComparison.OrdinalIgnoreCase) ?? false));
         var ordered = categoria == "defesas" ? filtered.OrderBy(x => x.Value) : filtered.OrderByDescending(x => x.Value);
-        var result = ordered.ThenByDescending(x => x.Campaign is null ? 0 : 3L * x.Campaign.Wins + x.Campaign.Draws)
+        var result = ordered.ThenByDescending(x => x.TieBreak)
+            .ThenByDescending(x => x.Campaign is null ? 0 : 3L * x.Campaign.Wins + x.Campaign.Draws)
             .ThenByDescending(x => x.Campaign?.GoalsFor ?? 0)
             .ThenByDescending(x => x.Campaign is null ? 0 : x.Campaign.GoalsFor - x.Campaign.GoalsAgainst)
             .ThenBy(x => x.Name).ThenBy(x => x.Edition).ToArray();

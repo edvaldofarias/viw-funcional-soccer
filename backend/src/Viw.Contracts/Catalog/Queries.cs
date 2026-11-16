@@ -27,6 +27,13 @@ public sealed class PlayerRequest : PageRequest
     public Guid? EditionId { get; set; }
 }
 
+/// <summary>Filtro de edição e paginação dos resultados acumulados por jogador.</summary>
+public sealed class PlayerResultsRequest : PageRequest
+{
+    /// <summary>GUID interno opcional da edição; sem ele, identidades unificadas somam todas as edições vinculadas.</summary>
+    public Guid? EditionId { get; set; }
+}
+
 /// <summary>Estados de partida aceitos pelo filtro público.</summary>
 public enum MatchState
 {

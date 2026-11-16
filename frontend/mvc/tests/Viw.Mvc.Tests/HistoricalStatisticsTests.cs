@@ -8,7 +8,7 @@ public sealed class HistoricalStatisticsTests
 {
     [Theory]
     [InlineData("/estatisticas/copas-cartoes", "Copas", "copas-gols,copas-cartoes,copas-artilheiros")]
-    [InlineData("/estatisticas/trios", "Jogadores", "artilheiros,duplas,trios,cartoes-jogadores")]
+    [InlineData("/estatisticas/trios", "Jogadores", "artilheiros,gols,hat-tricks,duplas,trios,vitorias,derrotas,aproveitamento,cartoes-jogadores")]
     [InlineData("/estatisticas", "Times", "campanhas,ataques,defesas,sem-sofrer,invencibilidade,cartoes-equipes")]
     public async Task Historical_navigation_switches_groups_and_lists_only_the_active_group_categories(
         string path, string group, string categories)
@@ -306,6 +306,67 @@ public sealed class HistoricalStatisticsTests
         var filtered = single.Single(x => x.Contains("Nome Unificado", StringComparison.Ordinal));
         filtered.ShouldContain("<td class=\"numeric\">3</td><td class=\"numeric\">0</td>");
         filtered.ShouldContain($"/imagens/editions/{FixtureApi.PreviousEditionId:D}");
+    }
+
+    [Fact]
+    public async Task Player_result_rankings_order_wins_losses_and_point_rate_with_a_minimum_of_games()
+    {
+        await using var fixture = new PortalFixture();
+        var current = new EditionResponse(FixtureApi.EditionId, Guid.Empty, FixtureApi.Slug, "Copa de Teste", 2026, 2, "Active", "America/Sao_Paulo", null, null);
+        var previous = current with { Id = FixtureApi.PreviousEditionId, Slug = FixtureApi.PreviousSlug, Name = "Copa Anterior", Year = 2025 };
+        PlayerResultsRankingResponse Row(string name, string slug, long played, int wins, int draws, int losses, params EditionResponse[] editions) =>
+            new(new(Guid.NewGuid(), slug, name, null), new(played, wins, draws, losses), editions);
+        fixture.Api.PlayerResultsRows =
+        [
+            Row("Ana", "ana", 12, 8, 2, 2, current, previous), Row("Bia", "", 6, 5, 0, 1, current), Row("Caio", "", 4, 4, 0, 0, current),
+            Row("Duda", "duda", 10, 0, 1, 9, previous), Row("Eva", "", 8, 5, 1, 2, current), Row("Sem placar", "", 3, 0, 0, 0, current)
+        ];
+        using var client = fixture.CreateClient();
+        var names = new[] { "Ana", "Bia", "Caio", "Duda", "Eva", "Sem placar" };
+        async Task<string[]> Rows(string path) => Regex.Matches(Regex.Match(WebUtility.HtmlDecode(await client.GetStringAsync(path)),
+            @"<tbody>[\s\S]*?</tbody>").Value, @"<tr>[\s\S]*?</tr>").Select(x => x.Value).ToArray();
+        string[] Order(string[] rows) => rows.Select(row => names.Single(name => Regex.IsMatch(row, $@">\s*{name}\s*</(a|span)>"))).ToArray();
+        var wins = await Rows("/estatisticas/vitorias");
+        Order(wins).ShouldBe(["Ana", "Bia", "Eva", "Caio"]);
+        wins[0].ShouldContain("href=\"/wiki/jogadores/ana\"");
+        wins[0].ShouldContain(">2 copas</span>");
+        Regex.IsMatch(wins[0], "<td class=\"numeric\">12</td>\\s*<td class=\"numeric\">8</td><td class=\"numeric\">2</td><td class=\"numeric\">2</td>").ShouldBeTrue();
+        wins[0].ShouldContain("8 vitórias");
+        wins[1].ShouldContain($"/imagens/editions/{FixtureApi.EditionId:D}");
+        wins[1].ShouldContain("/imagens/sourceplayers/");
+        Order(await Rows("/estatisticas/derrotas")).ShouldBe(["Duda", "Eva", "Ana", "Bia"]);
+        var rate = await Rows("/estatisticas/aproveitamento");
+        Order(rate).ShouldBe(["Bia", "Ana", "Eva", "Duda"]);
+        rate.Select(row => Regex.Match(row, @"[\d,]+%").Value).ShouldBe(["83,3%", "72,2%", "66,7%", "3,3%"]);
+        Order(await Rows($"/estatisticas/aproveitamento?edicao={FixtureApi.PreviousEditionId:D}")).ShouldBe(["Ana", "Duda"]);
+        fixture.Api.Requests.ShouldContain(x => x.StartsWith("/api/v1/players/results?", StringComparison.Ordinal) &&
+            x.Contains("pageSize=100", StringComparison.Ordinal) && x.Contains($"editionId={FixtureApi.PreviousEditionId:D}", StringComparison.Ordinal));
+        fixture.Api.Requests.ShouldNotContain(x => x.Contains("/overview", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task Player_goal_rankings_order_totals_and_hat_tricks_and_show_the_average_only_with_confirmed_games()
+    {
+        await using var fixture = new PortalFixture();
+        var edition = new EditionResponse(FixtureApi.EditionId, Guid.Empty, FixtureApi.Slug, "Copa de Teste", 2026, 2, "Active", "America/Sao_Paulo", null, null);
+        PlayerResultsRankingResponse Row(string name, string slug, long played, long goals, int hatTricks) =>
+            new(new(Guid.NewGuid(), slug, name, null), new(played, 0, 0, 0), [edition], goals, hatTricks);
+        fixture.Api.PlayerResultsRows = [Row("Ana", "ana", 12, 20, 2), Row("Bia", "", 6, 20, 1), Row("Caio", "", 9, 0, 0), Row("Duda", "", 5, 9, 2), Row("Eva", "", 0, 3, 1)];
+        using var client = fixture.CreateClient();
+        var names = new[] { "Ana", "Bia", "Caio", "Duda", "Eva" };
+        async Task<string[]> Rows(string path) => Regex.Matches(Regex.Match(WebUtility.HtmlDecode(await client.GetStringAsync(path)),
+            @"<tbody>[\s\S]*?</tbody>").Value, @"<tr>[\s\S]*?</tr>").Select(x => x.Value).ToArray();
+        string[] Order(string[] rows) => rows.Select(row => names.Single(name => Regex.IsMatch(row, $@">\s*{name}\s*</(a|span)>"))).ToArray();
+        var goals = await Rows("/estatisticas/gols");
+        Order(goals).ShouldBe(["Bia", "Ana", "Duda", "Eva"]);
+        Regex.IsMatch(goals[0], "<td class=\"numeric\">6</td>\\s*<td class=\"numeric\">3,33</td>").ShouldBeTrue();
+        goals[0].ShouldContain("20 gols");
+        Regex.IsMatch(goals[3], "<td class=\"numeric\">0</td>\\s*<td class=\"numeric\">—</td>").ShouldBeTrue();
+        var hatTricks = await Rows("/estatisticas/hat-tricks");
+        Order(hatTricks).ShouldBe(["Ana", "Duda", "Bia", "Eva"]);
+        Regex.IsMatch(hatTricks[0], "<td class=\"numeric\">12</td>\\s*<td class=\"numeric\">20</td>").ShouldBeTrue();
+        hatTricks[0].ShouldContain("2 hat-tricks");
+        hatTricks[2].ShouldContain("1 hat-trick<");
     }
 
     [Fact]

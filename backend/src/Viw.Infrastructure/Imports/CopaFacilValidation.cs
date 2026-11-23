@@ -1,4 +1,6 @@
 using Viw.Domain.Competition;
+using Viw.Domain.Competition.Enum;
+using Viw.Domain.Competition.ValueObjects;
 using Viw.Infrastructure.Imports.Dtos;
 
 namespace Viw.Infrastructure.Imports;

@@ -2,6 +2,7 @@ using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Viw.Application.Imports;
 using Viw.Domain.Competition;
+using Viw.Domain.Competition.Enum;
 using Viw.Infrastructure.Imports;
 using Viw.Infrastructure.Queries;
 using Viw.IntegrationTests.Support;
@@ -18,7 +19,7 @@ public sealed class CompetitionViewSqlTests
         await using var database=await SqlServerTestDatabase.CreateAsync();var db=database.Context;var d=database.Data;
         var phase=new CompetitionPhase {EditionId=d.Edition.Id,ExternalId="group",Name="Primeira fase",SortOrder=1};
         var final=new CompetitionPhase {EditionId=d.Edition.Id,ExternalId="final",Name="Final",SortOrder=2};db.AddRange(phase,final);
-        var home=await db.TeamEntryRecords.SingleAsync(x=>x.Id==d.Home.Id);home.AggregateStatisticsJson="{\"group\":{\"col\":0,\"dt\":\"0=3#1=1#\"}}";
+        var home=await db.TeamEntryRecords.SingleAsync(x=>x.Id==d.Home.Id);home.UpdateFromSource(home.Name,home.SourceImageUrl,"{\"group\":{\"col\":0,\"dt\":\"0=3#1=1#\"}}",home.SourceResultOrder);
         var first=d.CreateMatch();first.PhaseId=phase.Id;first.Status=MatchStatus.Finished;first.HomeScore=2;first.AwayScore=0;
         var game=d.CreateMatch();game.ExternalId="final-game";game.PhaseId=final.Id;game.Status=MatchStatus.Finished;game.HomeScore=1;game.AwayScore=1;
         if(penalties){game.HomePenalties=2;game.AwayPenalties=4;}
@@ -40,9 +41,8 @@ public sealed class CompetitionViewSqlTests
         var phase=new CompetitionPhase {EditionId=d.Edition.Id,ExternalId="final",Name="Grande Final",SortOrder=1};
         var home=await db.TeamEntryRecords.SingleAsync(x=>x.Id==d.Home.Id);
         var away=await db.TeamEntryRecords.SingleAsync(x=>x.Id==d.Away.Id);
-        home.SourceResultOrder=0;away.SourceResultOrder=3;
-        home.AggregateStatisticsJson="{\"final\":{\"col\":4,\"dt\":\"0=1#\"}}";
-        away.AggregateStatisticsJson="{\"final\":{\"col\":5,\"dt\":\"0=1#\"}}";
+        home.UpdateFromSource(home.Name,home.SourceImageUrl,"{\"final\":{\"col\":4,\"dt\":\"0=1#\"}}",0);
+        away.UpdateFromSource(away.Name,away.SourceImageUrl,"{\"final\":{\"col\":5,\"dt\":\"0=1#\"}}",3);
         var game=d.CreateMatch();game.PhaseId=phase.Id;game.Status=MatchStatus.Finished;game.HomeScore=2;game.AwayScore=2;
         db.AddRange(phase,game,d.CreateIdentityLink(),new PlayerRegistration {
             EditionId=d.Edition.Id,SourcePlayerId=d.SourcePlayer.Id,TeamEntryId=d.Home.Id,ValidFrom=DateTimeOffset.UtcNow});
@@ -78,9 +78,9 @@ public sealed class CompetitionViewSqlTests
         var groupB=new CompetitionGroup {EditionId=d.Edition.Id,PhaseId=phase.Id,Name="Grupo B",SortOrder=2};
         db.AddRange(phase,groupA,groupB);
         var home=await db.TeamEntryRecords.SingleAsync(x=>x.Id==d.Home.Id);
-        home.AggregateStatisticsJson="{\"group\":{\"col\":1,\"dt\":\"0=3#\"}}";
+        home.UpdateFromSource(home.Name,home.SourceImageUrl,"{\"group\":{\"col\":1,\"dt\":\"0=3#\"}}",home.SourceResultOrder);
         var away=await db.TeamEntryRecords.SingleAsync(x=>x.Id==d.Away.Id);
-        away.AggregateStatisticsJson="{\"group\":{\"col\":0,\"dt\":\"0=9#\"}}";
+        away.UpdateFromSource(away.Name,away.SourceImageUrl,"{\"group\":{\"col\":0,\"dt\":\"0=9#\"}}",away.SourceResultOrder);
         db.AddRange(
             new CompetitionGroupTeam {EditionId=d.Edition.Id,PhaseId=phase.Id,GroupId=groupA.Id,TeamEntryId=home.Id},
             new CompetitionGroupTeam {EditionId=d.Edition.Id,PhaseId=phase.Id,GroupId=groupB.Id,TeamEntryId=away.Id});

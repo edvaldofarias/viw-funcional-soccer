@@ -2,6 +2,7 @@ using System.Data;
 using Microsoft.EntityFrameworkCore;
 using Viw.Application.Imports;
 using Viw.Domain.Competition;
+using Viw.Domain.Competition.Enum;
 using Viw.Infrastructure.Persistence;
 
 namespace Viw.Infrastructure.Imports;

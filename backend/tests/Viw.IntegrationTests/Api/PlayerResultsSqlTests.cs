@@ -1,5 +1,6 @@
 using Viw.Contracts.Catalog;
 using Viw.Domain.Competition;
+using Viw.Domain.Competition.Enum;
 using Viw.Infrastructure.Queries;
 using Viw.IntegrationTests.Support;
 
@@ -16,7 +17,7 @@ public sealed class PlayerResultsSqlTests
         var oldSource = new SourcePlayer { EditionId = data.OtherEdition.Id, Provider = "fixture", ExternalId = "old-player", OriginalName = "Nome anterior" };
         var loner = new SourcePlayer { EditionId = data.Edition.Id, Provider = "fixture", ExternalId = "loner", OriginalName = "Sem vínculo" };
         var scorer = new SourcePlayer { EditionId = data.Edition.Id, Provider = "fixture", ExternalId = "scorer", OriginalName = "Presença desconhecida" };
-        var oldAway = new TeamEntry { EditionId = data.OtherEdition.Id, Provider = "fixture", ExternalId = "old-away", Name = "Outro" };
+        var oldAway = TeamEntry.Create(data.OtherEdition.Id, "fixture", "old-away", "Outro");
         Match Game(string id, int? home, int? away, MatchStatus status = MatchStatus.Finished)
         {
             var match = data.CreateMatch();

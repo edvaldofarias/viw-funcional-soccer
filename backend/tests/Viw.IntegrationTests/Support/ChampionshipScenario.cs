@@ -1,4 +1,5 @@
 using Viw.Domain.Competition;
+using Viw.Domain.Competition.Enum;
 
 namespace Viw.IntegrationTests.Support;
 
@@ -63,8 +64,6 @@ internal sealed class ChampionshipScenario
         Year = year, Semester = semester, TimeZoneId = "America/Sao_Paulo"
     };
 
-    private static TeamEntry CreateTeam(Guid editionId, string externalId) => new()
-    {
-        EditionId = editionId, Provider = "fixture", ExternalId = externalId, Name = externalId
-    };
+    private static TeamEntry CreateTeam(Guid editionId, string externalId) =>
+        TeamEntry.Create(editionId, "fixture", externalId, externalId);
 }

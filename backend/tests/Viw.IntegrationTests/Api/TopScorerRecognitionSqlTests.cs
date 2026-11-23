@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Viw.Contracts.Catalog;
 using Viw.Domain.Competition;
+using Viw.Domain.Competition.Enum;
 using Viw.Infrastructure.Queries;
 using Viw.IntegrationTests.Support;
 
@@ -20,7 +21,7 @@ public sealed class TopScorerRecognitionSqlTests
         var foreign = new SourcePlayer { EditionId=data.OtherEdition.Id, Provider="fixture", ExternalId="foreign", OriginalName="Outra edição" };
         var game=data.CreateMatch(); game.Status=MatchStatus.Finished; game.HomeScore=2; game.AwayScore=3;
         var live=data.CreateMatch(); live.ExternalId="live-scorer"; live.Status=MatchStatus.Live;
-        var foreignAway=new TeamEntry {EditionId=data.OtherEdition.Id,Provider="fixture",ExternalId="foreign-away",Name="Outro time"};
+        var foreignAway=TeamEntry.Create(data.OtherEdition.Id,"fixture","foreign-away","Outro time");
         var otherGame=new Match {EditionId=data.OtherEdition.Id,Provider="fixture",ExternalId="foreign-match",
             HomeTeamId=data.ForeignTeam.Id,AwayTeamId=foreignAway.Id,HomeScore=1000,AwayScore=0,Status=MatchStatus.Finished,Revision=1};
         var otherDefinition = new AwardDefinition {Code="test-recognition",Name="Outro prêmio",Scope=AwardScope.Championship,RecipientKind=RecipientKind.Player};

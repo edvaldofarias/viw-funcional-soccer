@@ -62,7 +62,7 @@ public sealed class MediaImportService(ViwDbContext db, ImportLeaseManager lease
         switch (target.Kind)
         {
             case "player": (await db.SourcePlayerRecords.SingleAsync(x => x.Id == target.Id, ct)).SourceImageAssetId = asset.Id; break;
-            case "team": (await db.TeamEntryRecords.SingleAsync(x => x.Id == target.Id, ct)).SourceImageAssetId = asset.Id; break;
+            case "team": (await db.TeamEntryRecords.SingleAsync(x => x.Id == target.Id, ct)).SetSourceImageAsset(asset.Id); break;
             case "edition": (await db.ChampionshipEditionRecords.SingleAsync(x => x.Id == target.Id, ct)).SourceImageAssetId = asset.Id; break;
             case "cover": (await db.ChampionshipEditionRecords.SingleAsync(x => x.Id == target.Id, ct)).SourceCoverAssetId = asset.Id; break;
         }

@@ -1,6 +1,8 @@
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Viw.Domain.Competition;
+using Viw.Domain.Competition.Enum;
+using Viw.Domain.Competition.ValueObjects;
 using Viw.IntegrationTests.Support;
 
 namespace Viw.IntegrationTests.Persistence;

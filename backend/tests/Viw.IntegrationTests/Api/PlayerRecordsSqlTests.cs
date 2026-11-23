@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Viw.Contracts.Catalog;
 using Viw.Domain.Competition;
+using Viw.Domain.Competition.Enum;
 using Viw.Infrastructure.Queries;
 using Viw.IntegrationTests.Support;
 
@@ -19,11 +20,11 @@ public sealed class PlayerRecordsSqlTests
         current.Status = previous.Status = EditionStatus.Archived;
         var home = await db.TeamEntryRecords.SingleAsync(x => x.Id == data.Home.Id);
         var foreign = await db.TeamEntryRecords.SingleAsync(x => x.Id == data.ForeignTeam.Id);
-        home.AggregateStatisticsJson = """{"group":{"col":1,"dt":"0=3"}}""";
-        foreign.AggregateStatisticsJson = """{"group":{"col":5,"dt":"0=3"}}""";
+        home.UpdateFromSource(home.Name,home.SourceImageUrl,"""{"group":{"col":1,"dt":"0=3"}}""",home.SourceResultOrder);
+        foreign.UpdateFromSource(foreign.Name,foreign.SourceImageUrl,"""{"group":{"col":5,"dt":"0=3"}}""",foreign.SourceResultOrder);
         var oldSource = new SourcePlayer { EditionId = previous.Id, Provider = "fixture",
             ExternalId = "old-player", OriginalName = "Nome anterior" };
-        var oldAway = new TeamEntry { EditionId = previous.Id, Provider = "fixture", ExternalId = "old-away", Name = "Outro" };
+        var oldAway = TeamEntry.Create(previous.Id, "fixture", "old-away", "Outro");
         var phase = new CompetitionPhase { EditionId = current.Id, ExternalId = "group", Name = "Grupo", SortOrder = 1 };
         var oldPhase = new CompetitionPhase { EditionId = previous.Id, ExternalId = "group", Name = "Grupo", SortOrder = 1 };
         var round = new CompetitionRound { EditionId = current.Id, PhaseId = phase.Id,

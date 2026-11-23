@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Viw.Contracts.Catalog;
 using Viw.Contracts.Imports;
 using Viw.Domain.Competition;
+using Viw.Domain.Competition.Enum;
 using Viw.Infrastructure.Queries;
 using Viw.Infrastructure.Imports;
 using Viw.Infrastructure.Statistics;
@@ -111,10 +112,8 @@ public sealed class SqlServerReadQueriesTests
         game.Status = MatchStatus.Finished; game.HomeScore = 2; game.AwayScore = 0;
         var live = data.CreateMatch();
         live.ExternalId = "live-card-game"; live.Status = MatchStatus.Live;
-        var pastAway = new TeamEntry {
-            EditionId = data.OtherEdition.Id, Provider = ChampionshipCatalog.Provider,
-            ExternalId = "past-away", Name = "Equipe antiga"
-        };
+        var pastAway = TeamEntry.Create(data.OtherEdition.Id, ChampionshipCatalog.Provider,
+            "past-away", "Equipe antiga");
         var past = new Match {
             EditionId = data.OtherEdition.Id, Provider = ChampionshipCatalog.Provider, ExternalId = "past-game",
             HomeTeamId = data.ForeignTeam.Id, AwayTeamId = pastAway.Id,
@@ -280,7 +279,8 @@ public sealed class SqlServerReadQueriesTests
         var edition = await db.ChampionshipEditionRecords.SingleAsync(x => x.Id == data.Edition.Id);
         edition.Status = EditionStatus.Active;
         var home = await db.TeamEntryRecords.SingleAsync(x => x.Id == data.Home.Id);
-        home.AggregateStatisticsJson = """{"group":{"col":1,"dt":"0=0"}}""";
+        home.UpdateFromSource(home.Name, home.SourceImageUrl, """{"group":{"col":1,"dt":"0=0"}}""",
+            home.SourceResultOrder);
         var phase = new CompetitionPhase {EditionId=edition.Id,ExternalId="group",Name="Classificação",SortOrder=1};
         var game = data.CreateMatch();
         game.PhaseId=phase.Id; game.Status=MatchStatus.Finished; game.HomeScore=2; game.AwayScore=5;

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Viw.Contracts.Catalog;
 using Viw.Domain.Competition;
+using Viw.Domain.Competition.Enum;
 using Viw.Infrastructure.Statistics;
 
 namespace Viw.Infrastructure.Queries;

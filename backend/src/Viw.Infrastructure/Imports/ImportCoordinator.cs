@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 using Viw.Application.Imports;
 using Viw.Domain.Common;
 using Viw.Domain.Competition;
+using Viw.Domain.Competition.Enum;
 using Viw.Infrastructure.Persistence;
 
 namespace Viw.Infrastructure.Imports;

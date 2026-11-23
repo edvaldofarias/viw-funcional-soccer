@@ -5,7 +5,7 @@ namespace Viw.Domain.Common;
 /// </summary>
 public abstract class Entity
 {
-    public Guid Id { get; set; } = Guid.NewGuid();
-    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
-    public byte[] RowVersion { get; set; } = [];
+    public Guid Id { get; private set; } = Guid.NewGuid();
+    public DateTimeOffset CreatedAt { get; private set; } = DateTimeOffset.UtcNow;
+    public byte[] RowVersion { get; private set; } = [];
 }

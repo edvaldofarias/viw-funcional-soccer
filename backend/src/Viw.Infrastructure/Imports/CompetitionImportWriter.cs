@@ -21,15 +21,14 @@ public sealed partial class CompetitionImportWriter(ViwDbContext db)
         var teams = await db.TeamEntryRecords.Where(x => x.EditionId == editionId && x.Provider == ChampionshipCatalog.Provider).ToDictionaryAsync(x => x.ExternalId, StringComparer.Ordinal, ct);
         foreach (var item in core.Teams)
         {
+            var name = CopaFacilValidation.RequiredText(item.Value.Name);
             if (!teams.TryGetValue(item.Key, out var team))
             {
-                team = new TeamEntry { EditionId = editionId, Provider = ChampionshipCatalog.Provider, ExternalId = item.Key };
+                team = TeamEntry.Create(editionId, ChampionshipCatalog.Provider, item.Key, name);
                 teams.Add(item.Key, team); db.Add(team);
             }
-            team.Name = CopaFacilValidation.RequiredText(item.Value.Name);
-            team.SourceImageUrl = CopaFacilValidation.BoundedText(item.Value.ImageUrl, 2048);
-            team.AggregateStatisticsJson = item.Value.Statistics?.GetRawText();
-            team.SourceResultOrder = item.Value.ResultOrder;
+            team.UpdateFromSource(name, CopaFacilValidation.BoundedText(item.Value.ImageUrl, 2048),
+                item.Value.Statistics?.GetRawText(), item.Value.ResultOrder);
         }
         var players = await db.SourcePlayerRecords.Where(x => x.EditionId == editionId && x.Provider == ChampionshipCatalog.Provider).ToDictionaryAsync(x => x.ExternalId, StringComparer.Ordinal, ct);
         var registrations = await db.PlayerRegistrationRecords.Where(x => x.EditionId == editionId && x.ValidTo == null).ToListAsync(ct);

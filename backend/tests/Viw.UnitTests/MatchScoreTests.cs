@@ -1,4 +1,4 @@
-using Viw.Domain.Competition;
+using Viw.Domain.Competition.ValueObjects;
 
 namespace Viw.UnitTests;
 

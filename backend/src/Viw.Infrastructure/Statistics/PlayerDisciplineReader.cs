@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Viw.Domain.Competition;
+using Viw.Domain.Competition.Enum;
 using Viw.Infrastructure.Imports;
 using Viw.Infrastructure.Persistence;
 

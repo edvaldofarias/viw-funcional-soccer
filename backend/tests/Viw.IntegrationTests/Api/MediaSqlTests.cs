@@ -22,8 +22,8 @@ public sealed class MediaSqlTests
             var bytes = new byte[] {137,80,78,71,13,10,26,10};
             var asset = new MediaAsset { StorageKey="fixture.png",ContentHash="fixture",ContentType="image/png",SizeBytes=bytes.Length };
             db.Add(asset);await db.SaveChangesAsync();
-            var team=await db.TeamEntryRecords.FindAsync(d.Home.Id);team!.SourceImageAssetId=asset.Id;
-            team.SourceImageUrl="https://firebasestorage.googleapis.com/fixture.png";await db.SaveChangesAsync();
+            var team=await db.TeamEntryRecords.FindAsync(d.Home.Id);team!.SetSourceImageAsset(asset.Id);
+            team.UpdateFromSource(team.Name,"https://firebasestorage.googleapis.com/fixture.png",team.AggregateStatisticsJson,team.SourceResultOrder);await db.SaveChangesAsync();
             await File.WriteAllBytesAsync(Path.Combine(path,asset.StorageKey),bytes);
             var options=Options.Create(new MediaOptions {LocalPath=path});
             var controller=new MediaController(db,new MediaReader(options),options) {ControllerContext=new ControllerContext {HttpContext=new DefaultHttpContext()}};
@@ -37,7 +37,7 @@ public sealed class MediaSqlTests
             // Assert
             fallback.ShouldBeOfType<RedirectResult>().Url.ShouldBe(team.SourceImageUrl);
             // Act: arbitrary external hosts must not be used.
-            team.SourceImageUrl="https://example.invalid/private";await db.SaveChangesAsync();
+            team.UpdateFromSource(team.Name,"https://example.invalid/private",team.AggregateStatisticsJson,team.SourceResultOrder);await db.SaveChangesAsync();
             var blocked=await controller.Get("teams",team.Id,null,ct:default);
             // Assert
             blocked.ShouldBeOfType<NotFoundResult>();

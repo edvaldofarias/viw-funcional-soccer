@@ -4,6 +4,10 @@
 
 Separar Competition, ChampionshipEdition, RuleSet e TeamEntry. Regras de pontuação, fases e desempates pertencem à edição. Registrar Match e PlayerMatchStatistics com origem e revisão; não converter estatística indisponível em zero.
 
+A direção para as entidades de negócio é proteger invariantes por operações nomeadas, em vez de expor setters públicos. Nesta primeira etapa, `TeamEntry.Create` estabelece a identidade por edição/provedor/ID externo; `UpdateFromSource` atualiza apenas os dados da fonte e rejeita uma ordem de resultado negativa. Os vínculos de imagem são alterados por operações próprias. Setters privados continuam compatíveis com o EF Core e não exigem mudanças no esquema.
+
+Enums ficam em arquivos individuais na pasta `Enum`, com namespace correspondente à pasta; Value Objects ficam em `ValueObjects`, também com namespace correspondente, e devem ser imutáveis, com igualdade por valor.
+
 ## Identidade
 
 Player representa somente a pessoa confirmada manualmente pelo Admin; o Worker nunca cria Player; SourcePlayer preserva o cadastro externo; PlayerRegistration registra equipe, edição e período. A chave externa combina provedor, edição e ID original.

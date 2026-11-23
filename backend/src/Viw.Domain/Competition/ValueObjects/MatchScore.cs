@@ -1,4 +1,4 @@
-namespace Viw.Domain.Competition;
+namespace Viw.Domain.Competition.ValueObjects;
 
 /// <summary>
 /// Placar normalizado de uma partida com resultado registrado.

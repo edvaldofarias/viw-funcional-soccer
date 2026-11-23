@@ -1,4 +1,5 @@
 using Viw.Domain.Common;
+using Viw.Domain.Competition.Enum;
 
 namespace Viw.Domain.Competition;
 

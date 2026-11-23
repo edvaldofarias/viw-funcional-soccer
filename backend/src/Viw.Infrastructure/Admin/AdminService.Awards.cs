@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Viw.Application.Admin;
 using Viw.Contracts.Admin;
 using Viw.Domain.Competition;
+using Viw.Domain.Competition.Enum;
 namespace Viw.Infrastructure.Admin;
 
 public sealed partial class AdminService
